@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="排序演算法視覺化教學網站 - 用動畫看懂氣泡排序、選擇排序、插入排序">
+<title>排序演算法視覺化 | 用動畫看懂排序</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#hero">📊 排序演算法視覺化</a>
+  <nav class="topnav" aria-label="主要導覽">
+    <a href="#bubble">氣泡排序</a>
+    <a href="#selection">選擇排序</a>
+    <a href="#insertion">插入排序</a>
+    <a href="#compare">比較模式</a>
+    <a href="#complexity">複雜度</a>
+  </nav>
+</header>
+
+<header class="hero" id="hero">
+  <div class="hero-inner">
+    <h1>排序演算法視覺化</h1>
+    <p class="hero-sub">用動畫看懂排序演算法，從比較、交換到完成排序</p>
+    <p class="hero-tag">看見資料如何一步一步被排列整齊</p>
+    <p class="hero-desc">
+      排序演算法是電腦科學中非常重要的基礎概念。透過視覺化動畫，可以觀察資料如何比較、交換與移動，進一步理解不同排序方法的核心思想。
+    </p>
+    <div class="hero-btns">
+      <a href="#bubble" class="btn btn-primary">氣泡排序</a>
+      <a href="#selection" class="btn btn-primary">選擇排序</a>
+      <a href="#insertion" class="btn btn-primary">插入排序</a>
+    </div>
+  </div>
+  <div class="hero-arrow" aria-hidden="true">▼</div>
+</header>
+
+<section class="data-panel" id="generator" aria-labelledby="data-title">
+  <div class="panel-head">
+    <div>
+      <h2 id="data-title">產生新資料</h2>
+      <p class="hint">三種演算法與比較模式會共用同一組亂數資料，方便你比較差異。</p>
+    </div>
+    <div class="panel-actions">
+      <label class="count-ctl" for="data-count">
+        <span>資料數量：<output id="data-count-val" for="data-count">8</output></span>
+        <span class="count-labels"><small>5</small><small>20</small></span>
+      </label>
+      <input type="range" id="data-count" min="5" max="20" value="8" step="1" aria-label="資料數量 5 到 20">
+      <button id="btn-newdata" class="btn btn-accent" type="button">🔄 產生新資料</button>
+    </div>
+  </div>
+  <div class="legend" aria-label="圖例">
+    <span class="lg"><i class="sw normal"></i>未處理</span>
+    <span class="lg"><i class="sw cmp"></i>比較中</span>
+    <span class="lg"><i class="sw mv"></i>交換中</span>
+    <span class="lg"><i class="sw key"></i>Key</span>
+    <span class="lg"><i class="sw min"></i>最小值</span>
+    <span class="lg"><i class="sw done"></i>已排序</span>
+    <span class="lg"><i class="sw cur"></i>目前位置</span>
+  </div>
+</section>
+
+<main>
+
+  <!-- ================= Bubble Sort ================= -->
+  <section class="algo-card" id="bubble" aria-labelledby="bubble-title">
+    <header class="algo-head">
+      <span class="algo-tag">01</span>
+      <h2 id="bubble-title">Bubble Sort<span class="slash">｜</span>氣泡排序法</h2>
+    </header>
+    <p class="algo-intro">
+      氣泡排序會不斷比較相鄰的兩個數字：如果左邊比右邊大，就交換。大的數字就會慢慢往右移動，像泡泡一樣浮到最右邊。
+    </p>
+    <blockquote class="idea">💭 想像一群數字排隊，大的數字會一步一步「冒泡」到右邊。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="bubble-bars" role="img" aria-label="氣泡排序柱狀圖"></div></div>
+      <div class="msg" id="bubble-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="bubble-start" type="button">▶ 開始</button>
+        <button class="btn" id="bubble-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="bubble-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="bubble-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="bubble-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="bubble-speed">
+        <span>慢</span>
+        <input type="range" id="bubble-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="bubble-speed-out" for="bubble-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前輪次</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前比較</span><b data-f="cur">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">交換次數</span><b data-f="swaps">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="bubble-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="bubble-code" aria-label="氣泡排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 0; i &lt; n - 1; i++) {</pre><em class="cm">// ① 每一輪確定一個最大值</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;for (let j = 0; j &lt; n - 1 - i; j++) {</pre><em class="cm">// ② 掃描相鄰元素</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;&nbsp;&nbsp;if (arr[j] &gt; arr[j + 1]) {</pre><em class="cm">// ③ 比較相鄰兩數</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(arr[j], arr[j + 1]);</pre><em class="cm">// ④ 左大右小就交換</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="6"><pre>}</pre><em class="cm">// ⑤ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>比較相鄰元素</li>
+        <li>大元素逐漸往右移動</li>
+        <li>每輪會確定一個元素的位置</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Selection Sort ================= -->
+  <section class="algo-card" id="selection" aria-labelledby="selection-title">
+    <header class="algo-head">
+      <span class="algo-tag">02</span>
+      <h2 id="selection-title">Selection Sort<span class="slash">｜</span>選擇排序法</h2>
+    </header>
+    <p class="algo-intro">
+      選擇排序每一輪都從「還沒排好」的數字中找出最小值，再把它放到目前位置。前面排好的區域就會越變越長。
+    </p>
+    <blockquote class="idea">💭 每一輪都從剩下的數字中「挑出最小的」，放到正確位置。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="selection-bars" role="img" aria-label="選擇排序柱狀圖"></div></div>
+      <div class="msg" id="selection-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="selection-start" type="button">▶ 開始</button>
+        <button class="btn" id="selection-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="selection-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="selection-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="selection-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="selection-speed">
+        <span>慢</span>
+        <input type="range" id="selection-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="selection-speed-out" for="selection-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前輪次</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前最小值</span><b data-f="minVal">–</b></div>
+        <div class="chip"><span class="k">目前位置</span><b data-f="pos">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">交換次數</span><b data-f="swaps">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="selection-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="selection-code" aria-label="選擇排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 0; i &lt; n - 1; i++) {</pre><em class="cm">// ① 每輪固定一個位置</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;let minIdx = i;<span class="k"></span></pre><em class="cm">// ② 假設目前位置就是最小值</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;for (let j = i + 1; j &lt; n; j++) {</pre><em class="cm">// ③ 掃描剩餘資料</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;&nbsp;&nbsp;if (arr[j] &lt; arr[minIdx]) {</pre><em class="cm">// ④ 找到更小的</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minIdx = j;</pre><em class="cm">// ⑤ 更新最小值位置</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;swap(arr[i], arr[minIdx]);</pre><em class="cm">// ⑥ 交換到正確位置</em></div>
+        <div class="line" data-line="8"><pre>}</pre><em class="cm">// ⑦ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>每輪尋找最小值</li>
+        <li>找到後交換</li>
+        <li>已排序區域逐漸增加</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Insertion Sort ================= -->
+  <section class="algo-card" id="insertion" aria-labelledby="insertion-title">
+    <header class="algo-head">
+      <span class="algo-tag">03</span>
+      <h2 id="insertion-title">Insertion Sort<span class="slash">｜</span>插入排序法</h2>
+    </header>
+    <p class="algo-intro">
+      插入排序把資料分成「左邊已排好」與「右邊還沒排」兩部分。每次從右邊拿出一個數字，像整理撲克牌一樣，插入到左邊正確的位置。
+    </p>
+    <blockquote class="idea">💭 就像整理撲克牌，一張一張拿起來，插到正確的位置。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="insertion-bars" role="img" aria-label="插入排序柱狀圖"></div></div>
+      <div class="msg" id="insertion-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="insertion-start" type="button">▶ 開始</button>
+        <button class="btn" id="insertion-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="insertion-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="insertion-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="insertion-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="insertion-speed">
+        <span>慢</span>
+        <input type="range" id="insertion-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="insertion-speed-out" for="insertion-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前處理</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前 Key</span><b data-f="keyVal">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">移動次數</span><b data-f="moves">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="insertion-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="insertion-code" aria-label="插入排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 1; i &lt; n; i++) {</pre><em class="cm">// ① 從第二個元素開始</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;let key = arr[i];</pre><em class="cm">// ② 取出目前元素（Key）</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;let j = i - 1;</pre></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;while (j &gt;= 0 &amp;&amp; arr[j] &gt; key) {</pre><em class="cm">// ③ 向左比較</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;arr[j + 1] = arr[j];</pre><em class="cm">// ④ 較大的元素向右移動</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;j--;</pre></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;arr[j + 1] = key;</pre><em class="cm">// ⑤ 插入正確位置</em></div>
+        <div class="line" data-line="8"><pre>}</pre><em class="cm">// ⑥ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>維持左側已排序區域</li>
+        <li>每次取出一個元素</li>
+        <li>將元素插入正確位置</li>
+        <li>很像整理撲克牌</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Compare mode ================= -->
+  <section class="section-block" id="compare" aria-labelledby="compare-title">
+    <h2 id="compare-title">三種排序法一起比較</h2>
+    <p class="block-intro">
+      使用同一組資料（<output class="mono" id="compare-arr">[]</output>），同時觀看三種演算法的動畫，
+      觀察哪一個比較多次、交換多、最早完成。
+    </p>
+    <div class="compare-toolbar">
+      <button class="btn btn-go" id="c-start" type="button">▶ 全部開始</button>
+      <button class="btn" id="c-pause" type="button">⏸ 全部暫停</button>
+      <button class="btn btn-step" id="c-step" type="button">⏭ 全部下一步</button>
+      <button class="btn btn-ghost" id="c-regen" type="button">🔄 產生新資料</button>
+      <button class="btn btn-ghost" id="c-reset" type="button">⏹ 重設</button>
+      <label class="speed inline" for="compare-speed">
+        <span>慢</span>
+        <input type="range" id="compare-speed" min="1" max="10" value="5" aria-label="比較模式動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="compare-speed-out" for="compare-speed">5</output>
+      </label>
+    </div>
+
+    <div class="compare-grid">
+      <article class="mini" aria-label="氣泡排序比較視窗">
+        <h3>Bubble Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-bubble"></div></div>
+        <p class="mini-msg" id="cm-bubble-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">交換</span><b data-f="swaps">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="選擇排序比較視窗">
+        <h3>Selection Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-selection"></div></div>
+        <p class="mini-msg" id="cm-selection-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">交換</span><b data-f="swaps">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="插入排序比較視窗">
+        <h3>Insertion Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-insertion"></div></div>
+        <p class="mini-msg" id="cm-insertion-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">移動</span><b data-f="moves">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+    </div>
+
+    <div class="race" id="race-result" hidden>
+      <h3>🏆 比較結果</h3>
+      <p id="race-winner" class="race-winner"></p>
+      <table class="cmp-table" id="race-table">
+        <thead><tr><th>排序法</th><th>比較次數</th><th>交換 / 移動次數</th><th>完成順序</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="race-note">三種演算法用「同一組資料」都完成了排序，但比較與交換的次數不同——這正是不同處理方法之間的差異。</p>
+    </div>
+  </section>
+
+  <!-- ================= Complexity table ================= -->
+  <section class="section-block" id="complexity" aria-labelledby="complexity-title">
+    <h2 id="complexity-title">三種排序法比較</h2>
+    <p class="block-intro">以下複雜度是針對常見實作與條件的教學簡化表示，重點是理解三種演算法的差異。</p>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>排序法</th><th>核心概念</th><th>最佳時間</th><th>平均時間</th><th>最差時間</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>氣泡排序</b></td><td>相鄰比較與交換</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+          <tr><td><b>選擇排序</b></td><td>找出最小值</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
+          <tr><td><b>插入排序</b></td><td>插入正確位置</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-card">
+      <p><b>記憶小技巧：</b>三種演算法都是「比較型」排序，平均時間複雜度都是 O(n²)；若資料「接近排序完成」，氣泡排序與插入排序可以做到最佳時間 O(n)。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p class="f-brand">排序演算法視覺化</p>
+  <p class="f-text">透過視覺化理解演算法，讓抽象的程式邏輯變得看得見。</p>
+  <p class="f-algos">Bubble Sort · Selection Sort · Insertion Sort</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
