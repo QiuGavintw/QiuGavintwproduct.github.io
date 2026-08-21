@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="搜尋演算法視覺化教學網站 - 用動畫看懂順序搜尋、二分搜尋">
+<title>搜尋演算法視覺化 | 用動畫看懂搜尋</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#hero">🔎 搜尋演算法視覺化</a>
+  <nav class="topnav" aria-label="主要導覽">
+    <a href="#linear">順序搜尋</a>
+    <a href="#binary">二分搜尋</a>
+    <a href="#compare">比較模式</a>
+    <a href="#complexity">複雜度</a>
+  </nav>
+</header>
+
+<header class="hero" id="hero">
+  <div class="hero-inner">
+    <h1>🔎 搜尋演算法視覺化</h1>
+    <p class="hero-sub">用動畫看懂搜尋演算法，從尋找、比較到找到目標</p>
+    <p class="hero-tag">看見資料如何一步一步找到你要的答案</p>
+    <p class="hero-desc">
+      搜尋演算法用來在資料中「找答案」：順序搜尋一個一個找，二分搜尋每次砍掉一半。
+      透過視覺化動畫，可以清楚看見兩種方法找資料時，比較次數與找尋方式的差異。
+    </p>
+    <div class="hero-btns">
+      <a href="#linear" class="btn btn-primary">順序搜尋</a>
+      <a href="#binary" class="btn btn-primary">二分搜尋</a>
+    </div>
+  </div>
+  <div class="hero-arrow" aria-hidden="true">▼</div>
+</header>
+
+<section class="data-panel" id="generator" aria-labelledby="data-title">
+  <div class="panel-head">
+    <div>
+      <h2 id="data-title">產生資料與搜尋目標</h2>
+      <p class="hint">順序搜尋與二分搜尋會共用「同一組已排序資料」與「同一個搜尋目標」，方便公平比較。</p>
+    </div>
+    <div class="panel-actions">
+      <label class="count-ctl" for="data-count">
+        <span>資料數量：<output id="data-count-val" for="data-count">8</output></span>
+        <span class="count-labels"><small>5</small><small>20</small></span>
+      </label>
+      <input type="range" id="data-count" min="5" max="20" value="8" step="1" aria-label="資料數量 5 到 20">
+      <label class="count-ctl" for="target-out">
+        <span>🎯 搜尋目標：<output id="target-out" class="target-val">25</output></span>
+        <span class="count-labels"><small>資料內</small><small>資料外</small></span>
+      </label>
+      <div class="target-btns">
+        <button id="btn-target-random" class="btn btn-step" type="button">🎲 隨機搜尋目標</button>
+        <button id="btn-target-none" class="btn btn-accent" type="button">🔍 找不到目標</button>
+      </div>
+      <button id="btn-newdata" class="btn btn-go" type="button">🔄 產生新資料</button>
+      <span class="data-status">資料狀態：<b>✓ 已排序</b></span>
+    </div>
+  </div>
+  <div class="legend" aria-label="圖例">
+    <span class="lg"><i class="sw normal"></i>未處理</span>
+    <span class="lg"><i class="sw checking"></i>檢查中</span>
+    <span class="lg"><i class="sw miss"></i>✕ 不符合</span>
+    <span class="lg"><i class="sw checked"></i>✓ 已檢查</span>
+    <span class="lg"><i class="sw found"></i>🎯 找到了</span>
+    <span class="lg"><i class="sw excl"></i>❌ 排除</span>
+    <span class="lg"><i class="sw mid"></i>★ 中間</span>
+    <span class="lg"><i class="sw ptr-l"></i>← Left</span>
+    <span class="lg"><i class="sw ptr-r"></i>Right →</span>
+  </div>
+</section>
+
+<main>
+
+  <!-- ================= Linear Search ================= -->
+  <section class="algo-card" id="linear" aria-labelledby="linear-title">
+    <header class="algo-head">
+      <span class="algo-tag">01</span>
+      <h2 id="linear-title">Linear Search<span class="slash">｜</span>順序搜尋法</h2>
+    </header>
+    <p class="algo-intro">
+      從第一個資料開始，一個一個往後找，直到找到目標為止。
+    </p>
+    <blockquote class="idea">💭 就像在一排人裡面找朋友，從第一個人開始一個一個問：「你是我要找的人嗎？」</blockquote>
+
+    <div class="viz">
+      <div class="chart chart-cards">
+        <div class="cards" id="linear-cards" role="img" aria-label="順序搜尋資料卡片"></div>
+      </div>
+      <div class="msg" id="linear-msg" aria-live="polite">準備就緒。按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="linear-start" type="button">▶ 開始</button>
+        <button class="btn" id="linear-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="linear-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="linear-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="linear-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="linear-speed">
+        <span>慢</span>
+        <input type="range" id="linear-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="linear-speed-out" for="linear-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">搜尋目標</span><b data-f="target">–</b></div>
+        <div class="chip"><span class="k">目前位置</span><b data-f="pos">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">搜尋狀態</span><b data-f="state">待機</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前資料：<output id="linear-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="linear-code" aria-label="順序搜尋程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 0; i &lt; arr.length; i++) {</pre><em class="cm">// ① 從頭開始掃描</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;if (arr[i] === target) {</pre><em class="cm">// ② 檢查目前資料是不是目標</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;&nbsp;&nbsp;return i;</pre><em class="cm">// ③ 找到了，回傳位置</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;}</pre><em class="cm">// ④ 不是就繼續往下找</em></div>
+        <div class="line" data-line="4"><pre>}</pre><em class="cm">// ⑤ 掃描完畢</em></div>
+        <div class="line" data-line="5"><pre>return -1;</pre><em class="cm">// ⑥ 全部都不是，回傳 -1</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>從頭開始一個一個找</li>
+        <li>不需要資料排序</li>
+        <li>資料越多，可能要找越久（最壞 O(n)）</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Binary Search ================= -->
+  <section class="algo-card" id="binary" aria-labelledby="binary-title">
+    <header class="algo-head">
+      <span class="algo-tag">02</span>
+      <h2 id="binary-title">Binary Search<span class="slash">｜</span>二分搜尋法</h2>
+    </header>
+    <p class="algo-intro">
+      二分搜尋會先看中間的數字，再決定答案在左邊還是右邊。
+    </p>
+    <blockquote class="idea">💭 就像查字典，不會從第一頁一頁一頁找，而是先翻到中間，再決定往前還是往後。</blockquote>
+
+    <div class="viz">
+      <div class="chart chart-cards">
+        <div class="ptr-row" id="binary-ptr" aria-hidden="true"></div>
+        <div class="cards" id="binary-cards" role="img" aria-label="二分搜尋資料卡片"></div>
+      </div>
+      <div class="msg" id="binary-msg" aria-live="polite">準備就緒。按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="binary-start" type="button">▶ 開始</button>
+        <button class="btn" id="binary-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="binary-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="binary-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="binary-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="binary-speed">
+        <span>慢</span>
+        <input type="range" id="binary-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="binary-speed-out" for="binary-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">搜尋目標</span><b data-f="target">–</b></div>
+        <div class="chip"><span class="k">Left</span><b data-f="left">–</b></div>
+        <div class="chip"><span class="k">Mid</span><b data-f="mid">–</b></div>
+        <div class="chip"><span class="k">Right</span><b data-f="right">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">狀態</span><b data-f="state">待機</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前資料：<output id="binary-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="binary-code" aria-label="二分搜尋程式碼">
+        <div class="line" data-line="0"><pre>let left = 0;</pre><em class="cm">// ① 搜尋範圍左界</em></div>
+        <div class="line" data-line="1"><pre>let right = arr.length - 1;</pre><em class="cm">// ② 搜尋範圍右界</em></div>
+        <div class="line" data-line="2"><pre>while (left &lt;= right) {</pre><em class="cm">// ③ 範圍還存在就繼續</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;const mid = Math.floor((left + right) / 2);</pre><em class="cm">// ④ 找出中間位置</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;if (arr[mid] === target) {</pre><em class="cm">// ⑤ 中間就是目標？</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;return mid;</pre><em class="cm">// ⑥ 找到了！</em></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;if (arr[mid] &lt; target) {</pre><em class="cm">// ⑦ 目標在右半邊？</em></div>
+        <div class="line" data-line="8"><pre>&nbsp;&nbsp;&nbsp;&nbsp;left = mid + 1;</pre><em class="cm">// ⑧ 排除左半邊</em></div>
+        <div class="line" data-line="9"><pre>&nbsp;&nbsp;} else {</pre><em class="cm">// ⑨ 目標在左半邊</em></div>
+        <div class="line" data-line="10"><pre>&nbsp;&nbsp;&nbsp;&nbsp;right = mid - 1;</pre><em class="cm">// ⑩ 排除右半邊</em></div>
+        <div class="line" data-line="11"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="12"><pre>}</pre></div>
+        <div class="line" data-line="13"><pre>return -1;</pre><em class="cm">// ⑪ 範圍空了，找不到</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>必須使用已排序資料</li>
+        <li>每次查看中間位置</li>
+        <li>每次可以排除一半資料</li>
+        <li>資料很多時非常有效率（O(log n)）</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Compare mode ================= -->
+  <section class="section-block" id="compare" aria-labelledby="compare-title">
+    <h2 id="compare-title">🔎 順序搜尋 vs 二分搜尋</h2>
+    <p class="block-intro">
+      使用同一組資料（<output class="mono" id="compare-arr">[]</output>）與同一個搜尋目標
+      （<output class="mono" id="compare-target">25</output>），同時觀看兩種搜尋法的動畫，比較它們各用了幾次比較。
+    </p>
+    <div class="compare-toolbar">
+      <button class="btn btn-go" id="c-start" type="button">▶ 全部開始</button>
+      <button class="btn" id="c-pause" type="button">⏸ 全部暫停</button>
+      <button class="btn btn-step" id="c-step" type="button">⏭ 全部下一步</button>
+      <button class="btn btn-ghost" id="c-regen" type="button">🔄 產生新資料</button>
+      <button class="btn btn-ghost" id="c-reset" type="button">⏹ 重設</button>
+      <label class="speed inline" for="compare-speed">
+        <span>慢</span>
+        <input type="range" id="compare-speed" min="1" max="10" value="5" aria-label="比較模式動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="compare-speed-out" for="compare-speed">5</output>
+      </label>
+    </div>
+
+    <div class="compare-grid two">
+      <article class="mini" aria-label="順序搜尋比較視窗">
+        <h3>🔎 順序搜尋</h3>
+        <p class="mini-tag">一個一個找</p>
+        <div class="mini-chart"><div class="cards" id="cm-linear"></div></div>
+        <p class="mini-msg" id="cm-linear-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">目標</span><b data-f="target">–</b></span>
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="二分搜尋比較視窗">
+        <h3>⚡ 二分搜尋</h3>
+        <p class="mini-tag">每次排除一半</p>
+        <div class="mini-chart"><div class="cards" id="cm-binary"></div></div>
+        <p class="mini-msg" id="cm-binary-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">目標</span><b data-f="target">–</b></span>
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+    </div>
+
+    <div class="race" id="race-result" hidden>
+      <h3>🏆 搜尋效率比較</h3>
+      <p id="race-winner" class="race-winner"></p>
+      <table class="cmp-table" id="race-table">
+        <thead><tr><th>搜尋法</th><th>比較次數</th><th>特色</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="race-note">二分搜尋因為每次都能排除一半資料，所以資料很多時通常可以更快找到答案。</p>
+    </div>
+  </section>
+
+  <!-- ================= Complexity ================= -->
+  <section class="section-block" id="complexity" aria-labelledby="complexity-title">
+    <h2 id="complexity-title">⏱ 搜尋演算法複雜度</h2>
+    <p class="block-intro">先用生活化的方式感受，再看公式。</p>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>搜尋法</th><th>最佳</th><th>平均</th><th>最壞</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>順序搜尋</b></td><td>O(1)</td><td>O(n)</td><td>O(n)</td></tr>
+          <tr><td><b>二分搜尋</b></td><td>O(1)</td><td>O(log n)</td><td>O(log n)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-card">
+      <p><b>O(n) 是什麼感覺？</b>假設有 100 個人要找，你可能要一個一個問，最壞可能問到第 100 個人。資料多一倍，可能就要多找一倍的時間。</p>
+    </div>
+    <div class="note-card">
+      <p><b>O(log n) 是什麼感覺？</b>假設有 100 個資料，第一次看完中間切成兩半，剩 50；再切一半剩 25；再切剩 12……資料一直砍一半，所以不需要一個一個找。二分搜尋每找一次，就把「不用看的資料」砍掉一大半。</p>
+    </div>
+    <div class="note-card teaching">
+      <p><b>兩種方法的差別：</b></p>
+      <p>順序搜尋：👀 → 👀 → 👀 → 👀 → 👀 → 🎯（一個一個找，最壞要看完所有資料）</p>
+      <p>二分搜尋：❌❌❌❌｜👀｜❌❌❌❌ → 再縮小 → 🎯（每次直接砍掉一半不用看的資料）</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p class="f-brand">搜尋演算法視覺化</p>
+  <p class="f-text">透過視覺化理解演算法，讓抽象的程式邏輯變得看得見。</p>
+  <p class="f-algos">Linear Search · Binary Search</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

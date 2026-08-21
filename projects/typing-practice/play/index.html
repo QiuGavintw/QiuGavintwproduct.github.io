@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="學生 QWERTY 打字訓練遊戲">
+  <title>⌨️ 打字訓練中心</title>
+  <script>
+    (function () {
+      try {
+        var key = 'typing_practice_v1';
+        var raw = localStorage.getItem(key);
+        if (raw) {
+          var d = JSON.parse(raw);
+          var t = d && d.settings && d.settings.theme;
+          if (t === 'dark' || t === 'light') {
+            document.documentElement.dataset.theme = t;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ========== 首頁 ========== -->
+    <main id="screen-home" class="screen screen-home" aria-label="首頁">
+      <header class="home-hero">
+        <div class="hero-emoji" aria-hidden="true">⌨️</div>
+        <h1 class="hero-title">打字訓練中心</h1>
+        <p class="hero-subtitle">提升你的打字速度！</p>
+      </header>
+
+      <section class="home-stats" aria-label="今日統計">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-today-wpm">0</span>
+          <span class="stat-label">今日最佳 WPM</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-best-wpm">0</span>
+          <span class="stat-label">個人最高 WPM</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-today-count">0</span>
+          <span class="stat-label">今日練習次數</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-streak">0</span>
+          <span class="stat-label">連續練習 / 天</span>
+        </div>
+      </section>
+
+      <section class="home-gamification" aria-label="等級與今日任務">
+        <div class="level-card">
+          <div class="level-head">
+            <span id="home-level" class="level-title">Lv.1</span>
+            <span id="level-name" class="level-name">初學者</span>
+          </div>
+          <div class="level-bar-track">
+            <div id="level-bar" class="level-bar" style="width:0%"></div>
+          </div>
+          <p id="level-xp" class="level-xp">Lv.1 進度 0 / 100 XP</p>
+          <p id="streak-text" class="streak-text">🔥 連續練習 0 天</p>
+        </div>
+        <div class="tasks-card">
+          <h3>📋 今日任務</h3>
+          <div id="task-list" class="task-list"></div>
+          <button id="btn-speed-challenge" class="btn btn-secondary">⚡ 60 秒極速挑戰</button>
+        </div>
+      </section>
+
+      <section id="home-recommend" class="home-recommend" aria-label="今日建議">
+        <h3>💡 今日建議</h3>
+        <p id="rec-text">完成幾次練習後，我們就能分析你的弱點！</p>
+        <button id="btn-weakness-home" class="btn btn-primary hidden">🎯 開始弱點練習</button>
+      </section>
+
+      <nav class="home-actions" aria-label="主要功能">
+        <button id="btn-start" class="btn btn-primary btn-lg">
+          <span aria-hidden="true">🚀</span> 開始練習
+        </button>
+        <button id="btn-stats" class="btn btn-secondary">
+          <span aria-hidden="true">📊</span> 我的成績
+        </button>
+        <button id="btn-achievements" class="btn btn-secondary">
+          <span aria-hidden="true">🏆</span> 我的成就
+        </button>
+        <button id="btn-settings" class="btn btn-secondary">
+          <span aria-hidden="true">⚙️</span> 設定
+        </button>
+      </nav>
+
+      <p class="home-footnote">第一版：點擊「開始練習」選擇課程，用鍵盤輸入下方文字。</p>
+    </main>
+
+    <!-- ========== 課程選擇 ========== -->
+    <div id="lesson-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="lesson-modal-title">
+      <div class="modal-card">
+        <h2 id="lesson-modal-title">📚 選擇課程</h2>
+        <div id="lesson-list" class="lesson-list" aria-label="課程列表"></div>
+        <button id="btn-lesson-close" class="btn btn-secondary">取消</button>
+      </div>
+    </div>
+
+    <!-- ========== 練習頁 ========== -->
+    <main id="screen-practice" class="screen screen-practice hidden" aria-label="練習頁面">
+      <header class="practice-header">
+        <button id="btn-practice-home" class="btn btn-ghost" aria-label="回首頁">🏠</button>
+        <h2 class="practice-title" id="practice-title">練習</h2>
+        <div class="practice-header-actions">
+          <button id="btn-restart" class="btn btn-ghost" aria-label="重新開始">🔄</button>
+          <button id="btn-pause" class="btn btn-ghost" aria-label="暫停">⏸️</button>
+        </div>
+      </header>
+
+      <section class="hud" aria-live="polite" aria-label="即時統計">
+        <div class="hud-item hud-wpm" data-label="WPM">
+          <span class="hud-value" id="hud-wpm">0</span>
+          <span class="hud-label">⚡ WPM</span>
+        </div>
+        <div class="hud-item" >
+          <span class="hud-value" id="hud-accuracy">100</span>
+          <span class="hud-label">🎯 正確率</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-value" id="hud-errors">0</span>
+          <span class="hud-label">❌ 錯誤</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-value" id="hud-time">0</span>
+          <span class="hud-label">⏱️ 時間 / 秒</span>
+        </div>
+      </section>
+
+      <section class="practice-zone">
+        <p class="practice-hint" id="practice-hint" role="status" aria-live="polite">請輸入下方文字 ↓</p>
+        <div id="finger-hint" class="finger-hint" aria-hidden="true">
+          <span class="fh-label">下一個按鍵</span>
+          <span class="fh-key" id="fh-key">A</span>
+          <span class="fh-finger" id="fh-finger">👈 左手小指</span>
+        </div>
+        <div id="practice-text" class="practice-text" aria-label="練習文字"></div>
+      </section>
+
+      <section id="keyboard" class="keyboard" aria-hidden="true"></section>
+      <p class="keyboard-note" id="keyboard-note">💡 虛擬鍵盤僅提供位置提示，請使用實體鍵盤輸入。</p>
+
+      <!-- 倒數 -->
+      <div id="countdown-overlay" class="countdown-overlay hidden">
+        <div id="countdown-number" class="countdown-number">3</div>
+      </div>
+
+      <!-- 暫停 -->
+      <div id="pause-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pause-modal-title">
+        <div class="modal-card">
+          <h2 id="pause-modal-title">⏸️ 遊戲暫停</h2>
+          <div class="modal-actions">
+            <button id="btn-resume" class="btn btn-primary">▶️ 繼續</button>
+            <button id="btn-restart-pause" class="btn btn-secondary">🔄 重新開始</button>
+            <button id="btn-home-pause" class="btn btn-secondary">🏠 回首頁</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========== 結果頁 ========== -->
+    <main id="screen-result" class="screen screen-result hidden" aria-label="練習結果">
+      <div class="result-card">
+        <div class="result-emoji" aria-hidden="true">🎉</div>
+        <h2 class="result-title">練習完成！</h2>
+
+        <div id="result-record" class="result-record hidden">
+          <p class="record-crown" aria-hidden="true">🏆</p>
+          <p class="record-text" id="result-record-text">新紀錄！</p>
+          <p class="record-sub" id="result-record-sub"></p>
+        </div>
+
+        <div class="result-stats" aria-live="polite" aria-label="本輪成績">
+          <div class="result-stat result-wpm">
+            <span class="result-value" id="result-wpm">0</span>
+            <span class="result-label">⚡ WPM</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-value" id="result-accuracy">0</span>
+            <span class="result-label">🎯 正確率</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-value" id="result-errors">0</span>
+            <span class="result-label">❌ 錯誤</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-value" id="result-time">0</span>
+            <span class="result-label">⏱️ 時間 / 秒</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-value" id="result-correct">0</span>
+            <span class="result-label">✓ 正確字元</span>
+          </div>
+          <div class="result-stat">
+            <span class="result-value" id="result-total">0</span>
+            <span class="result-label">字元總數</span>
+          </div>
+        </div>
+
+        <p class="result-best" id="result-best">🏆 個人最佳：0 WPM</p>
+        <p class="result-xp" id="result-xp"></p>
+
+        <div id="result-error-analysis" class="error-analysis hidden">
+          <h3>📊 本次錯誤分析</h3>
+          <div id="error-keys" class="ea-rows"></div>
+          <p id="weakest-finger" class="ea-finger"></p>
+          <button id="btn-weakness" class="btn btn-primary">🎯 加強弱點</button>
+        </div>
+
+        <div id="result-course-complete" class="course-complete hidden">
+          <p class="cc-crown" aria-hidden="true">🎉</p>
+          <h3>課程完成！</h3>
+          <p>你已完成 <strong id="cc-title"></strong></p>
+          <p id="cc-best" class="cc-best"></p>
+          <p id="cc-next" class="cc-next"></p>
+          <button id="btn-next-lesson" class="btn btn-primary">繼續下一課</button>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-again" class="btn btn-primary">🔄 再來一次</button>
+          <button id="btn-analysis" class="btn btn-secondary">📊 查看分析</button>
+          <button id="btn-result-home" class="btn btn-secondary">🏠 回首頁</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========== 個人統計（Dashboard） ========== -->
+    <main id="screen-stats" class="screen screen-stats hidden" aria-label="個人統計">
+      <header class="screen-header">
+        <button id="btn-dash-back" class="btn btn-ghost" aria-label="回首頁">🏠</button>
+        <h2 id="stats-title">個人統計總覽</h2>
+      </header>
+
+      <section class="dash-grid" aria-label="總覽數字">
+        <div class="dash-card"><span class="dash-value" id="dash-wpm">—</span><span class="dash-label">平均 WPM</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-acc">—</span><span class="dash-label">平均正確率</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-err">0</span><span class="dash-label">總錯誤次數</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-time">0</span><span class="dash-label">總練習時間</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-count">0</span><span class="dash-label">總練習次數</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-streak">0</span><span class="dash-label">連續練習天數</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-xp">0 XP</span><span class="dash-label">累計經驗值</span></div>
+        <div class="dash-card"><span class="dash-value" id="dash-level">Lv.1</span><span class="dash-label">目前等級</span></div>
+      </section>
+
+      <section class="dash-section">
+        <h3>🏆 個人最佳</h3>
+        <p id="stats-best" class="dash-text">—</p>
+        <p id="stats-best-sub" class="dash-sub">—</p>
+        <div class="dash-pb">
+          <span id="dash-pb-wpm">0 WPM</span>
+          <span id="dash-pb-acc">0%</span>
+          <span id="dash-pb-time">—</span>
+        </div>
+      </section>
+
+      <section class="dash-section">
+        <h3>📊 進步圖表</h3>
+        <h4 id="stats-chart-title" class="dash-chart-title">WPM ｜ 最近 10 次</h4>
+        <div id="stats-chart" class="chart-box"></div>
+        <p id="stats-trend" class="dash-trend">—</p>
+        <p id="stats-recent" class="dash-text"></p>
+        <p id="stats-recent-sub" class="dash-sub"></p>
+      </section>
+
+      <section class="dash-section">
+        <h3>📋 今日任務</h3>
+        <p id="stats-tasks" class="dash-text"></p>
+        <p id="stats-tasks-sub" class="dash-sub"></p>
+      </section>
+
+      <section class="dash-section">
+        <h3 id="stats-table-title">統計比較表</h3>
+        <div class="stats-table-wrap">
+          <table id="stats-table" class="stats-table">
+            <thead><tr><th>項目</th><th>數值</th><th>備註</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="dash-tabs">
+          <button id="btn-dash" class="btn btn-secondary btn-sm">📊 總覽</button>
+          <button id="btn-dash-tasks" class="btn btn-secondary btn-sm">📋 今日任務</button>
+          <button id="btn-dash-record" class="btn btn-secondary btn-sm">🗂️ 練習紀錄</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========== 成就 ========== -->
+    <main id="screen-ach" class="screen screen-ach hidden" aria-label="成就">
+      <header class="screen-header">
+        <button id="btn-ach-close" class="btn btn-ghost" aria-label="回首頁">🏠</button>
+        <h2>🏆 我的成就</h2>
+        <p class="ach-summary">已解鎖 <strong id="ach-count">0 / 10</strong><span id="ach-total" class="hidden"></span></p>
+      </header>
+      <section id="ach-grid" class="ach-grid" aria-label="成就列表"></section>
+    </main>
+
+    <!-- ========== 課程介紹 ========== -->
+    <div id="intro-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
+      <div class="modal-card intro-card">
+        <h2 id="intro-modal-title">⌨️ 本課程目標</h2>
+        <p class="intro-head" id="intro-head"></p>
+        <p class="intro-body" id="intro-body"></p>
+        <p class="intro-tip" id="intro-tip"></p>
+        <button id="btn-intro-start" class="btn btn-primary">開始練習</button>
+      </div>
+    </div>
+
+    <!-- ========== 設定 ========== -->
+    <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+      <div class="modal-card">
+        <h2 id="settings-modal-title">⚙️ 設定</h2>
+
+        <div class="setting-row">
+          <span class="setting-label">🎨 主題</span>
+          <div class="seg" role="radiogroup" aria-label="主題">
+            <button id="theme-light" class="seg-btn active" role="radio" aria-checked="true">☀️ 淺色</button>
+            <button id="theme-dark" class="seg-btn" role="radio" aria-checked="false">🌙 深色</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">🔊 音效</span>
+          <label class="check-row">
+            <input type="checkbox" id="set-sfx" checked>
+            <span>音效開關</span>
+          </label>
+          <div class="volume-row">
+            <span class="volume-label">音量</span>
+            <input type="range" id="sfx-volume" min="0" max="100" value="35" aria-label="音效音量">
+            <output class="volume-output" id="sfx-volume-out"></output>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">🎵 背景音樂</span>
+          <label class="check-row">
+            <input type="checkbox" id="set-music">
+            <span>音樂開關</span>
+          </label>
+          <div class="volume-row">
+            <span class="volume-label">音量</span>
+            <input type="range" id="music-volume" min="0" max="100" value="30" aria-label="背景音樂音量">
+            <output class="volume-output" id="music-volume-out"></output>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">練習難度</span>
+          <div class="seg" role="radiogroup" aria-label="練習難度">
+            <button id="mode-beginner" class="seg-btn active" role="radio" aria-checked="true">Beginner</button>
+            <button id="mode-normal" class="seg-btn" role="radio" aria-checked="false">Normal</button>
+          </div>
+          <p class="setting-desc">Beginner：按錯需修正後繼續｜Normal：按錯可繼續並記錄</p>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="set-finger-hints" checked>
+          <span>☑ 顯示手指提示</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" id="set-show-keyboard" checked>
+          <span>☑ 顯示虛擬鍵盤</span>
+        </label>
+
+        <div class="modal-actions">
+          <button id="btn-clear-data" class="btn btn-danger">🧹 清除所有紀錄</button>
+          <button id="btn-settings-close" class="btn btn-secondary">關閉</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 清除確認 ========== -->
+    <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+      <div class="modal-card">
+        <h2 id="confirm-modal-title">⚠️ 確定要刪除所有練習紀錄嗎？</h2>
+        <p class="confirm-warn">此操作無法復原。</p>
+        <div class="modal-actions">
+          <button id="btn-confirm-cancel" class="btn btn-secondary">取消</button>
+          <button id="btn-confirm-ok" class="btn btn-danger">確定刪除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

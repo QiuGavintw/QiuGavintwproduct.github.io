@@ -1,0 +1,143 @@
+{
+  "lessons": [
+    {
+      "id": "lesson-01",
+      "title": "基準鍵 F J",
+      "level": 1,
+      "type": "letters",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": ["f", "j"],
+      "intro": {
+        "head": "今天學習：左右食指",
+        "body": "F 和 J 是基準鍵，上面有凸起的小點。\n\n把兩隻食指放在 F 和 J 上，\n其他手指自然放在 Home Row。",
+        "tip": "💡 F 和 J 上有凸起的小點，可以幫助你找到 Home Row。"
+      },
+      "texts": [
+        "ffff jjjj",
+        "ffjj fjfj",
+        "ff jj ff jj",
+        "fff jjj fff jjj",
+        "fjfj fjfj fjfj",
+        "fjjf jffj fjjf",
+        "fj fj fj fj fj fj",
+        "ff fff jjj jj f j"
+      ]
+    },
+    {
+      "id": "lesson-02",
+      "title": "Home Row",
+      "level": 2,
+      "type": "letters",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": ["a", "s", "d", "f", "j", "k", "l", ";"],
+      "intro": {
+        "head": "今天學習：Home Row",
+        "body": "Home Row 是手的起點：\n\nA S D F    J K L ;\n\n打完其他鍵後，手指要回到這裡。",
+        "tip": "💡 打字時不要一直看鍵盤，讓手指記住 Home Row 的位置。"
+      },
+      "texts": [
+        "asdf jkl;",
+        "asdf jkl; asdf jkl;",
+        "aa ss dd ff jj kk ll ;;",
+        "sad lad fall lass",
+        "fjf jfj dkd kdk",
+        "asdf fdsa jkl; ;lkj"
+      ]
+    },
+    {
+      "id": "lesson-03",
+      "title": "Top Row",
+      "level": 3,
+      "type": "letters",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+      "intro": {
+        "head": "今天學習：Top Row",
+        "body": "上排：Q W E R T    Y U I O P\n\n從 Home Row 往上移動對應的手指，\n不要移動整隻手。",
+        "tip": "💡 上排只需要手指往上伸，手肘不要移動。"
+      },
+      "texts": [
+        "qwer uiop",
+        "qq ww ee rr tt yy uu ii oo pp",
+        "qwertyuiop",
+        "we ri po uq ty",
+        "qwerty asdf jkl; uiop"
+      ]
+    },
+    {
+      "id": "lesson-04",
+      "title": "Bottom Row",
+      "level": 4,
+      "type": "letters",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
+      "intro": {
+        "head": "今天學習：Bottom Row",
+        "body": "下排：Z X C V B    N M , . /\n\n手指往下伸，打完後回到 Home Row。",
+        "tip": "💡 打完全部下排按鍵後，記得回到 Home Row。"
+      },
+      "texts": [
+        "zxcv bnm , . /",
+        "zz xx cc vv bb nn mm ,, .. //",
+        "zxcvbnm ,. /",
+        "xc vb nm zx",
+        "zxcv asdf jkl; bnm"
+      ]
+    },
+    {
+      "id": "lesson-05",
+      "title": "混合鍵位",
+      "level": 5,
+      "type": "letters",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": ["a", "s", "d", "f", "j", "k", "l", "q", "w", "e", "r", "z", "x", "c", "v"],
+      "intro": {
+        "head": "今天學習：混合鍵位",
+        "body": "把三排按鍵混合練習，\n建立完整的鍵盤位置概念。",
+        "tip": "💡 不看鍵盤，憑感覺找按鍵位置。"
+      },
+      "texts": [
+        "qwerty asdfg zxcvb",
+        "qwertyuiop asdfghjkl; zxcvbnm",
+        "the quick brown fox",
+        "jumps over the lazy dog",
+        "abcdefghijklmnopqrstuvwxyz"
+      ]
+    },
+    {
+      "id": "lesson-06",
+      "title": "常見單字",
+      "level": 6,
+      "type": "words",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": [],
+      "intro": {
+        "head": "今天學習：常見單字",
+        "body": "練習常用英文單字，\n建立字母組合的打字節奏。",
+        "tip": "💡 一次看整個單字，不要逐字母閱讀。"
+      },
+      "texts": []
+    },
+    {
+      "id": "lesson-07",
+      "title": "英文句子",
+      "level": 7,
+      "type": "sentences",
+      "requiredAccuracy": 85,
+      "requiredCompletions": 2,
+      "focusKeys": [],
+      "intro": {
+        "head": "今天學習：英文句子",
+        "body": "練習完整句子，\n包含空格與標點符號。",
+        "tip": "💡 句子結束的句點後，記得空一格再繼續。"
+      },
+      "texts": []
+    }
+  ]
+}

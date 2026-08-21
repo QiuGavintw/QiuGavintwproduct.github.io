@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qiu Gavin 作品集｜用程式創造有趣的互動體驗</title>
+  <meta name="description" content="Qiu Gavin 個人作品集：集結互動遊戲、演算法視覺化與教育工具。以純前端技術打造，可直接在瀏覽器體驗。">
+  <meta name="author" content="Qiu Gavin">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Qiu Gavin 作品集">
+  <meta property="og:title" content="Qiu Gavin 作品集｜用程式創造有趣的互動體驗">
+  <meta property="og:description" content="集結互動遊戲、演算法視覺化與教育工具的個人作品集。">
+  <meta property="og:url" content="https://QiuGavintwproduct.github.io/">
+  <meta property="og:image" content="https://QiuGavintwproduct.github.io/assets/thumbnails/cephalopod.png">
+  <meta property="og:locale" content="zh_TW">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Qiu Gavin 作品集">
+  <meta name="twitter:description" content="用程式創造有趣的互動體驗。">
+  <meta name="twitter:image" content="https://QiuGavintwproduct.github.io/assets/thumbnails/cephalopod.png">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://QiuGavintwproduct.github.io/">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/favicon.svg">
+
+  <!-- Theme color -->
+  <meta name="theme-color" content="#fbfbfd">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- 載入前即套用主題，避免閃白 -->
+  <script>
+    (function () {
+      var t;
+      try { t = localStorage.getItem("qg-theme"); } catch (e) { /* ignore */ }
+      if (t !== "dark" && t !== "light") {
+        t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+</head>
+<body>
+  <!-- Loading -->
+  <div class="loader" data-loader role="status" aria-live="polite">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <div class="loader-text">Loading…</div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner" aria-label="主要導覽">
+      <a class="nav-brand" href="./index.html">
+        <span class="logo-mark" aria-hidden="true">QG</span>
+        <span>Qiu Gavin</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#works" aria-current="page">Works</a></li>
+      </ul>
+      <button class="theme-toggle" data-theme-toggle type="button" aria-label="切換主題">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <span class="hero-eyebrow">互動遊戲・教育工具・演算法視覺化</span>
+        <h1 class="hero-title">用程式，讓學習與遊戲都更有趣。</h1>
+        <p class="hero-subtitle">從經典遊戲到海洋教育，從演算法視覺化到打字訓練，每一件作品都是對互動體驗的探索。</p>
+        <p class="hero-desc">以純前端技術打造，所有作品皆可直接在瀏覽器中體驗。</p>
+      </div>
+    </section>
+
+    <!-- Works -->
+    <section id="works" class="section" aria-labelledby="works-title">
+      <div class="container">
+        <h2 id="works-title" class="section-title">作品集</h2>
+        <p class="section-subtitle">選擇分類，探索每個作品的玩法、技術與背後的想法。</p>
+
+        <div class="filter-bar" role="group" aria-label="作品分類篩選" data-filter-bar>
+          <button class="filter-btn is-active" data-filter="all" type="button" aria-pressed="true">全部</button>
+          <button class="filter-btn" data-filter="遊戲" type="button" aria-pressed="false">遊戲</button>
+          <button class="filter-btn" data-filter="教育" type="button" aria-pressed="false">教育</button>
+          <button class="filter-btn" data-filter="工具" type="button" aria-pressed="false">工具</button>
+          <button class="filter-btn" data-filter="視覺化" type="button" aria-pressed="false">視覺化</button>
+        </div>
+
+        <div class="works-grid" data-works-grid></div>
+        <div class="works-empty" data-works-empty>此分類目前沒有作品。</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>© <span data-year>2026</span> Qiu Gavin · 以純前端技術打造 · <a href="https://github.com/QiuGavintw/QiuGavintwproduct.github.io" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </div>
+  </footer>
+
+  <script src="js/projects.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

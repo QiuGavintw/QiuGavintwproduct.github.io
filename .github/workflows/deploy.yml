@@ -1,0 +1,105 @@
+name: Build & Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  quality-check:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (lightweight)
+        run: |
+          npm init -y
+          npm install --no-audit --no-fund html-validate
+
+      - name: HTML check (all HTML files)
+        run: |
+          find . -name "*.html" -not -path "./node_modules/*" -print
+          npx html-validate --ext html --ignore ./node_modules/** . 2>&1 || true
+        continue-on-error: true
+
+      - name: JavaScript syntax check
+        run: |
+          for f in $(find . -name "*.js" -not -path "./node_modules/*" -not -path "./projects/*/play/*"); do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+      - name: CSS sanity check
+        run: |
+          for f in $(find . -name "*.css" -not -path "./node_modules/*"); do
+            echo "CSS file present: $f ($(wc -c < "$f") bytes)"
+          done
+
+      - name: Link check (critical pages exist)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const projects = require('./js/projects.js');
+            let fail = 0;
+            for (const p of projects) {
+              if (!fs.existsSync(p.detailPage + 'index.html')) {
+                console.error('MISSING detail page: ' + p.detailPage);
+                fail = 1;
+              }
+              if (p.demoUrl && !fs.existsSync(p.demoUrl + 'index.html')) {
+                console.error('MISSING demo: ' + p.demoUrl);
+                fail = 1;
+              }
+              if (!fs.existsSync(p.thumbnail)) {
+                console.error('MISSING thumbnail: ' + p.thumbnail);
+                fail = 1;
+              }
+            }
+            ['index.html','404.html','sitemap.xml','robots.txt','css/style.css','js/main.js','js/detail.js','js/projects.js'].forEach(f => {
+              if (!fs.existsSync(f)) { console.error('MISSING: ' + f); fail = 1; }
+            });
+            if (fail) process.exit(1);
+            console.log('All project files verified (' + projects.length + ' projects).');
+          "
+
+      - name: Validate projects.js is loadable
+        run: node -e "const p=require('./js/projects.js'); console.log('projects.js OK:', p.length, 'projects');"
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: quality-check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

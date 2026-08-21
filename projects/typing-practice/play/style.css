@@ -1,0 +1,1016 @@
+/* ============ 打字訓練中心 — 全域（Light 預設 / Dark 切換） ============ */
+:root {
+  --bg-0: #eef2f7;
+  --bg-1: #ffffff;
+  --bg-2: #dde4ee;
+  --card: #ffffff;
+  --card-border: #cbd5e1;
+  --text: #0f172a;
+  --text-dim: #64748b;
+  --accent: #6366f1;
+  --accent-2: #0891b2;
+  --ok: #16a34a;
+  --bad: #dc2626;
+  --warn: #d97706;
+  --overlay: #eef2f7aa;
+  --bg-glow-1: #c7d2fe55;
+  --bg-glow-2: #67e8f933;
+  --current-text: #ffffff;
+  --current-ring: #ffffff55;
+  --wrong-text: #ffffff;
+  --row-overlay: #0f172a0f;
+  --key-top: #f8fafc;
+  --key-bottom: #cbd5e1;
+  --key-border: #94a3b866;
+  --key-shadow: #94a3b8;
+  --gline: #cbd5e1;
+  --glabel: #64748b;
+  --dot-stroke: #ffffff;
+  --toast-shadow: #0f172a33;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --key-gap: 6px;
+  --font-mono: "Consolas", "SFMono-Regular", "Menlo", "Courier New", monospace;
+}
+
+[data-theme="dark"] {
+  --bg-0: #0f172a;
+  --bg-1: #1e293b;
+  --bg-2: #334155;
+  --card: #1e293b;
+  --card-border: #2d3a52;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #6366f1;
+  --accent-2: #22d3ee;
+  --ok: #34d399;
+  --bad: #f87171;
+  --warn: #fbbf24;
+  --overlay: #0f172a99;
+  --bg-glow-1: #33415555;
+  --bg-glow-2: #312e8140;
+  --current-text: #ffffff;
+  --current-ring: #ffffff33;
+  --wrong-text: #ffffff;
+  --row-overlay: #00000022;
+  --key-top: #3b4a66;
+  --key-bottom: #2b3850;
+  --key-border: #00000066;
+  --key-shadow: #1e293b;
+  --gline: #334155;
+  --glabel: #94a3b8;
+  --dot-stroke: #e2e8f0;
+  --toast-shadow: #00000044;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 70% -10%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, var(--bg-glow-2), transparent 55%),
+    var(--bg-0);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.screen { min-height: 82vh; }
+
+.hidden { display: none !important; }
+
+:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============ 首頁 ============ */
+.screen-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  text-align: center;
+}
+
+.home-hero .hero-emoji { font-size: 64px; line-height: 1; margin-bottom: 6px; }
+
+.hero-title {
+  font-size: clamp(30px, 5vw, 44px);
+  margin: 4px 0;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-subtitle {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: clamp(16px, 2.5vw, 20px);
+}
+
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 760px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-value {
+  font-size: clamp(22px, 3.4vw, 30px);
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.stat-label { font-size: 13px; color: var(--text-dim); }
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.home-footnote { color: var(--text-dim); font-size: 13px; }
+
+/* ============ 按鈕 ============ */
+.btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--bg-2);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  user-select: none;
+}
+
+.btn:hover { filter: brightness(1.12); }
+.btn:active { transform: scale(.97); }
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), #4f46e5);
+  color: #fff;
+  box-shadow: 0 8px 20px #4f46e540;
+}
+
+.btn-primary:hover { box-shadow: 0 10px 26px #4f46e570; }
+
+.btn-lg { padding: 16px 24px; font-size: 18px; }
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--card-border);
+  padding: 10px 12px;
+}
+
+.btn-ghost:hover { background: var(--bg-2); }
+
+/* ============ 課程選擇 Modal ============ */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 16px;
+}
+
+.modal-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: auto;
+  text-align: center;
+  animation: pop .18s ease;
+}
+
+@keyframes pop {
+  from { transform: scale(.92); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.modal-card h2 { margin-top: 0; }
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.lesson-item {
+  background: var(--bg-1);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  width: 100%;
+  transition: border-color .12s ease, transform .12s ease;
+}
+
+.lesson-item:hover { border-color: var(--accent); transform: translateX(2px); }
+
+.lesson-item .lv-badge {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.lesson-item .lesson-info { display: flex; flex-direction: column; gap: 2px; }
+.lesson-item .lesson-desc { font-size: 12px; color: var(--text-dim); }
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* ============ 練習頁 ============ */
+.practice-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.practice-title {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+  text-align: center;
+}
+
+.practice-header-actions { display: flex; gap: 8px; }
+
+.hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.hud-item {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.hud-value { font-size: clamp(20px, 2.6vw, 26px); font-weight: 700; }
+
+.hud-item[data-label="WPM"] .hud-value { color: var(--warn); }
+.hud-item:nth-child(2) .hud-value { color: var(--ok); }
+.hud-item:nth-child(3) .hud-value { color: var(--bad); }
+.hud-item:nth-child(4) .hud-value { color: var(--accent-2); }
+
+.hud-label { font-size: 12px; color: var(--text-dim); }
+
+/* 練習文字 */
+.practice-zone { margin-bottom: 16px; }
+
+.practice-hint { text-align: center; color: var(--text-dim); margin: 0 0 8px; font-size: 14px; }
+
+.practice-text {
+  font-family: var(--font-mono);
+  font-size: clamp(20px, 3vw, 30px);
+  line-height: 1.8;
+  letter-spacing: 1px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  min-height: 76px;
+  word-break: break-all;
+  user-select: none;
+}
+
+.practice-text .char { transition: color .08s ease; border-radius: 4px; }
+.practice-text .char.done   { color: var(--text-dim); }
+.practice-text .char.todo   { color: var(--text); }
+.practice-text .char.current {
+  color: var(--current-text);
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--current-ring);
+  animation: blinkCursor 1s steps(2, start) infinite;
+}
+
+@keyframes blinkCursor {
+  50% { box-shadow: 0 0 0 2px transparent; }
+}
+
+.practice-text .char.wrong {
+  color: var(--wrong-text);
+  background: var(--bad);
+  text-decoration: underline wavy;
+}
+
+/* ============ 虛擬鍵盤 ============ */
+.keyboard {
+  background: var(--bg-1);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--key-gap);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.kb-row {
+  display: flex;
+  gap: var(--key-gap);
+}
+
+.kb-key {
+  flex: 1;
+  min-width: 0;
+  height: clamp(34px, 5.4vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+  border: 1px solid var(--key-border);
+  color: var(--text);
+  font-size: clamp(12px, 1.8vw, 15px);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: default;
+  user-select: none;
+  box-shadow: 0 2px 0 var(--key-shadow);
+}
+
+.kb-key.wide   { flex: 1.6; }
+.kb-key.space  { flex: 6; letter-spacing: 2px; font-size: 12px; color: var(--text-dim); }
+.kb-key.mod { color: var(--text-dim); font-size: 11px; }
+
+.kb-key.active {
+  background: linear-gradient(180deg, var(--accent), #4f46e5);
+  color: #fff;
+  box-shadow: 0 0 14px #6366f1aa, 0 2px 0 #312e81;
+  transform: scale(1.05);
+}
+
+.kb-key.wrong {
+  background: linear-gradient(180deg, var(--bad), #b91c1c);
+  color: #fff;
+  animation: shake .28s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
+.kb-key.flash-ok { animation: okpop .28s ease; }
+
+@keyframes okpop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* ============ 倒數 ============ */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-number {
+  font-size: clamp(70px, 16vw, 150px);
+  font-weight: 800;
+  color: var(--accent-2);
+  text-shadow: 0 0 40px #22d3ee88;
+  animation: countPop .9s ease;
+}
+
+@keyframes countPop {
+  0%   { transform: scale(2.2); opacity: 0; }
+  40%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1.06); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ============ 結果頁 ============ */
+.screen-result { display: flex; align-items: center; justify-content: center; }
+
+.result-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 30px 26px;
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  animation: pop .2s ease;
+}
+
+.result-emoji { font-size: 52px; line-height: 1; }
+.result-title { margin: 8px 0 4px; }
+
+.result-record {
+  background: linear-gradient(90deg, #fbbf2440, #f59e0b33);
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin: 12px auto;
+  max-width: 340px;
+}
+
+.record-crown { font-size: 30px; margin: 0; line-height: 1.2; }
+.record-text { margin: 2px 0; font-weight: 700; color: var(--warn); }
+.record-sub { margin: 0; font-size: 13px; color: var(--text-dim); }
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.result-stat {
+  background: var(--bg-1);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-wpm .result-value { color: var(--warn); font-size: 30px; }
+.result-value { font-size: clamp(18px, 2.6vw, 24px); font-weight: 700; }
+.result-label { font-size: 12px; color: var(--text-dim); }
+
+.result-best { color: var(--text-dim); font-size: 14px; }
+
+/* ============ Toast ============ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: var(--bg-2);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 15px;
+  box-shadow: 0 10px 30px var(--toast-shadow);
+  max-width: 90vw;
+  text-align: center;
+  animation: toastIn .2s ease;
+}
+
+@keyframes toastIn {
+  from { transform: translate(-50%, 14px); opacity: 0; }
+  to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+
+/* ============ 今日建議 ============ */
+.home-recommend {
+  width: 100%;
+  max-width: 760px;
+  background: linear-gradient(90deg, #6366f122, #22d3ee11);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  text-align: left;
+}
+
+.home-recommend h3 { margin: 0 0 6px; font-size: 16px; }
+
+.home-recommend p {
+  margin: 0 0 12px;
+  white-space: pre-line;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ============ 手指提示 ============ */
+.finger-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: center;
+  background: var(--bg-1);
+  border: 1px dashed var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fh-label { color: var(--text-dim); font-size: 13px; }
+
+.fh-key {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 8px;
+  padding: 2px 12px;
+  box-shadow: 0 0 12px #6366f1aa;
+}
+
+.fh-finger { color: var(--text); font-size: 14px; font-weight: 600; }
+
+/* ============ 課程清單 / 進度 ============ */
+.lesson-item { display: flex; align-items: center; gap: 12px; }
+
+.lesson-item .prog-track {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 90px;
+  height: 8px;
+  background: var(--bg-0);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lesson-item .prog-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+
+.lesson-done { color: var(--ok) !important; }
+
+.lesson-item.locked { opacity: .55; cursor: not-allowed; }
+
+/* ============ 課程介紹 ============ */
+.intro-card { text-align: left; }
+
+.intro-head {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-2);
+  margin: 4px 0;
+}
+
+.intro-body {
+  white-space: pre-line;
+  line-height: 1.7;
+  margin: 10px 0;
+  color: var(--text);
+}
+
+.intro-tip {
+  background: var(--bg-1);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 10px 0 16px;
+}
+
+/* ============ 設定 ============ */
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.setting-label { font-weight: 600; }
+
+.seg {
+  display: inline-flex;
+  background: var(--bg-0);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  gap: 4px;
+  align-self: flex-start;
+}
+
+.seg-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.seg-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.setting-desc { color: var(--text-dim); font-size: 13px; margin: 0; }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.check-row input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+.btn-danger {
+  background: linear-gradient(90deg, #dc2626, #b91c1c);
+  color: #fff;
+}
+
+.confirm-warn { color: var(--warn); font-weight: 600; }
+
+/* ============ 錯誤分析 ============ */
+.error-analysis {
+  background: var(--bg-1);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin: 14px 0;
+  text-align: left;
+}
+
+.error-analysis h3 { margin: 0 0 10px; font-size: 16px; }
+
+.ea-rows { display: flex; flex-direction: column; gap: 6px; }
+
+.ea-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--row-overlay);
+}
+
+.ea-key {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bad);
+  color: #fff;
+  border-radius: 6px;
+}
+
+.ea-count { margin-left: auto; color: var(--text-dim); font-size: 14px; }
+
+.ea-finger { color: var(--warn); font-weight: 600; margin: 10px 0 12px; }
+
+/* ============ 課程完成 ============ */
+.course-complete {
+  background: linear-gradient(90deg, #22d3ee22, #6366f122);
+  border: 1px dashed var(--accent-2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin: 14px 0;
+}
+
+.cc-crown { font-size: 36px; margin: 0; line-height: 1.2; }
+.course-complete h3 { margin: 4px 0; }
+.course-complete p { margin: 4px 0; }
+.cc-best { color: var(--text-dim); }
+.cc-next { color: var(--ok); font-weight: 600; }
+
+/* ============ 虛擬鍵盤：手指標示 ============ */
+.kb-key { position: relative; }
+
+.kb-finger {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  opacity: .75;
+  pointer-events: none;
+}
+
+.keyboard.hide-finger .kb-finger { display: none; }
+
+.kb-key.f-left-pinky   { border-bottom: 3px solid #f87171; }
+.kb-key.f-left-ring    { border-bottom: 3px solid #fb923c; }
+.kb-key.f-left-middle  { border-bottom: 3px solid #fbbf24; }
+.kb-key.f-left-index   { border-bottom: 3px solid #4ade80; }
+.kb-key.f-right-index  { border-bottom: 3px solid #22d3ee; }
+.kb-key.f-right-middle { border-bottom: 3px solid #60a5fa; }
+.kb-key.f-right-ring   { border-bottom: 3px solid #c084fc; }
+.kb-key.f-right-pinky  { border-bottom: 3px solid #f472b6; }
+
+.kb-key.f-left-pinky .kb-finger   { color: #f87171; }
+.kb-key.f-left-ring .kb-finger    { color: #fb923c; }
+.kb-key.f-left-middle .kb-finger  { color: #fbbf24; }
+.kb-key.f-left-index .kb-finger   { color: #4ade80; }
+.kb-key.f-right-index .kb-finger  { color: #22d3ee; }
+.kb-key.f-right-middle .kb-finger { color: #60a5fa; }
+.kb-key.f-right-ring .kb-finger   { color: #c084fc; }
+.kb-key.f-right-pinky .kb-finger  { color: #f472b6; }
+
+/* ============ 等級 / 每日任務（首頁） ============ */
+.home-gamification {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  text-align: left;
+}
+
+.level-card, .tasks-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.level-head { display: flex; align-items: baseline; gap: 10px; }
+.level-title { font-size: 22px; font-weight: 700; color: var(--accent-2); }
+.level-name { color: var(--warn); font-weight: 600; }
+
+.level-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.level-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width .4s ease;
+}
+
+.level-xp { margin: 0; color: var(--text-dim); font-size: 13px; }
+.streak-text { margin: 6px 0 0; color: var(--text-dim); font-size: 13px; }
+
+.tasks-card h3 { margin: 0 0 10px; font-size: 16px; }
+
+.task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-1);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.task-item.done { border-color: var(--ok); color: var(--ok); }
+.task-title { display: flex; align-items: center; gap: 6px; }
+.task-progress { color: var(--text-dim); font-size: 12px; }
+.task-item.done .task-progress { color: var(--ok); }
+
+/* ============ 結果頁 XP ============ */
+.result-xp {
+  margin: 8px 0 0;
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* ============ 個人統計 Dashboard ============ */
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.screen-header h2 { margin: 0; font-size: 24px; }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dash-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-value { font-size: 22px; font-weight: 700; color: var(--accent-2); }
+.dash-label { font-size: 12px; color: var(--text-dim); }
+
+.dash-section {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.dash-section h3 { margin: 0 0 8px; }
+.dash-chart-title { margin: 0 0 10px; color: var(--text-dim); font-weight: 600; }
+.dash-text { margin: 6px 0; }
+.dash-sub { margin: 2px 0 6px; color: var(--text-dim); font-size: 13px; }
+.dash-trend { color: var(--ok); font-weight: 600; margin: 8px 0 4px; }
+
+.dash-pb { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.dash-pb span {
+  background: var(--bg-1);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-weight: 700;
+  color: var(--warn);
+}
+
+.chart-box { background: var(--bg-1); border-radius: var(--radius-sm); padding: 10px; }
+
+.stats-table-wrap { overflow-x: auto; margin: 8px 0 12px; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stats-table th, .stats-table td { border: 1px solid var(--card-border); padding: 8px 10px; text-align: left; }
+.stats-table th { background: var(--bg-2); }
+.stats-table td { background: var(--bg-1); }
+
+.dash-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-sm { padding: 8px 14px; font-size: 14px; }
+
+/* SVG 圖表 */
+.gline { stroke: var(--gline); stroke-width: 1; }
+.glabel { fill: var(--glabel); font-size: 11px; }
+.poly { stroke: var(--accent-2); stroke-width: 2; }
+.dot { fill: var(--accent); stroke: var(--dot-stroke); stroke-width: 1; }
+.muted { color: var(--text-dim); text-align: center; }
+
+/* ============ 成就 ============ */
+.ach-summary { margin: 0 0 0 auto; color: var(--text-dim); }
+.ach-summary strong { color: var(--warn); }
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.ach-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+
+.ach-card.locked { opacity: .5; filter: grayscale(.7); }
+.ach-card.unlocked { border-color: var(--warn); box-shadow: 0 6px 16px #fbbf2430; }
+.ach-icon { font-size: 34px; }
+.ach-name { font-weight: 700; margin: 6px 0 2px; }
+.ach-desc { font-size: 12px; color: var(--text-dim); }
+.ach-time { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.ach-card.unlocked .ach-time { color: var(--ok); }
+
+/* ============ Phase 4：設定（音效 / 音樂 / 主題） ============ */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volume-label { font-size: 13px; color: var(--text-dim); min-width: 32px; }
+
+.volume-row input[type="range"] {
+  flex: 1;
+  max-width: 220px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.volume-output {
+  min-width: 38px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Phase 4：鍵盤提示 ============ */
+.keyboard-note {
+  margin: 10px auto 0;
+  max-width: 900px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ============ 響應式 ============ */
+@media (max-width: 820px) {
+  .home-stats { grid-template-columns: repeat(2, 1fr); }
+  .home-gamification { grid-template-columns: 1fr; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  .hud { grid-template-columns: repeat(2, 1fr); }
+  .result-stats { grid-template-columns: repeat(2, 1fr); }
+  #app { padding: 16px 10px 30px; }
+  .kb-key { height: 34px; font-size: 11px; }
+  .kb-key.mod { font-size: 9px; }
+  .keyboard { padding: 8px; gap: 4px; }
+}
+
+@media (max-width: 520px) {
+  .kb-row { gap: 3px; }
+  .kb-key { border-radius: 6px; height: 30px; font-size: 10px; }
+  .kb-key.mod { display: none; }
+  .kb-finger { display: none; }
+  .practice-text { font-size: 18px; padding: 14px 12px; }
+  .btn-lg { width: 100%; }
+  .dash-grid { gap: 8px; }
+  .dash-value { font-size: 18px; }
+  .ach-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .volume-row input[type="range"] { max-width: 120px; }
+  .seg-btn { padding: 7px 12px; font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

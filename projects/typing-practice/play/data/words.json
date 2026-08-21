@@ -1,0 +1,42 @@
+{
+  "easy": [
+    "a", "am", "an", "and", "are", "ask", "at", "bad", "be", "big",
+    "boy", "but", "can", "cat", "day", "did", "do", "eat", "end", "far",
+    "for", "fun", "get", "girl", "go", "good", "hand", "has", "he", "help",
+    "her", "hi", "him", "his", "home", "how", "if", "in", "is", "it",
+    "job", "joy", "kid", "let", "like", "look", "love", "make", "man", "may",
+    "me", "men", "mom", "my", "new", "no", "not", "now", "of", "on",
+    "one", "or", "our", "out", "own", "part", "play", "put", "red", "right",
+    "run", "say", "see", "she", "so", "some", "take", "the", "them", "then",
+    "there", "they", "thing", "think", "this", "three", "time", "to", "two", "up",
+    "use", "very", "walk", "want", "way", "we", "week", "well", "went", "were",
+    "what", "when", "where", "which", "who", "why", "will", "with", "work", "would",
+    "write", "year", "yes", "you"
+  ],
+  "medium": [
+    "about", "after", "again", "always", "another", "around", "because", "before", "being", "better",
+    "between", "black", "bring", "call", "change", "child", "class", "close", "color", "come",
+    "could", "course", "each", "early", "earth", "even", "every", "example", "eyes", "face",
+    "family", "father", "feel", "feet", "find", "first", "follow", "found", "friend", "game",
+    "give", "going", "great", "group", "grow", "head", "hear", "heart", "house", "idea",
+    "important", "into", "just", "keep", "kind", "know", "land", "large", "last", "later",
+    "learn", "leave", "left", "less", "light", "little", "live", "long", "might", "mind",
+    "money", "more", "morning", "mother", "move", "music", "never", "night", "number", "often",
+    "once", "open", "order", "paper", "people", "place", "plant", "point", "power", "question",
+    "quiet", "quite", "rain", "really", "reason", "river", "small", "sound", "speak", "stand",
+    "start", "state", "story", "strong", "study", "such", "system", "table", "talk", "teach",
+    "teacher", "tell", "test", "though", "through", "told", "town", "travel", "tree", "turn",
+    "under", "until", "voice", "water", "white", "without", "word", "world", "young"
+  ],
+  "hard": [
+    "beautiful", "believe", "breakfast", "building", "business", "caught", "century", "character", "children", "complete",
+    "consider", "continue", "control", "country", "culture", "danger", "decide", "describe", "different", "difficult",
+    "distance", "doctor", "education", "energy", "environment", "especially", "everything", "experience", "experiment", "familiar",
+    "favorite", "finally", "finish", "forward", "future", "general", "government", "healthy", "history", "however",
+    "imagine", "increase", "instead", "interesting", "language", "lesson", "library", "machine", "material", "measure",
+    "memory", "moment", "mountain", "natural", "necessary", "newspaper", "nothing", "opposite", "orange", "parent",
+    "perhaps", "picture", "possible", "problem", "program", "remember", "sentence", "several", "should", "sometimes",
+    "special", "student", "subject", "suppose", "surprise", "teacher", "television", "together", "tomorrow", "tonight",
+    "understand", "unusual", "usually", "vacation", "vegetable", "welcome", "wonderful", "yesterday"
+  ]
+}

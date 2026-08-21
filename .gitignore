@@ -1,2 +1,7 @@
 *.msi
 *.exe
+serve.mjs
+node_modules/
+.DS_Store
+Thumbs.db
+0807.txt
