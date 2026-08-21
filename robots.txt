@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://QiuGavintwproduct.github.io/sitemap.xml
+Sitemap: https://qiugavintw.github.io/QiuGavintwproduct.github.io/sitemap.xml
