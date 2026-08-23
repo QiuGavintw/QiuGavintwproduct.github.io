@@ -781,6 +781,102 @@ function mpOf(sp) { return Object.assign({}, MOVEMENT_DEFAULTS, MOVEMENT[sp.id] 
 const DEEP_SEA = { giantsq: true, vampire: true };
 
 /* ============================================================
+   [模組 2.8] 動畫系統（Animation States + 選配 Sprite Sheet）
+   - animationState：idle / swim / escape / caught（純表現層，
+     由 Ceph 邏輯狀態每幀推導，與世界座標完全分離——
+     animationFrame 只只驅動外觀，絕不回寫 worldX/worldY/velocity）
+   - 各物種幀率／幀數可在 ANIM 微調；未列者用 ANIM_DEFAULTS
+   - Sprite Sheet 為「選配升級」：僅當 assets/cephalopods/sprites/
+     manifest.json 存在且提供高品質透明幀時啟用；載入失敗或
+     缺檔時一律 fallback 到程序化繪圖，遊戲行為不受影響。
+     （animation-reference.png 僅為設計參考，不做盲目切割。）
+   ============================================================ */
+const ANIM_STATES = ['idle', 'swim', 'escape', 'caught'];
+const ANIM_DEFAULTS = {
+  idle:   { fps: 3,  frames: 2 },
+  swim:   { fps: 8,  frames: 4 },
+  escape: { fps: 13, frames: 4 },
+  caught: { fps: 10, frames: 3 }
+};
+/* 各物種動畫微調（依 Reference 的移動風格：慢速底棲低 fps、高速噴射高 fps） */
+const ANIM = {
+  xiaoquan:  { swim: { fps: 10 } },
+  suoguan:   { swim: { fps: 9 },  idle: { fps: 5 } },
+  huazhi:    { swim: { fps: 4 },  idle: { fps: 2 } },   /* 花枝：慢速、鰭持續波動 */
+  ruansi:    { swim: { fps: 8 } },
+  zhangyu:   { swim: { fps: 3 },  idle: { fps: 1.5 } }, /* 真蛸：爬行緩慢 */
+  wusei:     { swim: { fps: 5 } },
+  duanxiao:  { swim: { fps: 3 },  idle: { fps: 1.5 } }, /* 短蛸：慢速躲藏 */
+  nini:      { swim: { fps: 9 } },
+  changwan:  { swim: { fps: 8 },  escape: { fps: 14 } },/* 長腕延遲擺動 */
+  jiwuzei:   { swim: { fps: 4 } },
+  rocket:    { swim: { fps: 12 }, escape: { fps: 16 } },/* 火箭魷：噴射高速 */
+  giantoct:  { swim: { fps: 2.5 }, idle: { fps: 1 } },  /* 巨型章魚：重量感 */
+  mimic:     { swim: { fps: 4 },  idle: { fps: 2 } },   /* 擬態章魚：姿態變化 */
+  blueoct:   { swim: { fps: 3 } },
+  giantsq:   { swim: { fps: 5 },  escape: { fps: 12 } },/* 大王魷：長腕延遲 */
+  vampire:   { swim: { fps: 2 },  idle: { fps: 1 } }    /* 吸血鬼魷：極慢漂游 */
+};
+function animOf(sp) {
+  const base = sp && ANIM[sp.id] ? ANIM[sp.id] : {};
+  const out = {};
+  for (const st of ANIM_STATES) out[st] = Object.assign({}, ANIM_DEFAULTS[st], base[st] || {});
+  return out;
+}
+/* 邏輯狀態 → 動畫狀態推導（單向、表現層） */
+function deriveAnimState(logicState) {
+  if (logicState === 'caught' || logicState === 'struggle') return 'caught';
+  if (logicState === 'escape' || logicState === 'released' || logicState === 'flee') return 'escape';
+  if (logicState === 'hide') return 'idle';
+  return 'swim';
+}
+/* 選配 Sprite Sheet 載入器：
+   manifest 格式 { "<speciesId>": { "src": "sprites/xiaoquan.png", "fw": 64, "fh": 64,
+     "states": { "swim": {"row":0,"frames":4}, ... } } }
+   幀必須是去背透明素材；任何錯誤 → 永久 fallback 程序化繪圖。 */
+const SpriteSheets = {
+  ready: false, failed: false, map: {}, imgs: {},
+  init() {
+    if (this.ready || this.failed) return;
+    /* 無 fetch 或無 Image（Node 測試環境 / 舊瀏覽器）→ 同步判定 fallback */
+    if (typeof fetch !== 'function' || typeof Image !== 'function') { this.failed = true; return; }
+    try {
+      fetch('assets/cephalopods/sprites/manifest.json')
+        .then(r => { if (!r.ok) throw new Error('manifest http ' + r.status); return r.json(); })
+        .then(json => {
+          for (const id of Object.keys(json || {})) {
+            const e = json[id];
+            if (!e || !e.src || !e.fw || !e.fh) continue;
+            const img = new Image();
+            img.onload = () => { this.imgs[id] = img; };
+            img.onerror = () => { delete this.imgs[id]; };
+            img.src = e.src;
+            this.map[id] = e;
+          }
+          this.ready = true;
+        })
+        .catch(() => { this.failed = true; });
+    } catch (e) { this.failed = true; }
+  },
+  has(id) { return !!(this.ready && this.map[id] && this.imgs[id]); },
+  /* 回傳是否以 Sheet 繪製；false = 呼叫端走程序化 fallback */
+  draw(c, s) {
+    if (!this.has(c.spec.id)) return false;
+    const e = this.map[c.spec.id], img = this.imgs[c.spec.id];
+    const st = e.states && e.states[c.animState] ? c.animState : (e.states && e.states.swim ? 'swim' : null);
+    if (!st) return false;
+    const info = e.states[st];
+    const f = Math.floor(c.animFrame) % Math.max(1, info.frames | 0);
+    const sx = f * e.fw, sy = (info.row | 0) * e.fh;
+    const th = s * 2, tw = e.fw / e.fh * th;
+    try {
+      ctx.drawImage(img, sx, sy, e.fw, e.fh, -tw / 2, -th / 2, tw, th);
+      return true;
+    } catch (err) { return false; }
+  }
+};
+
+/* ============================================================
    [模組 3.5] 真實素材（Wikimedia Commons 合法授權影像）
    整合範圍：圖鑑 / 資訊小卡 / 保育選擇。照片以 cover-fit 繪製、
    未載入完成時自動回退到程式繪製，不影響既有遊玩機制。
@@ -1797,6 +1893,11 @@ class Ceph {
     this.trail = [];          // 殘影
     this.shrink = 1;          // 縮團比例（章魚）
     this.spd = this.mp.speed * rand(0.8, 1.2);
+    /* 動畫系統：表現層狀態與幀（與世界座標分離） */
+    this.animCfg = animOf(spec);
+    this.animState = deriveAnimState(this.state);   // idle / swim / escape / caught
+    this.animFrame = rand(0, 4);                    // 浮點幀計數，只驅動外觀
+    this.animClock = rand(0, 10);                   // 程序化特效時鐘（鰭波／腕膜／發光）
   }
 
   /* 重置到隨機位置（考慮章魚偏好岩石附近） */
@@ -1823,6 +1924,10 @@ class Ceph {
     const g = this.game;
     this.swimT += dt;
     if (this.inkCooldown > 0) this.inkCooldown -= dt;
+    /* 動畫狀態推導與幀推進（表現層，不影響世界座標） */
+    this.animState = deriveAnimState(this.state);
+    this.animFrame += dt * this.animCfg[this.animState].fps;
+    this.animClock += dt;
 
     /* 殘影壽命 */
     for (let i = this.trail.length - 1; i >= 0; i--) {
@@ -2019,6 +2124,10 @@ class Ceph {
     this.x = clamp(this.x, 30, CFG.W - 30);
     this.y = clamp(this.y, CFG.SEA_Y + 26, CFG.FLOOR_Y - 6);
     if (this.x <= 32 || this.x >= CFG.W - 32) { this.targetX = rand(60, CFG.W - 60); }
+    /* 火箭魷：噴射推進時尾部冒泡（視覺回饋，不影響座標） */
+    if (this.spec.id === 'rocket' && Math.abs(this.vx) + Math.abs(this.vy) > 3.5 && Math.random() < dt * 5) {
+      Particles.bubble(this.x - this.dir * this.size * 0.8, this.y);
+    }
   }
 
   /* 驚慌逃跑：一律朝海中（外側）+ 往下，永不朝船 / 岸 / 海面 */
@@ -2085,6 +2194,11 @@ class Ceph {
     Particles.splash(this.x, this.y);
   }
 
+  /* 是否處於受威脅狀態（藍環章魚發光等視覺反應用） */
+  isThreatened() {
+    return this.state === 'flee' || this.state === 'struggle' || this.state === 'escape' || this.state === 'caught';
+  }
+
   /* 繪製生物 */
   draw(t) {
     const ctx = this.game.ctx;
@@ -2110,24 +2224,66 @@ class Ceph {
     if (this.shrink < 1) ctx.scale(this.shrink, this.shrink);
     const swimK = Math.sin(this.swimT * 4) * (this.state === 'caught' ? 0.15 : 1);
 
-    /* 依種類繪製身體 */
-    switch (this.spec.id) {
-      case 'xiaoquan': this.drawSquid(s, swimK, true); break;
-      case 'suoguan': this.drawSquid(s, swimK, false); break;
-      case 'ruansi': this.drawSoftsquid(s, swimK); break;
-      case 'huazhi': this.drawCuttle(s, swimK, true); break;
-      case 'wusei': this.drawCuttle(s, swimK, false); break;
-      case 'zhangyu': this.drawOcto(s, swimK); break;
-      /* 擴充物種：魷類 / 烏賊類 / 章魚類，直接重用現有繪製函式 */
-      case 'rocket': this.drawSquid(s, swimK, true); break;      /* 火箭魷：偏白魷體色 */
-      case 'nini': case 'changwan': this.drawSquid(s, swimK, false); break;
-      case 'giantsq': this.drawSquid(s, swimK, false); break;    /* 大王魷：深色大型魷 */
-      case 'jiwuzei':
-        this.drawCuttle(s, swimK, false);
-        break;
-      case 'duanxiao': case 'giantoct': case 'mimic': case 'blueoct': case 'vampire':
-        this.drawOcto(s, swimK);
-        break;
+    /* 優先使用選配 Sprite Sheet（僅當 manifest + 透明幀素材齊備）；
+       否則 fallback 到程序化繪圖（現行向量外觀，含各物種動畫特效） */
+    if (SpriteSheets.draw(this, s)) {
+      /* Sheet 已繪製主體；程序化特效仍疊加（發光／藍環等反應即時狀態） */
+    } else {
+      /* 依種類繪製身體 */
+      switch (this.spec.id) {
+        case 'xiaoquan': this.drawSquid(s, swimK, true); break;
+        case 'suoguan': this.drawSquid(s, swimK, false); break;
+        case 'ruansi': this.drawSoftsquid(s, swimK); break;
+        case 'huazhi': this.drawCuttle(s, swimK, true); break;
+        case 'wusei': this.drawCuttle(s, swimK, false); break;
+        case 'zhangyu': this.drawOcto(s, swimK); break;
+        /* 擴充物種：魷類 / 烏賊類 / 章魚類，直接重用現有繪製函式 */
+        case 'rocket': this.drawSquid(s, swimK, true); break;      /* 火箭魷：偏白魷體色 */
+        case 'nini': case 'changwan': this.drawSquid(s, swimK, false); break;
+        case 'giantsq': this.drawSquid(s, swimK, false); break;    /* 大王魷：深色大型魷 */
+        case 'jiwuzei':
+          this.drawCuttle(s, swimK, false);
+          break;
+        case 'duanxiao': case 'giantoct': case 'mimic': case 'blueoct': case 'vampire':
+          this.drawOcto(s, swimK);
+          break;
+      }
+    }
+    /* 物種專屬動畫特效層（受威脅反應／生物發光／姿態） */
+    if (this.spec.id === 'blueoct') {
+      /* 藍環章魚：平時淡藍環；受威脅時藍環變亮並脈衝 */
+      const threat = this.isThreatened();
+      const pulse = 0.5 + 0.5 * Math.sin(this.animClock * (threat ? 9 : 2));
+      ctx.globalAlpha = threat ? 0.55 + pulse * 0.4 : 0.25 + pulse * 0.1;
+      if (threat) glow('#22d3ee', 10);
+      ctx.strokeStyle = threat ? '#67e8f9' : '#3b82f6';
+      ctx.lineWidth = 1.6;
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2 + this.phase;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * s * 0.45, Math.sin(a) * s * 0.38, s * 0.11, 0, 7);
+        ctx.stroke();
+      }
+      if (threat) noGlow();
+      ctx.globalAlpha = 1;
+    }
+    if (this.spec.id === 'vampire') {
+      /* 吸血鬼魷：腕膜展開／收縮 + 微弱生物發光（低光環境） */
+      const openK = 0.5 + 0.5 * Math.sin(this.animClock * 0.7);          /* 開闔循環 */
+      const web = 0.55 + 0.45 * openK;
+      ctx.globalAlpha = 0.14 + 0.1 * (0.5 + 0.5 * Math.sin(this.animClock * 1.3));
+      glow('#7dd3fc', 12);
+      ctx.fillStyle = '#67e8f9';
+      ctx.beginPath(); ctx.arc(0, s * 0.05, s * 0.55 * web, 0, 7); ctx.fill();
+      noGlow();
+      ctx.globalAlpha = 0.42;
+      ctx.strokeStyle = 'rgba(125,211,252,0.8)'; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.15);
+      ctx.quadraticCurveTo(-s * 0.95 * web, s * 0.35, 0, s * (0.5 + web * 0.45));
+      ctx.quadraticCurveTo(s * 0.95 * web, s * 0.35, 0, -s * 0.15);
+      ctx.closePath(); ctx.stroke();
+      ctx.globalAlpha = 1;
     }
     /* 特殊標記 */
     if (this.isJuvenile) {
@@ -2153,12 +2309,14 @@ class Ceph {
   drawSquid(s, k, isWhite) {
     const c = this.spec.palette;
     const w = s * 0.55;
+    /* 長腕物種（長腕鎖管／大王魷）：觸腕具相位延遲擺動 */
+    const lag = (this.spec.id === 'changwan' || this.spec.id === 'giantsq') ? 0.55 : 0.15;
     /* 觸腕 */
     ctx.strokeStyle = c[1]; ctx.lineWidth = 1.4;
     ctx.beginPath();
     for (let i = -2; i <= 2; i++) {
       ctx.moveTo(i * w * 0.3, s * 0.45);
-      ctx.quadraticCurveTo(i * w * 0.5 + Math.sin(k + i) * 2, s * 0.8, i * w * 0.4 + Math.sin(k * 1.5 + i) * 3, s * 1.05);
+      ctx.quadraticCurveTo(i * w * 0.5 + Math.sin(k + i * lag) * 2, s * 0.8, i * w * 0.4 + Math.sin(k * 1.5 + i * lag) * 3, s * 1.05);
     }
     ctx.stroke();
     /* 身體 */
@@ -2206,10 +2364,11 @@ class Ceph {
     ctx.bezierCurveTo(w * 1.3, -s * 0.5, w * 1.3, s * 0.4, 0, s * 0.55);
     ctx.bezierCurveTo(-w * 1.3, s * 0.4, -w * 1.3, -s * 0.5, 0, -s);
     ctx.closePath(); ctx.fill();
-    /* 包全身的鰭 */
+    /* 包全身的鰭（波浪式運動：橢圓隨時間輕微起伏） */
+    const fw = Math.sin(this.animClock * 3.2);
     ctx.fillStyle = 'rgba(232,201,160,0.85)';
     ctx.beginPath();
-    ctx.ellipse(0, s * 0.05, w * 1.5, s * 0.95, 0, 0, 7);
+    ctx.ellipse(0, s * 0.05, w * 1.5 * (1 + 0.03 * fw), s * 0.95 * (1 + 0.06 * fw), 0, 0, 7);
     ctx.fill();
     ctx.strokeStyle = 'rgba(185,141,94,0.5)'; ctx.lineWidth = 1.5;
     ctx.stroke();
@@ -2235,14 +2394,15 @@ class Ceph {
     ctx.bezierCurveTo(w * 1.1, -s * 0.5, w * 1.0, s * 0.55, 0, s * 0.7);
     ctx.bezierCurveTo(-w * 1.0, s * 0.55, -w * 1.1, -s * 0.5, 0, -s * 0.95);
     ctx.closePath(); ctx.fill();
-    /* 兩側波浪鰭 */
+    /* 兩側波浪鰭（鰭部持續波動：即使慢速／潛伏也有基礎擺動） */
     ctx.fillStyle = this.spec.palette[2];
     for (let side = -1; side <= 1; side += 2) {
       ctx.beginPath();
       ctx.moveTo(0, -s * 0.8);
       for (let i = 0; i <= 4; i++) {
         const px = side * w * (0.85 - i * 0.12);
-        const py = -s * 0.8 + i * s * 0.35 + Math.sin(k + i + side) * 3;
+        const py = -s * 0.8 + i * s * 0.35 + Math.sin(k + i + side) * 3
+                 + Math.sin(this.animClock * 4 + i * 1.3 + side) * 2.2;
         ctx.quadraticCurveTo(px + side * 8, py, px + side * 14, py);
         ctx.lineTo(px + side * 14, py + 4);
       }
@@ -2275,13 +2435,20 @@ class Ceph {
   /* --- 章魚（圓頭 + 八腕足） --- */
   drawOcto(s, k) {
     const w = s * 0.7;
+    /* 擬態章魚：緩慢姿態變化（模仿其他生物的體形伸縮） */
+    if (this.spec.id === 'mimic') {
+      const p = Math.sin(this.animClock * 0.9);
+      ctx.scale(1 + p * 0.09, 1 - p * 0.09);
+      ctx.rotate(p * 0.05);
+    }
     ctx.strokeStyle = this.spec.palette[1]; ctx.lineWidth = 2.5;
+    /* 八隻腕足獨立運動：每腕相位／頻率不同 */
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + Math.PI * 0.5;
       const ox = Math.cos(a) * w * 0.6;
       const oy = Math.sin(a) * w * 0.6;
-      const lx = Math.cos(a) * w * 1.5 + Math.sin(k * 0.8 + i) * 3;
-      const ly = Math.sin(a) * w * 1.5 + Math.cos(k * 0.8 + i) * 3;
+      const lx = Math.cos(a) * w * 1.5 + Math.sin(k * 0.8 + i * 1.7) * 3;
+      const ly = Math.sin(a) * w * 1.5 + Math.cos(k * (0.7 + i * 0.06) + i * 1.7) * 3;
       ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(ox * 1.5, oy * 1.5, lx, ly); ctx.stroke();
     }
     const g = ctx.createRadialGradient(-w * 0.3, -w * 0.3, 2, 0, 0, w);
@@ -2308,6 +2475,8 @@ class Game {
   constructor() {
     this.ctx = ctx;
     this.time = 0;
+    /* 動畫 Sprite Sheet 選配載入（缺檔／測試環境自動 fallback） */
+    try { if (typeof SpriteSheets !== 'undefined') SpriteSheets.init(); } catch (e) { /* 靜默 */ }
     this.bgTime = 0;           // 背景凍結時間：Modal 開啟時停止推進
     this.state = 'menu';       // menu / settings / brief / play / card / choice / shop / encyclopedia / help / clear / end
     this.paused = false;
