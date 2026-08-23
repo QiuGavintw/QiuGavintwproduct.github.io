@@ -480,3 +480,98 @@ n=20 尾元素（線性 20 次 vs 二分 5 次）、n=8 找不到（雙演算法
 gradient 位於 backgroundImage 的情形。
 
 ========================================
+
+========================================
+問題／需求紀錄 #007
+========================================
+
+日期：
+2026/08/23
+
+【使用者提出的需求】
+
+使用者要求將兩個已完成 UI 優化的演算法視覺化作品
+（排序：氣泡/選擇/插入；搜尋：順序/二分）正式放入作品集 GitHub
+（QiuGavintw.github.io），明確禁止重新開發、修改演算法或重設 UI，
+僅允許「整理 → 放入作品集 → commit → push」，
+並要求排除 node_modules、暫存檔、個人電腦路徑等敏感內容。
+
+【使用者如何與 AI 溝通】
+
+使用者以十一節的詳細檢查清單下達指令（專案檢查、資料夾結構、
+敏感檔案排除清單、獨立運作確認、remote 確認、commit 規範、
+Push 後驗證、GitHub Pages 確認、回報格式），
+並特別強調「不要 Push 到錯誤 repository」「不得捏造沒有發生的問題」。
+
+【AI／Open Code 的分析】
+
+執行前檢查發現一個必須由使用者裁決的分岔：
+1. 指令中作品集名稱寫為「QiuGavintw.github.io」，遠端確實存在此 repo
+   （公開、main 分支，內容為首頁+頭足類遊戲網站）；
+2. 但目前工作區（澎科大NPU）的 origin 實際指向另一個 repo
+   「QiuGavintwproduct.github.io」（個人作品集網站，已有 Product/
+   與 projects/ 結構與 GitHub Pages 部署歷史，
+   且工作區內確實存在指令所述的「Product/」資料夾）。
+兩者都可能被稱為「作品集」，且使用者明令不可推錯 → 依規則停下詢問。
+另發現：根目錄 sorting/search-visualizer 為 8/23 最新 UI 優化版，
+projects/*/play 內為 8/13–14 舊版（hash 不同）。
+
+【遇到的問題】
+
+1. 作品集目標 repo 有歧義（名稱完全符合者 vs 目前 origin）。
+2. 使用者建議路徑「Product/searching-visualizer」與既有命名
+   「search-visualizer」不一致。
+3. 工作區存在多個與本任務無關的未提交變更
+   （cephalopod 相關、0822.txt 等），須避免誤提交。
+
+【解決方式】
+
+1. 以選項方式向使用者確認 → 使用者明確選擇
+   「QiuGavintwproduct.github.io（目前 origin）」。
+2. 依使用者指示「以目前專案已存在的命名規則為優先」，
+   採用既有名稱 search-visualizer。
+3. 建立 Product/sorting-visualizer 與 Product/search-visualizer，
+   各放入最新版 index.html/style.css/script.js 及最新版
+   「演算法視覺化問題與解決.txt」（TXT 同時保留於專案根目錄）。
+4. git add 僅 stage 這兩個新資料夾（8 個檔案），
+   無關變更一律不納入本次 commit。
+5. Commit message 沿用 repo 既有的 conventional commits 規範：
+   "feat: add sorting and searching algorithm visualizers"，
+   推送至 origin master。
+
+【驗證結果】
+
+- 敏感掃描：Product 全部檔案無絕對路徑/C:\Users/Boyo/token/
+  password/secret/api_key 字串；無 node_modules、無暫存檔、無截圖暫存。
+- 獨立運作：真實 Chrome 以 file:// 載入兩個作品的 index.html，
+  h1 正常（排序演算法視覺化／搜尋演算法視覺化）、按鈕渲染正常
+  （21/18 顆）、Console Error = 0、載入失敗資源 = 0
+  （證明無絕對路徑與 localhost 依賴）。
+- Git：staged 清單核對僅 8 檔；commit e438e12；
+  push 至 https://github.com/QiuGavintw/QiuGavintwproduct.github.io.git
+  master 分支成功（38b70e5..e438e12）；working tree 其餘未提交變更
+  均為任務外項目，維持原狀。
+- GitHub Pages：gh api 確認 commit e438e12 的 build 狀態為 built
+  （無 error），並以 HTTP 實測線上頁面：
+  Product/sorting-visualizer/index.html 與
+  Product/search-visualizer/index.html 皆回應 200。
+- 本紀錄（#007）於 Push 成功後追加，同步更新三份 TXT
+  （根目錄 + 兩個 Product 資料夾內副本），
+  以獨立的 docs commit 提交——確保不預先捏造未發生結果。
+
+【最終結果】
+
+已解決。兩個作品正式進入作品集並上線：
+https://qiugavintw.github.io/QiuGavintwproduct.github.io/Product/sorting-visualizer/
+https://qiugavintw.github.io/QiuGavintwproduct.github.io/Product/search-visualizer/
+
+【備註】
+
+- 本次未更動 projects/*/play 內的較舊版本副本（非本次需求範圍），
+  日後若要統一版本可另行處理。
+- 名稱恰為「QiuGavintw.github.io」的另一 repo（首頁+遊戲網站）
+  本次完全未動。
+- 根目錄另有未追蹤之 0822.txt、頭足類遊戲問題與解決.txt 及
+  cephalopod 相關未提交變更，均屬其他任務，未納入本次推送。
+
+========================================
