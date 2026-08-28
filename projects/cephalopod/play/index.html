@@ -133,7 +133,9 @@ function saveState(state) {
       upgrades: state.upgrades,
       badges: state.badges,
       totalCatch: state.totalCatch,
-      levelIndex: state.levelIndex
+      levelIndex: state.levelIndex,
+      oceanCleaned: state.oceanCleaned || 0,
+      achievements: state.achievements || {}
     }));
   } catch (e) { /* 忽略寫入錯誤 */ }
 }
@@ -172,6 +174,10 @@ const Sfx = (() => {
   let sfxGain = null, bgmGain = null;
   let wavesGain = null, wavesOsc = null, wavesSrc = null;
   let musicTimer = null, reelTimer = null;
+  /* 背景音樂：澎湖海風.mp3（單例 Audio，loop；音量沿用 BGM_VOL_KEY 控制） */
+  const BGM_FILE = 'assets/audio/bgm/澎湖海風.mp3';
+  const BGM_FILE_GAIN = 0.6;
+  let bgmAudio = null;
   const PENTA = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
 
   /* 音量（load.localStorage；各自獨立，事件音效與背景音樂分開控制） */
@@ -219,7 +225,7 @@ const Sfx = (() => {
   }
   function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
   function setSfxVolume(v) { sfxVol = clamp(v, 0, 1); saveVolPref(SFX_VOL_KEY, sfxVol); if (sfxGain) sfxGain.gain.value = sfxVol * 0.55; }
-  function setBgmVolume(v) { bgmVol = clamp(v, 0, 1); saveVolPref(BGM_VOL_KEY, bgmVol); if (bgmGain) bgmGain.gain.value = bgmVol * 0.5; }
+  function setBgmVolume(v) { bgmVol = clamp(v, 0, 1); saveVolPref(BGM_VOL_KEY, bgmVol); if (bgmGain) bgmGain.gain.value = bgmVol * 0.5; if (bgmAudio) bgmAudio.volume = clamp(bgmVol * BGM_FILE_GAIN, 0, 1); }
   function getSfxVolume() { return sfxVol; }
   function getBgmVolume() { return bgmVol; }
 
@@ -340,28 +346,74 @@ const Sfx = (() => {
     tone(70, 0.8, 'sine', 0.05, 55, 'bgm');
   }
 
-  /* 背景音樂：五聲音階琶音循環（bgm bus） */
+  /* 背景音樂：播放 assets/audio/bgm/澎湖海風.mp3（循環、單例、不重複啟動）。
+     呼叫時機＝進入正式遊戲場景（startLevel）；離開遊戲（回首頁／清除資料／全破）時 stopMusic 暫停。 */
   function startMusic() {
-    if (musicTimer || !ctx) return;
-    let step = 0;
-    musicTimer = setInterval(() => {
-      const note = PENTA[step % PENTA.length];
-      tone(note, 0.5, 'sine', 0.045, null, 'bgm');
-      if (step % 4 === 0) tone(note / 2, 0.7, 'sine', 0.04, null, 'bgm');
-      step++;
-    }, 420);
+    if (musicTimer) return;   /* 已在播放：場景切換不重播 */
+    if (!bgmAudio) {
+      try {
+        bgmAudio = new Audio(BGM_FILE);
+        bgmAudio.loop = true;
+        bgmAudio.volume = clamp(bgmVol * BGM_FILE_GAIN, 0, 1);
+        bgmAudio.addEventListener('error', () => { /* 缺檔時靜默，不影響遊戲 */ });
+      } catch (e) { return; }
+    }
+    musicTimer = true;
+    const p = bgmAudio.play();
+    if (p && p.catch) p.catch(() => { /* autoplay 攔截：等待下次手勢再由 startLevel 觸發 */ });
   }
-  function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+  function stopMusic() {
+    if (!musicTimer) return;
+    musicTimer = null;
+    if (bgmAudio) bgmAudio.pause();
+  }
+  /* 測試 / 除錯用：唯讀檢視 BGM 播放狀態 */
+  function debugBgm() {
+    return bgmAudio ? { paused: bgmAudio.paused, loop: bgmAudio.loop, volume: bgmAudio.volume,
+      currentTime: bgmAudio.currentTime, duration: bgmAudio.duration, src: bgmAudio.currentSrc || BGM_FILE } : null;
+  }
 
   return {
     init, resume, startWaves, stopWaves, seagull,
     reelTick, startReel, stopReel,
     drop, splash, catchPop, miss, escape, inkBlast, coin, buy, deny, click, struggle, snap,
     researchChime, unlockJingle, fanfare, boatHum,
-    startMusic, stopMusic,
+    startMusic, stopMusic, debugBgm,
     setSfxVolume, setBgmVolume, getSfxVolume, getBgmVolume
   };
 })();
+
+/* ============================================================
+   [模組 2.5] 海洋保育物件與成就定義
+   - 海洋保育物件：環境物件，非頭足類；不進 SPECIES、不進圖鑑、不用 GIF
+   - 成就：兩條線（🌊 維繫海洋生命 / 🎮 遊戲），資料結構分開（以 category 區分）
+   ============================================================ */
+const OCEAN_OBJECTS = [
+  { id: 'net',     name: '廢棄漁網', icon: '🕸️', color: '#7fd4c8',
+    msg: '你撈起了一張廢棄漁網。\n廢棄漁網可能纏住海洋生物，\n一起守護海洋。' },
+  { id: 'trash',   name: '海洋垃圾', icon: '🥤', color: '#c9b458',
+    msg: '你撈起了海洋垃圾。\n減少海洋垃圾，就是保護海洋生物。' },
+  { id: 'plastic', name: '塑膠垃圾', icon: '🛍️', color: '#e8a0b4',
+    msg: '你撈起了塑膠垃圾。\n減少海洋垃圾，就是保護海洋生物。' }
+];
+const OCEAN_OBJ_CHANCE = 0.30;   // 空鉤觸底時撈起海洋物件的機率
+
+const ACH_CATEGORIES = {
+  ocean: '🌊 維繫海洋生命',
+  game: '🎮 遊戲'
+};
+const ACHIEVEMENTS = [
+  { id: 'guard_juvenile', category: 'ocean', name: '守護幼小生命', desc: '抓到幼體後選擇放生', goal: 1,
+    flavor: '你選擇讓幼體回到海洋，為海洋生命留下成長的機會。' },
+  { id: 'ocean_guardian', category: 'ocean', name: '海洋守護者', desc: '清除 5 個海洋垃圾或廢棄漁網', goal: 5,
+    flavor: '你的每一次打撈，都讓海洋生物更安全。' },
+  { id: 'first_survey',   category: 'game',  name: '初次研究', desc: '完成第一次調查', goal: 1,
+    flavor: '第一份調查紀錄完成，研究之路正式展開。' },
+  { id: 'first_catch',    category: 'game',  name: '捕獲新手', desc: '成功捕獲第一隻頭足類', goal: 1,
+    flavor: '第一次成功把頭足類帶上研究船！' },
+  { id: 'ency_explorer',  category: 'game',  name: '圖鑑探索者', desc: '解鎖 8 種頭足類圖鑑', goal: 8,
+    flavor: '圖鑑逐頁豐富，澎湖頭足世界在你眼前展開。' }
+];
 
 /* ============================================================
    [模組 3] 資料庫：澎湖頭足圖鑑
@@ -915,6 +967,343 @@ function loadCephImages() {
   }
 }
 window.loadCephImages = loadCephImages;   /* 供自動化測試 / 除錯使用 */
+
+/* ============================================================
+   [模組 3.5] 遊戲場景 GIF 素材（集中管理映射 + 統一尺寸系統）
+   ------------------------------------------------------------
+   ◆ 素材用途規則（場景 / 圖鑑完全分離）：
+     - 遊戲場景角色本體：只能使用 SPECIES_GAME_GIF_MAP 登記的 GIF 動畫。
+       有映射的物種一律走 GIF；載入失敗時顯示錯誤佔位標記並記錄
+       [GIF LOAD ERROR]，禁止回退舊 PNG/JPG/Sprite/程序化外觀。
+     - 圖鑑 / 資訊卡：維持真實照片（ASSET_MAP → IMAGES → drawPhoto），
+       與場景 GIF 互不混用、互不取代。
+   ◆ Animation ≠ Movement：
+     - GIF 只負責本體循環動畫；x/y/速度/方向/旋轉/捕捉/逃脫全部由
+       Movement System 掌控，GIF 於既有變換矩陣內繪製。
+    ◆ 統一顯示比例（GAME_SPRITE_SIZE 系統）：
+      - 目標「內容可見最長邊」= clamp(spec.size × BASE × 級距倍率,
+        MIN_VISIBLE, MAX_VISIBLE)。BASE 以「頭足類本體」為基準，
+        而非 GIF 畫布——繪製時以內容 bbox（實際可見本體範圍）對齊目標，
+        畫布留白不會吃掉尺寸。
+      - contain 等比例縮放：整幀以單一 k 縮放（dw/dh ≡ cw/ch），
+        內容 bbox 最長邊貼長邊貼齊目標，絕不拉伸變形。
+      - 錨點統一：內容 bbox 中心＝角色原點（本遊戲為側視游泳場景，
+        左右移動僅水平鏡像 scale(-1,1)（禁止上下翻轉）與 caught 傾斜；逐物種以各自 bbox 對心，
+        不因透明邊界跳動）。
+    ◆ 缺素材物種過渡期維持程序化外觀，待素材補齊後於
+      SPECIES_GAME_GIF_MAP 登記即可自動切換（2026-08-25 起 16 物種已全數接入，
+      目前無缺素材物種；程序化分支僅作載入失敗前之歷史備援）。
+    ============================================================ */
+const GAME_SPRITE_SIZE = {
+  BASE: 2.7,        // 內容可見最長邊 = spec.size × BASE × 級距倍率
+  MIN_VISIBLE: 56,  // 最小辨識尺寸(px)：小型種低於此值拉到此大小
+  MAX_VISIBLE: 220  // 上限(px)：避免遮擋 HUD／船隻與過度重疊
+};
+const SPRITE_SCALE_TIERS = {               // 體型級距倍率（依 spec.size 分層）
+  tiny: 0.90,      // 藍環章魚（14）
+  small: 0.95,     // 白魷(17)／短蛸(20)／吸血鬼魷(20)
+  medium: 1.05,    // 小管(22)／火箭魷(22)／姬烏賊(24)／擬烏賊(25)／長腕鎖管(26)
+  mediumPlus: 1.10,// 軟絲(27)／擬態章魚(28)／章魚(30)／烏賊(30)
+  large: 1.25,     // 花枝(34)：寬厚體型加大辨識
+  xlarge: 1.55,    // 巨型章魚(52)
+  boss: 1.70       // 大王魷(60)
+};
+window.__GAME_SPRITE_SIZE = GAME_SPRITE_SIZE;   /* 除錯／自動化驗證用 */
+window.__SPRITE_SCALE_TIERS = SPRITE_SCALE_TIERS;
+/* 集中管理：物種 id → 遊戲場景 GIF（唯一事實來源，其他地方不得散落硬編碼路徑）
+   #029（2026-08-25）：新增 wusei（金烏賊，來源影片「金色墨魚.mp4」），16 物種全數 GIF 化 */
+const SPECIES_GAME_GIF_MAP = {
+  xiaoquan: { src: 'assets/cephalopods/animation/gif/xiaoquan.gif', tier: 'small' },
+  suoguan : { src: 'assets/cephalopods/animation/gif/suoguan.gif',  tier: 'medium' },
+  huazhi  : { src: 'assets/cephalopods/animation/gif/huazhi.gif',   tier: 'large' },
+  ruansi  : { src: 'assets/cephalopods/animation/gif/ruansi.gif',   tier: 'mediumPlus' },
+  zhangyu : { src: 'assets/cephalopods/animation/gif/zhangyu.gif',  tier: 'mediumPlus' },
+  duanxiao: { src: 'assets/cephalopods/animation/gif/duanxiao.gif', tier: 'small' },
+  nini    : { src: 'assets/cephalopods/animation/gif/nini.gif',     tier: 'medium' },
+  changwan: { src: 'assets/cephalopods/animation/gif/changwan.gif', tier: 'medium' },
+  jiwuzei : { src: 'assets/cephalopods/animation/gif/jiwuzei.gif',  tier: 'medium' },
+  rocket  : { src: 'assets/cephalopods/animation/gif/rocket.gif',   tier: 'medium' },
+  giantoct: { src: 'assets/cephalopods/animation/gif/giantoct.gif', tier: 'xlarge' },
+  mimic   : { src: 'assets/cephalopods/animation/gif/mimic.gif',    tier: 'mediumPlus' },
+  blueoct : { src: 'assets/cephalopods/animation/gif/blueoct.gif',  tier: 'tiny' },
+  giantsq : { src: 'assets/cephalopods/animation/gif/giantsq.gif',  tier: 'boss' },
+  vampire : { src: 'assets/cephalopods/animation/gif/vampire.gif',  tier: 'small' },
+  wusei   : { src: 'assets/cephalopods/animation/gif/wusei.gif',    tier: 'mediumPlus' }
+};
+const GIFS = {};                     // { speciesId: HTMLImageElement }
+window.__SPECIES_GAME_GIF_MAP = SPECIES_GAME_GIF_MAP;
+window.__GIF_ANIMS = SPECIES_GAME_GIF_MAP;   /* 相容舊測試別名 */
+window.__GIFS = GIFS;
+
+/* ---------- 待補素材清單（GIF_MISSING_SPECIES）----------
+   2026-08-24：15 物種 GIF 已全數接入（含 giantoct/mimic/blueoct/
+   giantsq/vampire，來源影片經物種比對無誤），本清單現為空。
+   2026-08-25：16 物種 GIF 已全數接入（wusei 由使用者提供之「金色墨魚.mp4」
+   轉檔，見 #029），本清單維持空。
+   歷史警告仍有效，嚴禁以錯誤物種影片替代：
+   - 星斑叉鼻魨＝河豚、豹紋鰻＝鰻魚 → 與頭足類無關，不可使用
+   - 火焰章魚 ≠ 擬態章魚；白鰭章魚 ≠ 藍環章魚；菱鰭烏賊 ≠ 大王魷
+   若日後新增物種素材，接入步驟（不需改任何系統程式）：
+   1) 將 <id>.gif 放入 assets/cephalopods/animation/gif/
+   2) 於上方 SPECIES_GAME_GIF_MAP 新增一行：
+      <id>: { src: 'assets/cephalopods/animation/gif/<id>.gif', tier: '<體型級距>' },
+   3) 自動獲得：預解碼逐幀播放、等比例縮放、體型倍率、center anchor、
+      載入狀態機與錯誤處理。
+   4) 若來源為新影片轉檔，請同步在 GIF_VERIFIED_SOURCES 登記來源片名，
+      完成物種正確性人工確認（見下方防錯閘門說明）。 */
+const GIF_MISSING_SPECIES = {};
+window.__GIF_MISSING_SPECIES = GIF_MISSING_SPECIES;
+
+/* ---------- 錯誤素材防錯閘門（GIF_VERIFIED_SOURCES / gifIntegrity）----------
+   僅登記「已由人工確認畫面正確」的來源影片對照（16 部）。
+   gifIntegrity() 規則：
+   - MAP 中每個 id 必須能在本表找到對應來源 → verified
+   - 找不到對應來源的映射（例如日後新增了未確認素材）→ unverified，
+     ok=false：代表該 GIF 的物種正確性尚未經人工確認，不得計入完成數
+   - 缺失清單中的物種若出現在 MAP（卻沒有已確認來源）同樣列 unverified
+   本閘門只做開發期檢查與狀態呈報，不影響遊戲運行。 */
+const GIF_VERIFIED_SOURCES = {
+  suoguan : '小管.mp4',
+  xiaoquan: '白魷.mp4',
+  huazhi  : '花枝（虎斑烏賊）.mp4',
+  ruansi  : '軟絲.mp4',
+  zhangyu : '真蛸（章魚）.mp4',
+  duanxiao: '短蛸.mp4',
+  nini    : '擬烏賊.mp4',
+  changwan: '長腕鎖管.mp4',
+  jiwuzei : '姬烏賊.mp4',
+  rocket  : '火箭魷.mp4',
+  /* 2026-08-24 新增：使用者提供之中文 source 影片（物種比對無誤後轉檔接入）*/
+  giantoct: '巨型章魚.mp4',
+  mimic   : '擬態章魚.mp4',
+  blueoct : '藍環章魚.mp4',
+   giantsq : '大王烏賊.mp4',   /* 大王烏賊＝大王魷（Architeuthis dux 同物種）*/
+   vampire : '吸血鬼魷.mp4',
+   /* 2026-08-25 新增（#029）：使用者提供之金烏賊來源影片 */
+   wusei   : '金色墨魚.mp4'
+};
+window.__GIF_VERIFIED_SOURCES = GIF_VERIFIED_SOURCES;
+function gifIntegrity() {
+  const verified = [], unverified = [];
+  for (const id in SPECIES_GAME_GIF_MAP) {
+    /* #023 強化：除來源登記外，映射 src 必須指向自身 /id.gif（防錯配） */
+    if (!new RegExp('/' + id + '\\.gif$').test(SPECIES_GAME_GIF_MAP[id].src || '')) {
+      unverified.push(id + '（映射路徑非自身 GIF，疑似錯配）');
+    } else if (GIF_VERIFIED_SOURCES[id]) verified.push(id);
+    else unverified.push(id + '（未登記已確認來源）');
+  }
+  for (const id in GIF_MISSING_SPECIES) {
+    if (SPECIES_GAME_GIF_MAP[id] && !GIF_VERIFIED_SOURCES[id]) {
+      unverified.push(id + '（屬缺失清單物種，來源未確認）');
+    }
+  }
+  const st = (typeof gifStatus === 'function') ? gifStatus() : null;
+  return {
+    ok: unverified.length === 0,
+    verified, unverified,
+    missing: Object.keys(GIF_MISSING_SPECIES),
+    loadedSummary: st ? (st.loaded + ' / ' + st.total + ' loaded') : '-'
+  };
+}
+window.__GIF_INTEGRITY = gifIntegrity;
+
+function loadGifAnims() {
+  if (typeof Image === 'undefined') return;   // Node 測試環境跳過
+  for (const id in SPECIES_GAME_GIF_MAP) {
+    const ent = SPECIES_GAME_GIF_MAP[id];
+    const img = new Image();
+    img._status = 'loading';
+    img.onload = () => { img._status = 'loaded'; img._ok = true; };
+    img.onerror = () => {
+      img._status = 'error'; img._ok = false;
+      console.warn('[GIF LOAD ERROR] species=' + id + ' path=' + ent.src);
+    };
+    img.src = ent.src;
+    GIFS[id] = img;
+    buildGifFrames(id);                        // 併行預解碼逐幀（見下），失敗自動走原生
+  }
+}
+window.loadGifAnims = loadGifAnims;   /* 供自動化測試 / 除錯使用 */
+
+/* ---------- 逐幀預解碼（保證 Canvas 上真的逐幀播放） ----------
+   原理：瀏覽器對 ctx.drawImage(<img>[GIF]) 的「隨時間換幀」在部分環境
+   （如 headless／省電分頁）可能被凍結或延遲；為確保遊戲場景的動畫
+   「一定真的播」，載入後用 WebCodecs ImageDecoder 將同一份 GIF 檔
+   預先解碼為離屏 canvas 幀序列，繪製時依經過時間取幀。
+   - 不引入任何外部框架；素材仍是原本的 GIF 檔。
+   - ImageDecoder 不支援（舊瀏覽器）或 fetch 失敗（某些 file:// 環境）
+     時自動回退：直接 drawImage(<img>)，交由瀏覽器原生 GIF 動畫。 */
+const GIF_FRAMES = {};                 // { id: { frames:[{cv,ms}], total } }
+window.__GIF_FRAMES = GIF_FRAMES;
+let _gifStatusDirty = true;
+async function buildGifFrames(id) {
+  try {
+    if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') return;
+    const resp = await fetch(SPECIES_GAME_GIF_MAP[id].src);
+    if (!resp.ok && resp.status !== 0) return;
+    const buf = await resp.arrayBuffer();
+    const dec = new ImageDecoder({ data: buf, type: 'image/gif' });
+    await dec.tracks.ready;
+    const track = dec.tracks.selectedTrack;
+    const n = Math.min(track.frameCount || 1, 96);
+    const frames = [];
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+      const { image } = await dec.decode({ frameIndex: i });
+      const cv = document.createElement('canvas');
+      cv.width = image.displayWidth; cv.height = image.displayHeight;
+      cv.getContext('2d').drawImage(image, 0, 0);
+      const ms = Math.max(20, (image.duration || 83333) / 1000);
+      image.close();
+      frames.push({ cv, ms });
+      total += ms;
+    }
+    if (n > 1) {
+      /* 內容 bbox：取樣數幀的 alpha bbox 聯集＝「實際可見本體」範圍，
+         繪製時以此對齊尺寸與中心，畫布留白不會吃掉顯示大小 */
+      const box = measureContentBox(frames[0].cv, frames, 8);
+      GIF_FRAMES[id] = { frames, total, box };
+      _gifStatusDirty = true;
+    }
+  } catch (e) { /* 回退原生 <img> GIF 動畫 */ }
+}
+
+/* ---------- 內容 bbox 量測（載入／預解碼階段一次性計算）----------
+   於離屏 canvas 取樣繪製並掃描 alpha>128 的聯集外框。
+   - 方案 B（使用者方案）：預解碼階段算好、繪製時直接使用。
+   - 沒有透明背景的 GIF：alpha 全不透明 → bbox=整張畫布，行為等同
+     未裁切，不會錯誤裁切固定背景素材。
+   - 像素讀取不可用（Node 測試環境等）→ 回傳 null＝以整張畫布為準。 */
+function measureContentBox(cvSample, frames, sampleEvery) {
+  try {
+    const w = cvSample.width, h = cvSample.height;
+    if (!(w > 0) || !(h > 0)) return null;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    let x1 = w, y1 = h, x2 = -1, y2 = -1;
+    const list = frames || [cvSample];
+    const step = Math.max(1, Math.min(sampleEvery || 8, list.length));
+    for (let i = 0; i < list.length; i += step) {
+      const f = list[i];
+      g.clearRect(0, 0, w, h);
+      g.drawImage(f.cv || f, 0, 0);
+      const d = g.getImageData(0, 0, w, h).data;
+      for (let y = 0; y < h; y++) {
+        const row = y * w * 4;
+        for (let x = 0; x < w; x++) {
+          if (d[row + x * 4 + 3] > 128) {
+            if (x < x1) x1 = x; if (x > x2) x2 = x;
+            if (y < y1) y1 = y; if (y > y2) y2 = y;
+          }
+        }
+      }
+    }
+    if (x2 < 0) return null;
+    return { x: x1, y: y1, w: x2 - x1 + 1, h: y2 - y1 + 1 };
+  } catch (e) { return null; }
+}
+
+
+/* 開發檢查：回傳載入狀態摘要（含每物種明細與播放模式） */
+function gifStatus() {
+  let loaded = 0, failed = 0, loading = 0;
+  const detail = {};
+  for (const id in SPECIES_GAME_GIF_MAP) {
+    const st = (GIFS[id] && GIFS[id]._status) || 'pending';
+    const mode = GIF_FRAMES[id] ? 'frames' : (st === 'loaded' ? 'native' : '-');
+    detail[id] = st + '/' + mode;
+    if (st === 'loaded') loaded++;
+    else if (st === 'error') failed++;
+    else loading++;
+  }
+  return { total: Object.keys(SPECIES_GAME_GIF_MAP).length, loaded, failed, loading, detail };
+}
+window.__GIF_STATUS = gifStatus;
+
+/* contain 等比例縮放：scale = min(tbw/sw, tbh/sh)，永不變形 */
+function computeGifDrawBox(sw, sh, tbw, tbh) {
+  if (!(sw > 0) || !(sh > 0)) return { dw: 0, dh: 0 };
+  const k = Math.min(tbw / sw, tbh / sh);
+  return { dw: sw * k, dh: sh * k };
+}
+
+/* Ceph 本體 GIF 繪製：於呼叫端已完成的 translate/rotate/scale 變換內 blit。
+   播放來源優先序：預解碼幀序列（保證逐幀推進）→ 原生 <img> GIF 動畫。
+   回傳 DRAWN=已繪製／FAILED=有映射但未載入成功（呼叫端須顯示錯誤佔位，
+   禁止回退舊素材）／NONE=無映射（缺素材物種，呼叫端走過渡期程序化）。
+   效能：幀序列為離屏 canvas，drawImage 直接 blit；多隻同種共用同一組幀。 */
+const GifAnims = {
+  DRAWN: 1, FAILED: 2, NONE: 0,
+  ready(id) {
+    if (GIF_FRAMES[id]) return true;
+    const g = GIFS[id];
+    return !!(g && (g._status === 'loaded' || g._ok) && g.naturalWidth > 0);
+  },
+  draw(c, s) {
+    const ent = SPECIES_GAME_GIF_MAP[c.spec.id];
+    if (!ent) return GifAnims.NONE;                     // 缺素材物種 → 過渡期程序化
+    /* 自身路徑守衛：映射必須指向「/id.gif」自身檔，配錯物種一律視同載入失敗
+       （錯誤佔位），嚴禁畫出他種動物（#023 防錯配強化） */
+    if (!new RegExp('/' + c.spec.id + '\\.gif$').test(ent.src)) return GifAnims.FAILED;
+    const fr = GIF_FRAMES[c.spec.id];
+    let src = null, cw = 0, ch = 0, box = null;
+    if (fr && fr.frames.length) {
+      /* 幀序列模式：依經過時間決定當前幀（動畫真的會播） */
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      let t = now % fr.total;
+      let f = fr.frames[fr.frames.length - 1];
+      for (let i = 0; i < fr.frames.length; i++) {
+        if (t < fr.frames[i].ms) { f = fr.frames[i]; break; }
+        t -= fr.frames[i].ms;
+      }
+      src = f.cv; cw = f.cv.width; ch = f.cv.height; box = fr.box || null;
+    } else {
+      const img = GIFS[c.spec.id];
+      if (!img || !(img._status === 'loaded' || img._ok) || !(img.naturalWidth > 0)) {
+        return GifAnims.FAILED;                         // 載入失敗 → 錯誤佔位，不回退舊素材
+      }
+      /* 原生 fallback：首次繪製時一次性量測內容 bbox（失敗→null=整張） */
+      if (img._cbox === undefined) img._cbox = measureContentBox(img, null, 8);
+      src = img; cw = img.naturalWidth; ch = img.naturalHeight; box = img._cbox;
+    }
+    /* 目標＝「內容可見最長邊」，clamp 至辨識上下限；
+       以內容 bbox（而非畫布）對齊目標 → 本體實際變大 */
+    const bw = box ? box.w : cw, bh = box ? box.h : ch;
+    const target = clamp(s * GAME_SPRITE_SIZE.BASE * (SPRITE_SCALE_TIERS[ent.tier] || 1.0),
+      GAME_SPRITE_SIZE.MIN_VISIBLE, GAME_SPRITE_SIZE.MAX_VISIBLE);
+    const fit = computeGifDrawBox(bw, bh, target, target);
+    const k = fit.dw / bw;                              // 單一 k：整幀等比，永不變形
+    const dw = cw * k, dh = ch * k;
+    /* 統一錨點：內容 bbox 中心＝角色原點 */
+    const cx = box ? (box.x + box.w / 2) : cw / 2;
+    const cy = box ? (box.y + box.h / 2) : ch / 2;
+    ctx.drawImage(src, -cx * k, -cy * k, dw, dh);
+    return GifAnims.DRAWN;
+  }
+};
+window.__GifAnims = GifAnims;
+
+/* GIF 載入失敗佔位標記：明確可辨識的錯誤指示（非任何舊角色外觀） */
+function drawGifErrorPlaceholder(c, s) {
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.arc(0, 0, Math.max(8, s * 0.55), 0, 7);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ef4444';
+  ctx.font = 'bold ' + Math.max(10, s * 0.6) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('!', 0, 1);
+  ctx.restore();
+}
+
+
 /* ============================================================
    [模組 4] 資料庫：關卡（海域）設定
    ============================================================ */
@@ -1281,6 +1670,57 @@ class UIFlow {
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     this.cursor += lines.length * lh;
     return this;
+  }
+}
+
+/* ---------- SelectRow：參數設定列（標籤＋值＋右側 ▼）----------
+   可重用版面原語：y 一律由呼叫端的 flow cursor 傳入，
+   列高 / 間距 / ▼ 尺寸 / 標籤欄寬全部由本類常數推導，
+   文字與 ▼ 共用同一個 top，結構上保證不重疊、不錯位。 */
+class UISelectRow {
+  static H = 32;        // 列高
+  static GAP = 6;       // 列間距
+  static BTN_W = 60;    // ▼ 寬
+  static BTN_H = 26;    // ▼ 高
+  static LABEL_COL = 88;// 標籤欄寬（所有列共用，左側對齊）
+  /* 繪製一列；回傳 ▼ 按鈕矩形 {x,y,w,h}。top = 列頂（flow cursor）。 */
+  static draw(top, x, w, label, value) {
+    const cy = top + this.H / 2;
+    ctx.font = 'bold 15px ' + FONT;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#9fd8f0';
+    ctx.fillText(label + '：', x, cy);
+    const vx = x + this.LABEL_COL;
+    const maxV = w - this.LABEL_COL - this.BTN_W - 14;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(this.fit(String(value), maxV), vx, cy);
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    return { x: x + w - this.BTN_W, y: top + (this.H - this.BTN_H) / 2, w: this.BTN_W, h: this.BTN_H };
+  }
+  /* 值過長時以 … 截斷，避免與右側 ▼ 重疊 */
+  static fit(t, maxW) {
+    if (ctx.measureText(t).width <= maxW) return t;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+}
+
+/* ---------- Grid：等欄等距網格原語 ----------
+   給起點 / 內容寬 / 欄數 / 格高 / 間距，cell(i) 自動換列，
+   未來新增選項只需改 cols，不需要手算任何座標。 */
+class UIGrid {
+  constructor(x, y, w, cols, cellH, gapX, gapY) {
+    this.x = x; this.y = y; this.w = w;
+    this.cols = cols; this.h = cellH; this.gapX = gapX; this.gapY = gapY;
+  }
+  get cellW() { return (this.w - (this.cols - 1) * this.gapX) / this.cols; }
+  cell(i) {
+    const c = i % this.cols, r = Math.floor(i / this.cols);
+    return { x: this.x + c * (this.cellW + this.gapX), y: this.y + r * (this.h + this.gapY), w: this.cellW, h: this.h };
+  }
+  height(n) {
+    const rows = Math.ceil(n / this.cols);
+    return rows * this.h + (rows - 1) * this.gapY;
   }
 }
 
@@ -2208,7 +2648,6 @@ class Ceph {
       ctx.globalAlpha = Math.max(0, tr.life / 0.3) * 0.35;
       ctx.save();
       ctx.translate(tr.x, tr.y);
-      if (tr.rot < 0) ctx.rotate(Math.PI);
       ctx.fillStyle = this.spec.palette[0];
       ctx.beginPath();
       ctx.ellipse(0, 0, s * 0.5, s * 0.7, 0, 0, 7);
@@ -2219,16 +2658,24 @@ class Ceph {
     ctx.save();
     ctx.translate(this.x, this.y);
     if (this.state === 'caught') ctx.rotate(this.dir * -0.35);
-    else if (this.dir < 0) ctx.rotate(Math.PI);
+    else if (this.dir < 0) ctx.scale(-1, 1);   /* 換向僅水平鏡像；禁止上下翻轉 */
     /* 章魚縮團（逃離時） */
     if (this.shrink < 1) ctx.scale(this.shrink, this.shrink);
     const swimK = Math.sin(this.swimT * 4) * (this.state === 'caught' ? 0.15 : 1);
 
-    /* 優先使用選配 Sprite Sheet（僅當 manifest + 透明幀素材齊備）；
-       否則 fallback 到程序化繪圖（現行向量外觀，含各物種動畫特效） */
-    if (SpriteSheets.draw(this, s)) {
-      /* Sheet 已繪製主體；程序化特效仍疊加（發光／藍環等反應即時狀態） */
+    /* 遊戲場景本體素材規則：
+       - 有 GIF 映射的物種：一律 GIF（載入失敗 → 紅色錯誤佔位 + console 記錄，
+         禁止回退舊 PNG/JPG/Sprite/程序化外觀）。
+       - 缺 GIF 素材的物種（過渡期）：Sprite Sheet → 程序化繪圖。
+       三者皆只畫「本體」，位置/方向/縮放由上方 Movement 變換掌控。 */
+    const gifRes = GifAnims.draw(this, s);
+    if (gifRes === GifAnims.DRAWN) {
+      /* GIF 本體已繪製；程序化特效仍疊加（發光／藍環等反應即時狀態） */
     } else {
+      if (gifRes === GifAnims.FAILED) drawGifErrorPlaceholder(this, s);
+      else if (SpriteSheets.draw(this, s)) {
+        /* Sheet 已繪製主體（僅缺 GIF 素材物種之過渡選項） */
+      } else {
       /* 依種類繪製身體 */
       switch (this.spec.id) {
         case 'xiaoquan': this.drawSquid(s, swimK, true); break;
@@ -2247,6 +2694,7 @@ class Ceph {
         case 'duanxiao': case 'giantoct': case 'mimic': case 'blueoct': case 'vampire':
           this.drawOcto(s, swimK);
           break;
+      }
       }
     }
     /* 物種專屬動畫特效層（受威脅反應／生物發光／姿態） */
@@ -2285,24 +2733,25 @@ class Ceph {
       ctx.closePath(); ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    /* 特殊標記 */
-    if (this.isJuvenile) {
-      ctx.fillStyle = '#ffd54d';
-      ctx.font = '10px ' + FONT;
-      ctx.textAlign = 'center';
-      ctx.fillText('幼體', 0, -s - 8);
-    }
+    /* 特殊標記（生物本體，可隨方向翻面） */
     if (this.isRare) {
       glow('#ffe08a', 14);
       ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(0, 0, s + 5, 0, 7); ctx.stroke();
       noGlow();
-      ctx.fillStyle = '#ffe08a';
-      ctx.font = '10px ' + FONT;
-      ctx.textAlign = 'center';
-      ctx.fillText('稀有', 0, -s - 8);
     }
     ctx.restore();
+
+    /* 標籤文字（幼體／稀有）在生物翻面 transform 之外以絕對座標繪製，
+       確保任何朝向（dir<0 時 scale(-1,1)）都不會讓文字水平鏡像。 */
+    if (this.isJuvenile || this.isRare) {
+      ctx.save();
+      ctx.fillStyle = this.isJuvenile ? '#ffd54d' : '#ffe08a';
+      ctx.font = '10px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.fillText(this.isJuvenile ? '幼體' : '稀有', this.x, this.y - s - 8);
+      ctx.restore();
+    }
   }
 
   /* --- 魷魚 / 小管（紡錘形 + 鰭 + 觸腕） --- */
@@ -2491,6 +2940,11 @@ class Game {
     this.badges = save.badges || [];
     this.totalCatch = save.totalCatch || 0;
     this.levelIndex = save.levelIndex || 0;
+    /* 海洋保育：累計清除物件數 + 成就紀錄（id/category/name/description/unlocked/progress） */
+    this.oceanCleaned = save.oceanCleaned || 0;
+    this.achievements = save.achievements || {};
+    /* 橫幅佇列（成就解鎖 / 海洋保育提示；自動消失、不阻塞遊戲） */
+    this.banners = [];
 
     /* 本關狀態（預設第一站作為主選單背景） */
     this.level = LEVELS[0];
@@ -2502,7 +2956,7 @@ class Game {
     this.weather = 'sunny';
     this.tide = 'high';
     this.creatures = [];
-    this.hook = { x: 0, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false };
+    this.hook = { x: 0, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false, object: null };
     this.inkTimer = 0;
     this.catchCount = 0;
     this.missionDone = false;
@@ -2564,7 +3018,7 @@ class Game {
     this.levelCatch = {};
     this.creatures = [];
     this.rocks = [];
-    this.hook = { x: CFG.BOAT_X, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false };
+    this.hook = { x: CFG.BOAT_X, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false, object: null };
     this.inkTimer = 0;
     this.catchCount = 0;
     this.missionDone = false;
@@ -2587,7 +3041,8 @@ class Game {
     saveState(this);
     Sfx.startWaves();
     Sfx.boatHum();
-    Sfx.seagull();
+    /* 進入正式遊戲場景：啟動背景音樂（單例，已在播放則不重播） */
+    Sfx.startMusic();
   }
 
   /* 產生一隻生物（依棲地/季節/時間權重；測試模式可覆寫出現機率） */
@@ -2784,6 +3239,12 @@ class Game {
       t.life += dt;
       if (t.life > t.dur) this.toasts.splice(i, 1);
     }
+    /* 橫幅（成就 / 海洋保育提示） */
+    for (let i = this.banners.length - 1; i >= 0; i--) {
+      const b = this.banners[i];
+      b.life += dt;
+      if (b.life > b.dur) this.banners.splice(i, 1);
+    }
     /* 商店動畫計時（點擊脈衝 / 圖示發光） */
     for (let i = this.pulses.length - 1; i >= 0; i--) {
       this.pulses[i].t += dt;
@@ -2857,6 +3318,7 @@ class Game {
       case 'struggle': this.hookStruggle(dt); break;
       case 'arrive': this.hookArrive(dt); break;
       case 'collect': this.hookCollect(dt); break;
+      case 'retract': this.hookRetract(dt); break;   /* 空鉤收回（觸底不反彈） */
     }
   }
 
@@ -2878,13 +3340,41 @@ class Game {
     h.x += Math.sin(this.time * 0.7) * current * dt;
     this.hookPos(h);
     this.checkCatch();
-    if (h.y >= CFG.FLOOR_Y - 2) {
+    if (h.state === 'drop' && h.y >= CFG.FLOOR_Y - 2) {
+      /* 碰到底部：不反彈、不穿透、不卡住 → 立即進入收回狀態 */
       h.y = CFG.FLOOR_Y - 2;
       Particles.splash(h.x, CFG.SEA_Y);
       Particles.splash(h.x, h.y);
       Sfx.splash();
-      h.state = 'idle'; h.line = CFG.ARM_LEN;
+      /* 沒抓到頭足類：有機率撈起海洋保育物件（非頭足類，僅環境/保育用途） */
+      h.object = Math.random() < OCEAN_OBJ_CHANCE ? pick(OCEAN_OBJECTS) : null;
+      h.state = 'retract';
     }
+  }
+
+  /* RETRACT：空鉤收線回船（觸底後 / 撈起海洋物件時），到定位後回到待機 */
+  hookRetract(dt) {
+    const h = this.hook;
+    h.line -= this.reelSpeed() * dt;
+    this.hookPos(h);
+    if (h.line <= CFG.ARM_LEN) {
+      h.line = CFG.ARM_LEN;
+      const obj = h.object || null;
+      h.object = null;
+      h.t = 0;
+      h.vibT = 0;
+      h.state = 'idle';
+      if (obj) this.collectOceanObject(obj);
+    }
+  }
+
+  /* 收穫海洋保育物件：提示 + 計數 + 成就進度（不影響研究點／捕捉系統） */
+  collectOceanObject(obj) {
+    this.oceanCleaned = (this.oceanCleaned || 0) + 1;
+    this.showBanner(obj.icon + ' 海洋保育', obj.msg, obj.color);
+    Sfx.researchChime();
+    this.progressAchievement('ocean_guardian', this.oceanCleaned);
+    saveState(this);
   }
 
   /* HOOKED：剛掛住，短暫停留 */
@@ -3051,10 +3541,14 @@ class Game {
     this.catchCount++;
     this.totalCatch++;
     this.levelCatch[c.spec.id] = (this.levelCatch[c.spec.id] || 0) + 1;
+    /* 成就：初次捕獲 */
+    if (this.totalCatch >= 1) this.unlockAchievement('first_catch');
 
     /* 第一次捕獲：解鎖圖鑑 */
     const firstTime = !(this.encyclopedia[c.spec.id]);
     this.encyclopedia[c.spec.id] = (this.encyclopedia[c.spec.id] || 0) + 1;
+    /* 成就：圖鑑探索者（依已解鎖物種數） */
+    this.progressAchievement('ency_explorer', Object.keys(this.encyclopedia).length);
 
     /* 計算研究點數 */
     const pts = Math.round(c.value * this.valueMult());
@@ -3118,6 +3612,8 @@ class Game {
     this.addPoints(bonus);
     this.floats.push({ x: CFG.BOAT_X, y: 200, text: '關卡完成 +' + bonus + ' 研究點', color: '#ffe08a', life: 0 });
     this.toast('本關捕獲 ' + this.catchCount + ' 隻頭足類', 2.5);
+    /* 成就：初次研究（完成第一次調查） */
+    this.unlockAchievement('first_survey');
     this.state = 'clear';
     Sfx.researchChime();
     saveState(this);
@@ -3153,6 +3649,44 @@ class Game {
     }
     saveFsPref(this.fsPref);
   }
+  /* ---------- 成就系統（沿用 SAVE_KEY 存檔；解鎖以橫幅提示，自動消失） ---------- */
+  achRec(id) {
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    if (!def) return null;
+    let rec = this.achievements[id];
+    if (!rec) {
+      rec = { id, category: def.category, name: def.name, description: def.desc,
+        unlocked: false, unlockedAt: null, progress: 0 };
+      this.achievements[id] = rec;
+    }
+    return rec;
+  }
+  progressAchievement(id, value) {
+    const rec = this.achRec(id);
+    if (!rec || rec.unlocked) return;
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    rec.progress = Math.min(def.goal, Math.max(rec.progress || 0, value));
+    if (rec.progress >= def.goal) { this.unlockAchievement(id); return; }
+    saveState(this);
+  }
+  unlockAchievement(id) {
+    const rec = this.achRec(id);
+    if (!rec || rec.unlocked) return;
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    rec.unlocked = true;
+    rec.progress = def.goal;
+    rec.unlockedAt = Date.now();
+    /* 首次解鎖：顯示成就提示（不阻塞遊戲，數秒後自動消失） */
+    this.showBanner('🏆 成就解鎖！', def.name + '\n' + def.flavor, '#ffe08a');
+    Sfx.fanfare();
+    saveState(this);
+  }
+
+  /* ---------- 橫幅（多行文字面板；成就 / 海洋保育提示共用，不遮擋操作） ---------- */
+  showBanner(title, body, color) {
+    this.banners.push({ title, body: String(body), color: color || '#ffe08a', life: 0, dur: 3.8 });
+  }
+
   toast(text, dur) {
     this.toasts.push({ text, life: 0, dur: dur || 2 });
   }
@@ -3170,6 +3704,11 @@ class Game {
     this.levelIndex = 0;
     this.levelCatch = {};
     this.missionDone = false;
+    /* 成就與海洋保育計數一併清除，不留殘留 */
+    this.achievements = {};
+    this.oceanCleaned = 0;
+    this.banners = [];
+    Sfx.stopMusic();
     this.fsPref = loadFsPref();
     this.clearConfirm = false;
     this.toast('遊戲資料已成功清除。', 3);
@@ -3287,6 +3826,7 @@ class Game {
       case 'encyclopedia': this.drawEncyclopedia(); break;
       case 'end': this.drawEnd(); break;
       case 'paused': this.drawPauseMenu(); break;
+      case 'achievements': this.drawAchievements(); break;
       case 'test': this.drawTestMode(); break;
     }
     /* 測試模式：遊玩中顯示測試工具列 + Debug Panel */
@@ -3323,6 +3863,26 @@ class Game {
       ctx.font = 'bold 15px ' + FONT;
       ctx.fillStyle = '#eaf9ff'; ctx.textAlign = 'center';
       ctx.fillText(t.text, CFG.W / 2, 108);
+      ctx.globalAlpha = 1;
+    }
+
+    /* 橫幅：成就解鎖／海洋保育提示（淡入淡出，自動消失，不阻塞操作） */
+    for (const b of this.banners) {
+      const a = b.life < 0.25 ? b.life / 0.25 : (b.life > b.dur - 0.5 ? (b.dur - b.life) / 0.5 : 1);
+      ctx.globalAlpha = clamp(a, 0, 1);
+      const lines = b.body.split('\n');
+      const bw = 430, bh = 44 + lines.length * 22;
+      const bx = CFG.W / 2 - bw / 2, by = 128;
+      ctx.fillStyle = 'rgba(8,26,44,0.92)';
+      roundRect(bx, by, bw, bh, 12); ctx.fill();
+      ctx.strokeStyle = b.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 17px ' + FONT;
+      ctx.fillStyle = b.color;
+      ctx.fillText(b.title, CFG.W / 2, by + 27);
+      ctx.font = '14px ' + FONT;
+      ctx.fillStyle = '#eaf9ff';
+      lines.forEach((ln, i) => ctx.fillText(ln, CFG.W / 2, by + 51 + i * 22));
       ctx.globalAlpha = 1;
     }
   }
@@ -3467,7 +4027,7 @@ class Game {
     }
     /* --- 高性能捲線器：甲板捲軸，收線時旋轉 --- */
     if (this.upgrade('reel') > 0) {
-      const spinning = this.hook.state === 'returning' || this.hook.state === 'struggle';
+      const spinning = this.hook.state === 'returning' || this.hook.state === 'struggle' || this.hook.state === 'retract';
       const a = spinning ? this.time * 18 : 0.3;
       ctx.save();
       ctx.translate(bx + 30, by + 12);
@@ -3806,6 +4366,7 @@ drawHUD() {
     this.addBtn('澎湖海洋研究中心（商店）', CFG.W / 2 - bw / 2, by0 + bgap * 2, bw, bh, () => this.openShop(), '#1d6fa5');
     this.addBtn('研究員手冊（玩法說明）', CFG.W / 2 - bw / 2, by0 + bgap * 3, bw, bh, () => { this.state = 'help'; Sfx.click(); }, '#3a5a8a');
     this.addBtn('⚙ 設定', CFG.W / 2 - 240, CFG.H - 100, 160, 40, () => { this.state = 'settings'; Sfx.click(); }, '#44505a');
+    this.addBtn('🏆 成就', CFG.W / 2 - 80, CFG.H - 100, 160, 40, () => { this.state = 'achievements'; Sfx.click(); }, '#8a6a2a');
     this.addBtn('⛶ 全螢幕：' + (isFullscreen() || this.fsPref ? '開' : '關'), CFG.W / 2 + 80, CFG.H - 100, 160, 40, () => this.toggleFullscreen(), '#1d6fa5');
     this.drawButtons();
 
@@ -3902,13 +4463,39 @@ drawHUD() {
       ['📚 圖鑑與任務', '第一次捕獲會解鎖圖鑑並獲得完整介紹。完成今日研究任務可獲得研究徽章與獎金。'],
       ['🐣 保育觀念', '捕到「幼體」或「稀有個體」時，可以選擇放生獲得保育點數，或帶回研究獲得研究點數。保護澎湖海洋，從你做起！'],
       ['⌨️ 操作', '滑鼠點擊或按空白鍵放下捕撈器。點擊螢幕上按鈕進行選單操作。'],
-      ['🎵 音效', '聲音可於選單播放，全程使用 Web Audio 合成，無需任何音檔。']
+      ['🎵 音效', '事件音效與海浪環境音使用 Web Audio 即時合成；背景音樂採用「澎湖海風」。音量可於設定中分別調整。']
     ];
     for (const [t, d] of lines) {
       fl.title(t, { size: 18, color: '#ffe08a', gap: 2 });
       fl.text(d, { size: 15, color: '#d8ecf8', maxW: fl.w, lh: 22 });
       fl.gap(12);
     }
+    this.buttons = [];
+    this.addBtn('返回', CFG.W / 2 - 50, CFG.H - 70, 100, 40, () => { this.state = 'menu'; Sfx.click(); });
+    this.drawButtons();
+  }
+
+  /* ---------- 成就頁面（🌊 維繫海洋生命 / 🎮 遊戲） ---------- */
+  drawAchievements() {
+    ctx.fillStyle = 'rgba(4,20,34,0.5)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    const fl = this.panelFrame(150, 40, CFG.W - 300, 520, '成就');
+    fl.text('🏆 成就', { size: 22, bold: true, color: '#fff', align: 'center', maxW: fl.w, lh: 30 });
+    let lastCat = null;
+    for (const def of ACHIEVEMENTS) {
+      if (def.category !== lastCat) {
+        lastCat = def.category;
+        fl.gap(6);
+        fl.title(ACH_CATEGORIES[def.category], { size: 17, color: '#7ef0ff', gap: 2 });
+      }
+      const rec = this.achRec(def.id);
+      const mark = rec.unlocked ? '✓' : '□';
+      const prog = def.goal > 1 ? '　' + (rec.progress || 0) + ' / ' + def.goal : '';
+      fl.title(mark + ' ' + def.name + prog + (rec.unlocked ? '　已解鎖' : ''), { size: 15, color: rec.unlocked ? '#ffe08a' : '#d8ecf8', gap: 1 });
+      fl.text(def.desc, { size: 13, color: '#8aa8b8', maxW: fl.w, lh: 18 });
+    }
+    const done = ACHIEVEMENTS.filter(d => { const r = this.achievements[d.id]; return r && r.unlocked; }).length;
+    fl.gap(6);
+    fl.text('已解鎖成就：' + done + ' / ' + ACHIEVEMENTS.length, { size: 14, color: '#e6c7ff', align: 'center', maxW: fl.w, lh: 20 });
     this.buttons = [];
     this.addBtn('返回', CFG.W / 2 - 50, CFG.H - 70, 100, 40, () => { this.state = 'menu'; Sfx.click(); });
     this.drawButtons();
@@ -4033,6 +4620,8 @@ drawHUD() {
       this.conserve += 30;
       this.toast('你選擇了放生！保育點 +30', 2.5);
       Sfx.researchChime();
+      /* 成就：守護幼小生命（幼體放生） */
+      if (ceph.isJuvenile) this.unlockAchievement('guard_juvenile');
       this.pendingCatch = null;
       this.showCard(ceph, firstTime, 0);
       saveState(this);
@@ -4067,7 +4656,7 @@ drawHUD() {
       this.addBtn('下一站 ▶', CFG.W / 2 - 50, CFG.H - 90, 160, 44, () => { this.startLevel(this.levelIndex + 1); Sfx.click(); }, '#2a8f4a');
       this.addBtn('主選單', CFG.W / 2 + 130, CFG.H - 90, 140, 44, () => { this.state = 'menu'; Sfx.click(); }, '#3a5a8a');
     } else {
-      this.addBtn('完成研究之旅 ▶', CFG.W / 2 - 140, CFG.H - 90, 280, 44, () => { this.state = 'end'; Sfx.fanfare(); }, '#c33b3b');
+      this.addBtn('完成研究之旅 ▶', CFG.W / 2 - 140, CFG.H - 90, 280, 44, () => { this.state = 'end'; Sfx.stopMusic(); Sfx.fanfare(); }, '#c33b3b');
     }
     this.drawButtons();
   }
@@ -4168,6 +4757,7 @@ drawHUD() {
     this._homeConfirm = false;
     this._resumeState = null;
     this.exitTestMode(false);            // 若在測試模式，放棄測試結果
+    Sfx.stopMusic();                     // 離開遊戲場景：暫停背景音樂
     this.state = GameState.HOME;
     this.buttons = [];
     Sfx.click();
@@ -4214,7 +4804,9 @@ drawHUD() {
       upgrades: Object.assign({}, this.upgrades),
       badges: this.badges.slice(),
       totalCatch: this.totalCatch,
-      levelIndex: this.levelIndex
+      levelIndex: this.levelIndex,
+      oceanCleaned: this.oceanCleaned || 0,
+      achievements: JSON.parse(JSON.stringify(this.achievements || {}))
     };
     /* 測試模式的「有效」研究點：最大安全值（runtime override，不寫入存檔） */
     this.test.researchPoints = Number.MAX_SAFE_INTEGER;
@@ -4237,6 +4829,8 @@ drawHUD() {
       this.badges = this.test.snapshot.badges;
       this.totalCatch = this.test.snapshot.totalCatch;
       this.levelIndex = this.test.snapshot.levelIndex;
+      this.oceanCleaned = this.test.snapshot.oceanCleaned || 0;
+      this.achievements = JSON.parse(JSON.stringify(this.test.snapshot.achievements || {}));
       saveState(this);
     }
     this.test.snapshot = null;
@@ -4270,7 +4864,7 @@ drawHUD() {
     this.levelCatch = {};
     this.creatures = [];
     this.rocks = [];
-    this.hook = { x: CFG.BOAT_X, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false };
+    this.hook = { x: CFG.BOAT_X, y: 0, angle: 0, dir: 1, state: 'idle', line: CFG.ARM_LEN, target: null, liftFail: 0, t: 0, vibT: 0, fxDone: false, object: null };
     this.inkTimer = 0;
     this.catchCount = 0;
     this.missionDone = false;
@@ -4290,6 +4884,8 @@ drawHUD() {
     this.buttons = [];
     Sfx.startWaves();
     Sfx.boatHum();
+    /* 測試模式遊玩場景同樣播放背景音樂（單例，不重播） */
+    Sfx.startMusic();
   }
   /* 立即生成：只產生指定物種 */
   instantSpawn() {
@@ -4363,58 +4959,66 @@ drawHUD() {
     }
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
-  /* 測試模式畫面（設定面板） */
+  /* 測試模式畫面（設定面板）
+     版面規則（根因修正）：全畫面只允許一個垂直游標 fl.cursor，
+     參數列用 UISelectRow、道具格用 UIGrid 推導；文字與其控制項
+     共用同一個 top，禁止任何地方自行累加固定座標。
+     底部動作列錨定面板內側底緣，與上方內容以安全間距分離。 */
   drawTestMode() {
     ctx.fillStyle = 'rgba(4,20,34,0.6)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
     const cfg = this.test.cfg;
-    const fl = this.panelFrame(200, 40, CFG.W - 400, 540, '測試模式');
-    fl.text('自由調整參數，體驗捕捉流程；離開時可選擇還原或保留。', { size: 14, color: '#a8d8ea', align: 'center', maxW: fl.w, lh: 20 });
-    fl.gap(6);
-    const sp = SPECIES[cfg.speciesIdx];
-    const lv = LEVELS[cfg.levelIndex];
-    const rows = [
-      ['關卡', 'Lv.' + (cfg.levelIndex + 1) + ' ' + (lv.levelName || lv.name), 'levelIndex', LEVELS.length],
-      ['物種', sp.name + '（' + sp.latin + '）', 'speciesIdx', SPECIES.length],
-      ['時間', TOD_NAMES[cfg.timeOfDay], 'timeOfDay', ['day', 'night', 'dusk', 'dawn']],
-      ['季節', SEASON_NAMES[cfg.season], 'season', ['spring', 'summer', 'autumn', 'winter']],
-      ['深度', cfg.depth === 'near' ? '近海' : (cfg.depth === 'mid' ? '中層' : '深海'), 'depth', ['near', 'mid', 'deep']],
-      ['出現機率', Math.round(cfg.probability * 100) + '%', 'probability', [0.25, 0.5, 0.75, 1.0]]
-    ];
-    /* 每列：標籤 + 目前值 + [▼] 切換按鈕 */
+    const PX = 140, PY = 20, PW = CFG.W - PX * 2, PH = CFG.H - PY * 2;
+    const fl = this.panelFrame(PX, PY, PW, PH, '測試模式');
     this.buttons = [];
-    let y = fl.cursor + 4;
-    for (const [label, val, key, opts] of rows) {
-      fl.text(label + '：' + val, { size: 16, color: '#eaf9ff', align: 'center', maxW: fl.w, lh: 22 });
-      this.addBtn('▼', CFG.W / 2 + 150, y, 46, 30, (() => { const k = key, o = opts; return () => {
-        if (k === 'probability') { const idx = o.indexOf(cfg.probability); cfg.probability = o[(idx + 1) % o.length]; }
-        else if (Array.isArray(o)) { const idx = o.indexOf(cfg[k]); cfg[k] = o[(idx + 1) % o.length]; }
-        else cfg[k] = (cfg[k] + 1) % o;
-        Sfx.click();
-      }; })(), '#1d6fa5');
-      y += 30;
-    }
-    fl.gap(6);
-    /* 勾選：無限時間 / 無限研究點 / 無限保育點 */
-    const toggles = [
-      ['無限時間', 'infiniteTime'],
-      ['無限研究點', 'infinitePoints'],
-      ['無限保育點', 'infiniteConserve']
+
+    /* ---- 幾何常數：唯一來源 ---- */
+    const GX = 8, GY = 6;                                   // 道具格線間距
+    const TOG_W = Math.min(320, fl.w), TOG_H = 32, TOG_G = 6; // 無限開關
+    const ACT_H = 42, ACT_G = 10;                           // 底部動作列
+
+    /* ---- 底部動作列：錨定面板內側底緣（不隨內容漂移）---- */
+    const actW = Math.floor((fl.w - ACT_G * 2) / 3);
+    const actY = PY + PH - UIPanel.BADGE_BOTTOM - ACT_H;
+    const contentMaxY = actY - 14;                          // 內容區下界
+
+    /* ---- 提示列 ---- */
+    fl.text('自由調整參數，體驗捕捉流程；離開時可選擇還原或保留。',
+      { size: 13, color: '#a8d8ea', align: 'center', maxW: fl.w, lh: 17 });
+    fl.gap(4);
+
+    /* ---- 參數列 ×6：文字與 ▼ 同一 top，游標單調推進 ---- */
+    const nextOf = (v, arr) => arr[(arr.indexOf(v) + 1) % arr.length];
+    const sp = SPECIES[cfg.speciesIdx], lv = LEVELS[cfg.levelIndex];
+    const rows = [
+      ['關卡', 'Lv.' + (cfg.levelIndex + 1) + ' ' + (lv.levelName || lv.name),
+        () => { cfg.levelIndex = (cfg.levelIndex + 1) % LEVELS.length; }],
+      ['物種', sp.name + '（' + sp.latin + '）',
+        () => { cfg.speciesIdx = (cfg.speciesIdx + 1) % SPECIES.length; }],
+      ['時間', TOD_NAMES[cfg.timeOfDay],
+        () => { cfg.timeOfDay = nextOf(cfg.timeOfDay, ['day', 'night', 'dusk', 'dawn']); }],
+      ['季節', SEASON_NAMES[cfg.season],
+        () => { cfg.season = nextOf(cfg.season, ['spring', 'summer', 'autumn', 'winter']); }],
+      ['深度', cfg.depth === 'near' ? '近海' : (cfg.depth === 'mid' ? '中層' : '深海'),
+        () => { cfg.depth = nextOf(cfg.depth, ['near', 'mid', 'deep']); }],
+      ['出現機率', Math.round(cfg.probability * 100) + '%',
+        () => { cfg.probability = nextOf(cfg.probability, [0.25, 0.5, 0.75, 1.0]); }]
     ];
-    for (const [label, key] of toggles) {
-      const on = cfg[key];
-      this.addBtn((on ? '☑ ' : '☐ ') + label, CFG.W / 2 - 130, y, 260, 38, () => { cfg[key] = !cfg[key]; Sfx.click(); }, on ? '#2a8f4a' : '#44505a');
-      y += 46;
+    for (const [label, val, cyc] of rows) {
+      if (fl.cursor > contentMaxY) break;                   // 保險：永不壓到動作列
+      const r = UISelectRow.draw(fl.cursor, fl.x, fl.w, label, val);
+      this.addBtn('▼', r.x, r.y, r.w, r.h, () => { cyc(); Sfx.click(); }, '#1d6fa5');
+      fl.cursor += UISelectRow.H + UISelectRow.GAP;
     }
-    /* 道具快切：一鍵啟用/停用（滿級）。測試結束由快照還原，不污染正式進度 */
+
+    /* ---- 道具快切：3 欄 × 2 列 Grid（等寬等高等距）---- */
     fl.gap(6);
-    fl.text('道具快切：點一下啟用（滿級）／再點停用', { size: 14, color: '#a8d8ea', align: 'center', maxW: fl.w, lh: 20 });
-    let iy = fl.cursor + 6;
+    fl.text('道具快切：點一下啟用（滿級）／再點停用',
+      { size: 13, color: '#ffe08a', align: 'center', maxW: fl.w, lh: 16 });
+    fl.gap(4);
+    const grid = new UIGrid(fl.x, fl.cursor, fl.w, 3, UISelectRow.H, GX, GY);
     for (let i = 0; i < SHOP.length; i++) {
-      const it = SHOP[i];
-      const gx = CFG.W / 2 - 260 + (i % 3) * 175;
-      const gy = iy + Math.floor(i / 3) * 40;
-      const lvl = this.upgrade(it.id);
-      this.addBtn((lvl > 0 ? '☑ ' : '☐ ') + it.name, gx, gy, 168, 34, (() => {
+      const it = SHOP[i], c = grid.cell(i), lvl = this.upgrade(it.id);
+      this.addBtn((lvl > 0 ? '☑ ' : '☐ ') + it.name, c.x, c.y, c.w, c.h, (() => {
         const id = it.id, max = it.max;
         return () => {
           if (this.upgrade(id) > 0) { this.upgrades[id] = 0; this.toast('已停用 ' + it.name, 1.5); }
@@ -4423,10 +5027,31 @@ drawHUD() {
         };
       })(), lvl > 0 ? '#2a8f4a' : '#44505a');
     }
-    /* 動作按鈕 */
-    this.addBtn('立即生成', CFG.W / 2 - 280, CFG.H - 96, 170, 46, () => { this.startTest(); this.instantSpawn(); }, '#1d6fa5');
-    this.addBtn('開始測試', CFG.W / 2 - 85, CFG.H - 96, 170, 46, () => this.startTest(), '#2a8f4a');
-    this.addBtn('返回設定', CFG.W / 2 + 110, CFG.H - 96, 170, 46, () => { this.state = GameState.SETTINGS; this.test.active = false; Sfx.click(); }, '#3a5a8a');
+    fl.cursor += grid.height(SHOP.length);
+
+    /* ---- 無限開關 ×3：Grid 正下方，同寬同距垂直堆疊置中 ---- */
+    fl.gap(8);
+    const togX = fl.x + (fl.w - TOG_W) / 2;
+    const toggles = [
+      ['無限時間', 'infiniteTime'],
+      ['無限研究點', 'infinitePoints'],
+      ['無限保育點', 'infiniteConserve']
+    ];
+    toggles.forEach(([label, key], ti) => {
+      const on = cfg[key];
+      this.addBtn((on ? '☑ ' : '☐ ') + label, togX, fl.cursor, TOG_W, TOG_H,
+        () => { cfg[key] = !cfg[key]; Sfx.click(); }, on ? '#2a8f4a' : '#44505a');
+      fl.cursor += TOG_H + (ti < toggles.length - 1 ? TOG_G : 0);
+    });
+
+    /* ---- 底部動作列：同一水平、同寬、同間距 ---- */
+    const acts = [
+      ['立即生成', () => { this.startTest(); this.instantSpawn(); }, '#1d6fa5'],
+      ['開始測試', () => this.startTest(), '#2a8f4a'],
+      ['返回設定', () => { this.state = GameState.SETTINGS; this.test.active = false; Sfx.click(); }, '#3a5a8a']
+    ];
+    acts.forEach(([lb, fn, col], i) =>
+      this.addBtn(lb, fl.x + i * (actW + ACT_G), actY, actW, ACT_H, fn, col));
     this.drawButtons();
   }
   /* 測試模式：HUD 下方測試工具列 */
@@ -4485,6 +5110,7 @@ function shadeHex(hex, f) {
   window.__game = game;
 
   loadCephImages();   /* 載入圖鑑 / 資訊小卡用的真實素材影像 */
+  loadGifAnims();     /* 載入遊戲場景用 GIF 本體動畫（缺件自動回退程序化） */
 
   /* 畫面縮放：依視窗尺寸調整 */
   function resize() {
@@ -4515,12 +5141,12 @@ function shadeHex(hex, f) {
     if (ev.code === 'Space') { ev.preventDefault(); game.onKey(true); }
   });
 
-  /* 背景音樂與海浪於首次互動後啟動（先 init AudioContext，符合自動播放政策） */
+  /* 背景音樂於進入正式遊戲場景（startLevel）時啟動；此處僅初始化
+     AudioContext 與環境音（海浪），符合瀏覽器自動播放政策。 */
   document.addEventListener('pointerdown', function once() {
     Sfx.init();
     Sfx.resume();
     Sfx.startWaves();
-    Sfx.startMusic();
     /* 若上次偏好全螢幕，於首次互動時自動進入 */
     if (game.fsPref && isFsSupported() && !isFullscreen()) {
       requestFullscreen();
