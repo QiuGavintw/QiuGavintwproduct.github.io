@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>澎湖頭足探險 | Penghu Cephalopod Explorer</title>
 <style>
 /* ============================================================
@@ -15,6 +15,8 @@ html, body {
   background: radial-gradient(ellipse at 50% 0%, #123b5c 0%, #0a2233 55%, #06141f 100%);
   overflow: hidden;
   font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 #stage {
   position: fixed;
@@ -22,6 +24,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 手機瀏海 / 圓角 / 安全區域留白，避免被系統 UI 遮擋 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing: border-box;
 }
 canvas#game {
   image-rendering: auto;
@@ -30,12 +35,68 @@ canvas#game {
   border-radius: 8px;
   touch-action: none;
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ============================================================
+   手機直向橫向提示（僅觸控小螢幕直向時顯示；橫向時完全不影響遊戲）
+   ============================================================ */
+#rotate-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 50% 0%, #123b5c 0%, #0a2233 65%, #06141f 100%);
+  color: #bfe9ff;
+  font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+  text-align: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing: border-box;
+}
+#rotate-prompt .rp-icon {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 22px;
+  animation: rp-rotate 2.2s ease-in-out infinite;
+}
+#rotate-prompt .rp-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+#rotate-prompt .rp-sub {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #8fc3dd;
+  max-width: 300px;
+}
+@keyframes rp-rotate {
+  0%   { transform: rotate(0deg); }
+  40%  { transform: rotate(90deg); }
+  60%  { transform: rotate(90deg); }
+  100% { transform: rotate(90deg); }
+}
+
+/* 觸控 + 直向 + 窄螢幕 → 顯示橫向提示；橫向或不支援觸控一律不顯示 */
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
+  #rotate-prompt { display: flex; }
 }
 </style>
 </head>
 <body>
 <div id="stage">
   <canvas id="game"></canvas>
+</div>
+<div id="rotate-prompt" role="presentation" aria-hidden="true">
+  <div class="rp-icon">📱🔄</div>
+  <div class="rp-title">請將手機橫向</div>
+  <div class="rp-sub">本遊戲採橫向畫面設計，請旋轉裝置以獲得最佳遊玩體驗。</div>
 </div>
 <script>
 'use strict';
@@ -5112,17 +5173,40 @@ function shadeHex(hex, f) {
   loadCephImages();   /* 載入圖鑑 / 資訊小卡用的真實素材影像 */
   loadGifAnims();     /* 載入遊戲場景用 GIF 本體動畫（缺件自動回退程序化） */
 
-  /* 畫面縮放：依視窗尺寸調整 */
+  /* 畫面縮放：依視窗尺寸調整（維持 960x600 等比例，不變形、不裁切、無捲軸） */
+  function viewportSize() {
+    let vw = window.innerWidth, vh = window.innerHeight;
+    /* 扣掉安全區域，避免 canvas 被瀏海 / 系統 UI 遮擋 */
+    try {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;inset:0;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);visibility:hidden;pointer-events:none;';
+      document.body.appendChild(probe);
+      const r = probe.getBoundingClientRect();
+      const padT = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      const padR = parseFloat(getComputedStyle(probe).paddingRight) || 0;
+      const padB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+      const padL = parseFloat(getComputedStyle(probe).paddingLeft) || 0;
+      document.body.removeChild(probe);
+      const usableW = Math.max(vw - padL - padR, 1);
+      const usableH = Math.max(vh - padT - padB, 1);
+      if (usableH < vh || usableW < vw) { vw = usableW; vh = usableH; }
+    } catch (e) { /* 保持原尺寸 */ }
+    return { vw, vh };
+  }
   function resize() {
-    const vw = window.innerWidth, vh = window.innerHeight;
+    const { vw, vh } = viewportSize();
+    /* contain：等比例縮放填滿可用空間，並保留些許光暈間距；上限 1.4（桌面） */
     const scale = Math.min(vw / (CFG.W + 40), vh / (CFG.H + 20), 1.4);
     canvas.style.width = Math.round(CFG.W * scale) + 'px';
     canvas.style.height = Math.round(CFG.H * scale) + 'px';
   }
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 150));
   resize();
 
-  /* 滑鼠與觸控 */
+  /* 輸入：統一台式滑鼠 / 手機觸控為 Pointer Events，避免 mouse + touch 重複觸發。
+     維持原遊戲邏輯——全部對應到既有 onMouseDown/Move/Up（mousedown=mousedown,
+     移動=move, mouseup=up、click/dropHook）。 */
   function toLogical(ev) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -5130,13 +5214,26 @@ function shadeHex(hex, f) {
       y: (ev.clientY - rect.top) * CFG.H / rect.height
     };
   }
-  canvas.addEventListener('mousemove', ev => game.onMouseMove(toLogical(ev).x, toLogical(ev).y));
-  canvas.addEventListener('mousedown', ev => game.onMouseDown(toLogical(ev).x, toLogical(ev).y));
-  canvas.addEventListener('mouseup', ev => game.onMouseUp(toLogical(ev).x, toLogical(ev).y));
-  canvas.addEventListener('touchstart', ev => { ev.preventDefault(); const t = toLogical(ev.touches[0]); game.onMouseDown(t.x, t.y); }, { passive: false });
-  canvas.addEventListener('touchmove', ev => { ev.preventDefault(); const t = toLogical(ev.touches[0]); game.onMouseMove(t.x, t.y); }, { passive: false });
-  canvas.addEventListener('touchend', ev => { ev.preventDefault(); game.onMouseUp(game.mouse.x, game.mouse.y); }, { passive: false });
-  canvas.addEventListener('touchcancel', ev => { game.mouse.down = false; }, { passive: false });
+  canvas.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
+    const t = toLogical(ev);
+    game.onMouseDown(t.x, t.y);
+  });
+  canvas.addEventListener('pointermove', ev => {
+    const t = toLogical(ev);
+    game.onMouseMove(t.x, t.y);
+  });
+  const pointerUp = ev => {
+    const rect = canvas.getBoundingClientRect();
+    const t = {
+      x: clamp((ev.clientX - rect.left) * CFG.W / rect.width, 0, CFG.W),
+      y: clamp((ev.clientY - rect.top) * CFG.H / rect.height, 0, CFG.H)
+    };
+    game.onMouseUp(t.x, t.y);
+  };
+  canvas.addEventListener('pointerup', pointerUp);
+  canvas.addEventListener('pointercancel', pointerUp);
   document.addEventListener('keydown', ev => {
     if (ev.code === 'Space') { ev.preventDefault(); game.onKey(true); }
   });
