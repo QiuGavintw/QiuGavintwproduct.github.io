@@ -203,45 +203,6 @@
       ]
     },
     {
-      id: "snake",
-      slug: "snake",
-      title: "貪吃蛇",
-      shortDescription: "經典貪吃蛇全面進化版，道具、成就、主題與多種模式一次滿足。",
-      description:
-        "「貪吃蛇」是一款經典貪吃蛇遊戲的全面進化版本。除了基本吃食物成長玩法，更加入加速、凍結、穿牆等道具系統，以及主題切換、成就系統、音效與 Combo 特效。支援經典、闖關與時間挑戰等多種模式，甚至提供雙人對戰。",
-      categories: ["遊戲"],
-      technologies: ["HTML5", "Canvas", "JavaScript", "Web Audio API"],
-      thumbnail: "assets/thumbnails/snake.png",
-      screenshots: ["assets/thumbnails/snake.png"],
-      detailPage: "projects/snake/",
-      demoUrl: "projects/snake/play/",
-      githubUrl: "https://github.com/QiuGavintw/QiuGavintwproduct.github.io/tree/master/projects/snake",
-      createdAt: "2026-07-20",
-      updatedAt: "2026-07-20",
-      featured: false,
-      accent: "#34c759",
-      features: [
-        "經典貪吃蛇玩法，支援方向鍵與滑桿控制",
-        "道具系統：加速、凍結、穿牆，磁鐵吸引果實",
-        "多種遊戲模式：經典、闖關、時間挑戰、雙人對戰",
-        "成就系統與里程碑語音提示",
-        "主題切換與粒子特效（Combo VFX）",
-        "Web Audio API 即時合成音效與背景音樂",
-        "最高分與等級自動儲存"
-      ],
-      howToPlay: [
-        "使用方向鍵或 WASD 控制蛇的移動",
-        "吃到食物可讓蛇變長並獲得分數",
-        "拾取道具獲得特殊能力",
-        "避免撞牆或咬到自己，雙人模式避免互撞"
-      ],
-      highlights: [
-        "畫布全向量繪製，支援不同視窗尺寸",
-        "豐富的 VFX 與粒子特效",
-        "多模式玩法增加耐玩度"
-      ]
-    },
-    {
       id: "lunch-angel",
       slug: "lunch-angel",
       title: "午餐小天使",
