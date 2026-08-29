@@ -575,3 +575,235 @@ https://qiugavintw.github.io/QiuGavintwproduct.github.io/Product/search-visualiz
   cephalopod 相關未提交變更，均屬其他任務，未納入本次推送。
 
 ========================================
+
+========================================
+問題／需求紀錄 #008
+========================================
+
+日期：
+2026/08/28
+
+【使用者提出的需求】
+
+在既有「排序演算法視覺化」（開發版本）中新增兩支演算法，與既有
+氣泡／選擇／插入共用同一組資料與 Step Engine，升級為 5 演算法版：
+- Merge Sort：教學型拆分‧合併視覺，含「拆分膠囊面板」
+  （mrg-panel 逐步顯示目前拆分區塊）、twopointer 合併比較
+  （split／mergestart／mergecmp／mergeresult 型步驟與 stats）；
+- Greedy Sort：教學型示範（逐步掃描抓最小值再交換，
+  gscan／gchoose／gbetter 型步驟）；
+- 比較區由 3 窗擴為 5 窗（compare-grid 2+2+1），複雜度表改 5 列，
+  英雄區、頂部導覽、footer、圖例與說明文案同步更新；
+- 使用者強調不得重寫既有三種排序（Bubble／Selection／Insertion），
+  新演算法須沿用相同視覺語意、相同資料，且「完成後跑測試驗證，
+  追加紀錄 #008，結束回報」。
+
+【使用者如何與 AI 溝通】
+
+使用者以多輪訊息逐項下達：
+1. 指定在「排序視覺化」加入 Merge Sort 與 Greedy Sort，
+   並說明視覺期待（Merge 有拆分膠囊、Greedy 為教學型逐步說明）；
+2. 明確禁止改寫既有三種排序；要求新演算法與舊演算法共用同一組
+   資料做公平比較；比較區要顯示 5 種；
+3. 要求 Merge 的合併過程以 twopointer 呈現，並提供「怎跑、為何」
+   的教學文案；
+4. 要求整合進 step engine（runners 共用比較表）、寫三層測試
+   （邏輯／jsdom UI／Chrome RWD）、最後追加本紀錄再回報，
+   且明令不得捏造未發生的問題與未通過的結果。
+
+【AI／Open Code 的分析】
+
+既有架構：script.js 以多個 generator 產生 steps，Step Engine 依型別
+分類（cmpNo／swap／sw 等），render 以 style.left 定位的 bar 呈現，
+applyStep 每步更新 stats／highlights／msg；各演算法於 init() 以
+visualizers.<key> 掛到各自 HTML section。由此推論：
+- Merge 需要「資料來源（左陣列／右陣列）」資訊（mergecmp 帶
+  src:l／src:r），並需要獨立的拆分膠囊面板顯示目前 split 區塊；
+- Greedy 掃描最小值時需要「目前候選」與「目前最小」分色
+  （gseek／gcand／gbest）；
+- runner 表大小固定為 5，比較表格必須 5 列；
+- 「移動」語意：Merge 的移動＝合併放置次數、Greedy 的移動＝交換次數，
+  避免數值零或不解；故 mergeSteps 尾端補 stats.moves = merges。
+
+【遇到的問題】
+
+1. Merge 初版「先切出兩個子陣列、再原位合併」：
+   切出的子陣列上移位 = 同一 id 元素在一個 snapshot 出現兩次，
+   data-id 重複、target 對應到舊元素，會造成柱子重疊與位置錯亂；
+   且「每步是一條 bar 排列快照」的視覺模型與「切兩陣列」衝突。
+2. merge 產生器原想直接搬移 id（makeItem 換新列）——render 會對舊
+   id 的動畫狀態錯誤、且柱子在 DOM 端持續 append 造成元素外洩。
+3. jsdom UI 測試連環誤判（皆測試腳本問題，非產品 bug）：
+   a) bar 以 data-id 為主鍵、以 style.left 定位——DOM 子元素順序
+      ≠ 視覺順序，直接抓 DOM order 讀值必然錯誤；
+   b) v.complete() 到達終點會把 msg 覆寫成「✅ 排序完成！陣列已按
+      升冪排列。可按下「▶ 開始」重新播放。」——用 generator done
+      訊息的 token（如「就定位」「排序完成」關鍵字）判斷完成會
+      永遠失敗；
+   c) mini 比較窗的 chips 在 article.mini 內、是 #cm-merge 的兄弟
+      元素，以 #cm-merge 為父層的 querySelector 抓不到；
+   d) 未開始時 stepinfo = "0 / <總數>"（總數為各演算法步數），
+      所有 stats chips（含 merges／swaps）為「–」。
+4. Chrome 比較競賽：Merge 那列的「移動」欄若沒接 stats.moves 會顯示
+   0；我測試時把 race 表格第 4、第 3 欄順序弄反（誤取到名次）。
+
+【解決方式】
+
+1. Merge 重寫為「相鄰交換式」位移（與插入排序視覺一致）：
+   於 5 個 split 步驟順序把值逐一搬到正確位置；新增
+   mergesplit／mergestart／mergeshift（相鄰換位，帶 mcmp）／
+   mput／mergeresult 型步驟，每步 snapshot 的 id 唯一、multiset
+   一致；不再執行 makeItem 換 id。拆分區塊資訊改由 render 依
+   vars 計算（mrg-panel 膠囊），移除執行期 switch 陣列。
+2. Greedy 以 gscan／gcand／gbest 型步驟呈現「掃描→候選→目前最小」
+   流程，gswap 完成交換（isMove 含 "gswap"）。
+3. 測試修正：
+   a) barVals 依 style.left 排序後再取 .num；
+   b) 完成判斷改用 stepinfo（cursor==total）與 race 結束，
+      不用頁面文案；
+   c) mini 資訊用 getElementById("cm-merge").closest(".mini") 抓；
+   d) init 期待改為 stepinfo "0 / <總數>"（總數>0）與 chips「–」。
+4. mergeSteps 尾端 stats.moves = merges（n=8 為 7）、
+   greedySteps stats.moves = swaps（n=8 為 6）；
+   race 5 窗以 compare-grid 2+2+1（第 5 格 grid-column:1/-1），
+   狹窄視窗收成單欄。
+
+【驗證結果】
+
+- 邏輯測試（node sort5_logic_test.js）：
+  270,623 checks，ALL SORT5 LOGIC TESTS PASSED——60 隨機輪 × 5 演算法
+  ＋ 11 固定資料集（含重複值、全相同、最小在最尾、n=1），
+  每演算法驗步驟型別、id 唯一、multiset 保全、最終已排序。
+- jsdom UI 接線測試：SORT5 UI TESTS PASSED——5 演算法逐步到完成、
+  stepinfo 0/N→N/N、bar 數固定 8 不外洩、Merge 膠囊執行中 ≥2／結束 1、
+  merges=7、Greedy gseek／gpick 出現且 compares=28、比較 5 窗、
+  race 結果、regen 共用資料、speed 滑桿。
+- 真實 Chrome（file:// 載入，1440／1024／768／390／375）：
+  PASS 46/46、Console errors = 0，SORT5 REAL BROWSER VERIFICATION
+  PASSED：
+  - 5 演算法各自逐步跑完（bubble 54／selection 58／insertion 63／
+    merge 65／greedy 66 步），節點數無外洩、最終 bar 已排序；
+  - Merge 執行中膠囊 ≥2、結束剩 1、合併次數 = 7；
+  - Greedy 出現 gseek／gpick、比較次數 = 28、teach-pill 標示在；
+  - 比較競賽完成、race 表 5 列、Merge 移動欄 = 7、Bubble 為本次
+    資料的優勝者（28 比較／18 交換）；
+  - compare-grid 桌面 2 欄且第 5 格橫跨、390px 收單欄；
+    四組視窗零水平溢位、375px 下 Merge 膠囊不溢出面板、Hero 不過高。
+
+【最終結果】
+
+已解決。排序視覺化升級為 5 演算法版（Merge Sort 教學型拆分合併視覺
+＋ Greedy Sort 教學型示範），三層測試全綠後才追加本紀錄，所有數字
+皆為實測。向使用者回報「排序演算法視覺化 FINAL PASS｜5 Algorithms」。
+
+【備註】
+
+- 既有三種排序的 generator 與 Step Engine 零修改；
+  回歸（邏輯 60 輪 ＋ 真機逐步）皆通過。
+- 截圖存於 Temp\opencode\shots_sort5\。
+- 經驗教訓 1：視覺化引擎以「bar 排列快照」為資料載體時，
+  任何「移動 id 物件」的操作都會破壞不變量；應以「可視唯一物件 ＋
+  相鄰交換」建模，並讓每個 snapshot 保持 id 唯一且 multiset 不變。
+- 經驗教訓 2：UI 測試必須使用引擎自己的狀態量（stepinfo cursor、
+  html[hidden]、computed style）判斷結果，不要依賴會被
+  complete() 覆寫的頁面文案；讀 bar 值時要以實際定位（style.left）
+  排序而非 DOM 子元素順序。
+
+========================================
+
+========================================
+問題／需求紀錄 #009
+========================================
+
+日期：
+2026/08/28
+
+【使用者提出的需求】
+
+使用者要求對「排序演算法視覺化｜5 演算法版本」進行完整最終驗收：
+- 依 25 節檢查清單逐步執行（git 掃描、5 演算法功能、邏輯測試、
+  jsdom UI、Compare、Race、Big-O、教學文案、真實 Chrome 五種視窗
+  寬度、視覺一致性、Accessibility、JS 品質、隨機資料、既有 3 種
+  排序無回歸、問題紀錄、禁止新增第 6 種演算法／不得大改 UI）；
+- 若發現問題：找原因 → 最小修改 → 回歸 → 確認無破壞 → Commit＋Push；
+- 不得「為了過關而改測試」，PASS 數量變化要說明原因；
+- Race 的 Merge 移動欄若因實作有合理變化，要說明，不硬改舊數字；
+- 全部 PASS 才允許 Commit，並追加發現／修復之紀錄。
+
+【使用者如何與 AI 溝通】
+
+使用者本次完全沒有給圖或截圖，而是給一份 25 節的完整驗收指令，
+要求我「自己掃描、自己驗證、自己決定檔案結構」：
+- 明確警告：排序視覺化資料夾本身不是 git repo；唯一相關 repo 是
+  「個人作品集網站」（origin=QiuGavintwproduct.github.io，
+  master，線上正式入口 Product/sorting-visualizer）。
+- 經提問裁決後，使用者選擇「僅更新 Product/sorting-visualizer」：
+  複製 開發版本 4 檔（index/style/script＋紀錄 txt）回 Product/
+  sorting-visualizer，只 stage 該資料夾，commit 後 push origin master，
+  其餘無關 deletions 一律不碰。
+
+【AI／Open Code 的分析】
+
+1. 掃描：CWD（澎科大NPU\各專案\排序視覺化）無 .git；唯一相關 repo
+   為「個人作品集網站」。該 repo 工作目錄有大量無關 deleted 變更
+   （typing-practice、cephalopod、search-visualizer、根目錄 html，
+   甚至 Product/sorting-visualizer 整組 4 檔也被列為 deleted）——
+   直接 git add . 會誤刪線上內容，故依使用者裁決只處理
+   Product/sorting-visualizer 4 檔。
+2. 回歸比對：以花括號配對取出 舊版本\Product快照\script.js 與
+   開發版本\script.js 的 bubbleSteps / selectionSteps / insertionSteps，
+   逐字元比較完全相同 → 既有 3 種排序核心邏輯零改動。
+3. 資料模型：generateArray(count) 產生 1..count 的「排列」（必然無
+   重複值）→ UI 層不可能產生重複資料；重複值／n=1 的正確性由邏輯
+   測試以含重複與 n=1 的資料集覆蓋（這是合理分工，非缺陷）。
+4. 數字差異說明：邏輯測試每輪 PASS 的 check 數是「動態」的
+   （255k ／ 286k ／ 270k 依隨機資料步數而變），所以與先前紀錄的
+   270,623 不同屬於正常浮動，唯一不變的是「全部 PASS」。
+
+【遇到的問題】（本次驗收發現並修復）
+
+1. Big-O 區塊（#complexity）：表格只有「時間」欄（最佳／平均／最差），
+   沒有說明空間複雜度；驗收清單第八節明確要求確認「空間複雜度正確」。
+2. Accessibility：比較模式的 5 個迷你柱狀圖容器（cm-bubble 等）
+   是 <div class="bars">，但缺少 section 柱狀圖那樣的
+   role="img" ＋ aria-label，螢幕閱讀器無法理解這些圖的語意。
+
+【解決方式】
+
+1. 在 #complexity 的 note-card 補一行：「空間：氣泡、選擇、插入、
+   貪心（本示範實作）通常額外空間 O(1)；合併排序需要暫存左右兩半，
+   額外空間 O(n)。」——未重構表格，最小文字修正。
+2. 五個迷你柱狀圖容器各補上
+   role="img" 與對應 aria-label（氣泡／選擇／插入／合併／貪心排序
+   比較柱狀圖）。
+
+【驗證結果】
+
+改動後全 5 套驗收重跑：
+- 邏輯測試：ALL SORT5 LOGIC TESTS PASSED（check 數依隨機輪次浮動）。
+- jsdom UI：SORT5 UI TESTS PASSED。
+- jsdom 功能驗收（n=5/8/12 矩陣＋n=20 壓力＋Compare 隔離＋Race）：
+  PASS 131 FAIL 0。
+- 真實 Chrome 基礎驗收：PASS 46 FAIL 0。
+- 真實 Chrome 進階驗收（語意／對比度／鍵盤 Enter 啟動／
+  prefers-reduced-motion 0.01s／五視窗 1440·1024·768·390·375
+  零溢位零重疊零截斷／行動版完成與 reset·regen）：PASS 72 FAIL 0，
+  Console errors = 0。
+
+【最終結果】
+
+已解決。本次驗收共修復 2 個缺口（空間複雜度說明、mini 柱狀圖語意），
+皆為 index.html 的最小文字／屬性修正，未更動 script.js 與演算法。
+全套測試綠燈後才 Commit＋Push（僅 Product/sorting-visualizer 4 檔）。
+
+【備註】
+
+- 合理變化說明：Merge 的比較次數依資料排列而異（n=8 時可為 16 或
+  17），Greedy 交換次數亦隨資料而異（n=8 時 1..7）——這些不是 bug；
+  Race 的「Merge 移動欄＝合併次數＝n−1」才是固定值（n=8 為 7）。
+- duplicate-id 防線仍在：邏輯測試要求每 snapshot id 唯一＋multiset
+  不變，且真機逐步執行時 bar 節點數恆等 n（無元素外洩）。
+- 本次 Commit 不包含 repo 工作目錄裡與排序無關的 deleted 變更
+  （那些是使用者其他整理動作，維持原狀未 stage）。
+
+========================================

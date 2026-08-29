@@ -231,6 +231,228 @@
   }
 
   /* ============================================================
+     Merge Sort（合併排序法）step generator
+     分兩階段視覺化：先「拆分」（splitPass），再「合併」（mergePass）。
+     拆分階段不動陣列，只更新區塊；合併階段用原地 shift 合併。
+     step 欄位：splitBlock/merging/mcmp/mput/mBlocks/activeBlock
+     ============================================================ */
+  function mergeSteps(items) {
+    var w = clone(items), n = w.length, steps = [];
+    var sortedFlags = new Array(n).fill(false);
+    var compares = 0, merges = 0;
+    var blocks = [[0, n - 1]];
+
+    function blocksCopy() { return blocks.map(function (b) { return [b[0], b[1]]; }); }
+    function push(o) { steps.push(o); }
+
+    function replaceBlock(lo, hi, withBlocks) {
+      var out = [];
+      for (var i = 0; i < blocks.length; i++) {
+        if (blocks[i][0] === lo && blocks[i][1] === hi) out = out.concat(withBlocks);
+        else out.push([blocks[i][0], blocks[i][1]]);
+      }
+      return out;
+    }
+    function findPair(lo, mid, hi) {
+      for (var i = 0; i < blocks.length - 1; i++) {
+        if (blocks[i][0] === lo && blocks[i][1] === mid &&
+            blocks[i + 1][0] === mid + 1 && blocks[i + 1][1] === hi) return i;
+      }
+      return -1;
+    }
+
+    /* ---- Phase 1: 拆分（只更新區塊，不動陣列） ---- */
+    function splitPass(lo, hi) {
+      var r = "A[" + lo + ".." + hi + "]";
+      push({
+        type: "split", arr: clone(w), splitBlock: [lo, hi], merging: null, mcmp: [], mput: -1,
+        mBlocks: blocksCopy(), activeBlock: [lo, hi], sorted: sortedFlags.slice(),
+        stats: { compares: compares, merges: merges, range: r, size: hi - lo + 1 },
+        msg: lo === hi
+          ? "只剩下單一元素 " + w[lo].value + "：區塊 " + r + " 不需要再拆分"
+          : "拆分區塊 " + r + "：把 " + (hi - lo + 1) + " 個資料切成左右兩半",
+        code: lo === hi ? [1] : [2], move: false
+      });
+      if (lo === hi) return;
+      var mid = (lo + hi) >> 1;
+      blocks = replaceBlock(lo, hi, [[lo, mid], [mid + 1, hi]]);
+      splitPass(lo, mid);
+      splitPass(mid + 1, hi);
+    }
+
+    /* ---- Phase 2: 合併（post-order，與拆分邊界一致） ---- */
+    function mergePass(lo, hi) {
+      if (lo === hi) return;
+      var mid0 = (lo + hi) >> 1;
+      mergePass(lo, mid0);
+      mergePass(mid0 + 1, hi);
+      mergeRange(lo, mid0, hi);
+    }
+
+    function mergeRange(lo, mid0, hi) {
+      merges++;
+      var i, j, s;
+      for (i = lo; i <= hi; i++) sortedFlags[i] = false;
+      push({
+        type: "mergestart", arr: clone(w), merging: [lo, hi], mcmp: [], mput: -1,
+        mBlocks: blocksCopy(), activeBlock: [lo, hi], sorted: sortedFlags.slice(),
+        stats: { compares: compares, merges: merges, range: "A[" + lo + ".." + hi + "]", size: hi - lo + 1 },
+        msg: "合併兩個已排序區塊：A[" + lo + ".." + mid0 + "] 與 A[" + (mid0 + 1) + ".." + hi + "]",
+        code: [5, 7], move: false
+      });
+      i = lo; j = mid0 + 1; var mid = mid0;
+      while (i <= mid && j <= hi) {
+        compares++;
+        push({
+          type: "mergecmp", arr: clone(w), merging: [lo, hi], mcmp: [i, j], mput: -1,
+          mBlocks: blocksCopy(), activeBlock: [lo, hi], sorted: sortedFlags.slice(),
+          stats: { compares: compares, merges: merges, range: "A[" + lo + ".." + hi + "]", size: hi - lo + 1 },
+          msg: "比較兩個區塊的開頭：A[" + i + "]＝" + w[i].value + " 與 A[" + j + "]＝" + w[j].value,
+          code: [8], move: false
+        });
+        if (w[i].value <= w[j].value) {
+          i++;
+        } else {
+          var moved = w[j].value;
+          for (s = j; s > i; s--) {
+            var t = w[s - 1]; w[s - 1] = w[s]; w[s] = t;
+            push({
+              type: "mergeshift", arr: clone(w), merging: [lo, hi], mcmp: [s - 1, s], mput: s,
+              mBlocks: blocksCopy(), activeBlock: [lo, hi], sorted: sortedFlags.slice(),
+              stats: { compares: compares, merges: merges, range: "A[" + lo + ".." + hi + "]", size: hi - lo + 1 },
+              msg: "較小的 " + moved + " 向左交換到位置 A[" + (s - 1) + "]",
+              code: [9], move: true
+            });
+          }
+          i++; j++; mid++;
+        }
+      }
+      for (i = lo; i <= hi; i++) sortedFlags[i] = true;
+      var pi = findPair(lo, mid0, hi);
+      if (pi >= 0) blocks = blocks.slice(0, pi).concat([[lo, hi]], blocks.slice(pi + 2));
+      push({
+        type: "mergedone", arr: clone(w), merging: null, mcmp: [], mput: -1,
+        mBlocks: blocksCopy(), activeBlock: [lo, hi], sorted: sortedFlags.slice(),
+        stats: { compares: compares, merges: merges, range: "A[" + lo + ".." + hi + "]", size: hi - lo + 1 },
+        msg: "區塊 A[" + lo + ".." + hi + "] 合併完成：[" +
+          w.slice(lo, hi + 1).map(function (o) { return o.value; }).join(" ") + "]",
+        code: [10], move: false
+      });
+    }
+
+    splitPass(0, n - 1);
+    mergePass(0, n - 1);
+    for (var x = 0; x < n; x++) sortedFlags[x] = true;
+    blocks = [[0, n - 1]];
+    steps.push({
+      type: "done", arr: clone(w), mergedone: null, mcmp: [], mput: -1,
+      mBlocks: blocksCopy(), activeBlock: null, sorted: sortedFlags.slice(),
+      stats: { compares: compares, merges: merges, range: "A[0.." + (n - 1) + "]", size: n },
+      msg: "完成！合併排序把資料依序排好了：" + w.map(function (o) { return o.value; }).join(", "),
+      code: [10], move: false
+    });
+    steps.forEach(function (s) { if (s.stats) s.stats.moves = merges; });
+    return steps;
+  }
+
+  /* ============================================================
+     Greedy Sort（教學型貪心排序法）step generator
+     每一步從「剩餘資料」中挑出目前看起來最好的（最小值），排到前面。
+     step 欄位：gscan（搜尋中）/gcand（候選）/gpick（貪心選擇）/gswap
+     ============================================================ */
+  function greedySteps(items) {
+    var w = clone(items), n = w.length, steps = [];
+    var sortedFlags = new Array(n).fill(false);
+    var compares = 0, swaps = 0, i, j;
+
+    function push(o) { steps.push(o); }
+
+    for (i = 0; i < n - 1; i++) {
+      var pass = i + 1, cand = i;
+
+      steps.push({
+        type: "gstart", arr: clone(w), gscan: i, gcand: i, gpick: -1, gswap: [],
+        sorted: sortedFlags.slice(),
+        stats: { pass: pass, candVal: w[i].value, bestVal: w[i].value, compares: compares, swaps: swaps },
+        msg: "第 " + pass + " 輪：先假設第一筆剩餘資料「" + w[i].value + "」目前看起來最好",
+        code: [1, 2], move: false
+      });
+
+      for (j = i + 1; j < n; j++) {
+        compares++;
+        steps.push({
+          type: "gscan", arr: clone(w), gscan: j, gcand: cand, gpick: -1, gswap: [],
+          sorted: sortedFlags.slice(),
+          stats: { pass: pass, candVal: w[cand].value, bestVal: w[cand].value, compares: compares, swaps: swaps },
+          msg: "搜尋中：掃描剩餘資料 A[" + j + "]＝" + w[j].value + "，目前最佳選擇是 " + w[cand].value,
+          code: [3, 4], move: false
+        });
+        if (w[j].value < w[cand].value) {
+          cand = j;
+          steps.push({
+            type: "gbetter", arr: clone(w), gscan: j, gcand: cand, gpick: -1, gswap: [],
+            sorted: sortedFlags.slice(),
+            stats: { pass: pass, candVal: w[cand].value, bestVal: w[cand].value, compares: compares, swaps: swaps },
+            msg: "發現「看起來更好」的候選：" + w[cand].value + "（A[" + cand + "]），更新選擇",
+            code: [5], move: false
+          });
+        }
+      }
+
+      steps.push({
+        type: "gchoose", arr: clone(w), gscan: -1, gcand: cand, gpick: cand, gswap: [],
+        sorted: sortedFlags.slice(),
+        stats: { pass: pass, candVal: w[cand].value, bestVal: w[cand].value, compares: compares, swaps: swaps },
+        msg: "貪心選擇：目前看起來最好的選擇是「" + w[cand].value + "」，把它放到下一個排序位置",
+        code: [6, 7], move: false
+      });
+
+      if (cand !== i) {
+        swaps++;
+        var a = w[i].value, b = w[cand].value;
+        var t = w[i]; w[i] = w[cand]; w[cand] = t;
+        steps.push({
+          type: "gswap", arr: clone(w), gscan: -1, gcand: -1, gpick: -1, gswap: [i, cand],
+          compare: [i, cand], sorted: sortedFlags.slice(),
+          stats: { pass: pass, candVal: w[i].value, bestVal: b, compares: compares, swaps: swaps },
+          msg: "把「" + b + "」換到位置 A[" + i + "]（原本是 " + a + "）",
+          code: [8], move: true
+        });
+      }
+
+      if (i === cand) {
+        steps.push({
+          type: "gkeep", arr: clone(w), gscan: -1, gcand: -1, gpick: -1, gswap: [],
+          sorted: sortedFlags.slice(),
+          stats: { pass: pass, candVal: w[i].value, bestVal: w[i].value, compares: compares, swaps: swaps },
+          msg: "「" + w[i].value + "」剛好就在正確位置，不需要交換，直接固定",
+          code: [8], move: false
+        });
+      }
+
+      sortedFlags[i] = true;
+      steps.push({
+        type: "gmark", arr: clone(w), gscan: -1, gcand: -1, gpick: -1, gswap: [],
+        sorted: sortedFlags.slice(),
+        stats: { pass: pass, candVal: null, bestVal: w[i].value, compares: compares, swaps: swaps },
+        msg: "第 " + pass + " 個已確定：位置 A[" + i + "]＝" + w[i].value + "（排進排序結果）",
+        code: [8], move: false
+      });
+    }
+
+    sortedFlags[n - 1] = true;
+    steps.push({
+      type: "done", arr: clone(w), gscan: -1, gcand: -1, gpick: -1, gswap: [],
+      sorted: sortedFlags.slice(),
+      stats: { pass: n, candVal: null, bestVal: w[n - 1].value, compares: compares, swaps: swaps },
+      msg: "完成！貪心排序從「目前看起來最好的」一路挑選，陣列已升冪排序：" +
+        w.map(function (o) { return o.value; }).join(", "),
+      code: [9], move: false
+    });
+    return steps;
+  }
+
+  /* ============================================================
      Rendering layer
      ============================================================ */
   var INTRO = "準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。";
@@ -249,7 +471,15 @@
     var key = st && st.key != null ? st.key : -1;
     var min = st && st.min != null ? st.min : -1;
     var cur = st && st.cur != null ? st.cur : -1;
-    var isMove = st && (st.type === "swap" || st.type === "shift");
+    var isMove = st && (st.type === "swap" || st.type === "shift" || st.type === "gswap");
+    var splitBlock = st && st.splitBlock ? st.splitBlock : null;
+    var merging = st && st.merging ? st.merging : null;
+    var mcmp = st && st.mcmp ? st.mcmp : [];
+    var mput = st && st.mput != null ? st.mput : -1;
+    var gscan = st && st.gscan != null ? st.gscan : -1;
+    var gcand = st && st.gcand != null ? st.gcand : -1;
+    var gpick = st && st.gpick != null ? st.gpick : -1;
+    function within(r, idx) { return r && idx >= r[0] && idx <= r[1]; }
     var existing = {};
     var kids = v.barsEl.children;
     for (var i = 0; i < kids.length; i++) existing[kids[i].getAttribute("data-id")] = kids[i];
@@ -273,7 +503,12 @@
       var compact = slot < 50;
       var badge = "";
       if (slot >= 30) {
-        if (cur === idx) badge = "位置";
+        if (gpick === idx) badge = compact ? "選擇" : "Greedy 選擇";
+        if (!badge && gcand === idx) badge = "候選";
+        if (!badge && gscan === idx) badge = compact ? "搜尋" : "搜尋中";
+        if (!badge && mcmp.indexOf(idx) !== -1) badge = compact ? "比較" : "比較中";
+        if (!badge && mput === idx) badge = compact ? "合併" : "合併中";
+        if (!badge && cur === idx) badge = "位置";
         if (!badge && min === idx) badge = compact ? "最小" : "最小值";
         if (!badge && key === idx) badge = "Key";
         if (!badge && compare.indexOf(idx) !== -1) badge = isMove ? (compact ? "交換" : "交換中") : (compact ? "比較" : "比較中");
@@ -283,12 +518,19 @@
       bm.style.display = badge ? "" : "none";
 
       el.classList.toggle("cmp", !isMove && compare.indexOf(idx) !== -1);
-      el.classList.toggle("mv", isMove && compare.indexOf(idx) !== -1);
+      el.classList.toggle("mv", (isMove && compare.indexOf(idx) !== -1) || (st && st.gswap && st.gswap.indexOf(idx) !== -1));
       el.classList.toggle("key", key === idx);
       el.classList.toggle("min", min === idx);
       el.classList.toggle("cur", cur === idx);
       el.classList.toggle("region", !!v.region[idx]);
       el.classList.toggle("sorted", !!v.sorted[idx]);
+      el.classList.toggle("split", within(splitBlock, idx));
+      el.classList.toggle("mrg", within(merging, idx));
+      el.classList.toggle("mcmp", mcmp.indexOf(idx) !== -1);
+      el.classList.toggle("mput", mput === idx);
+      el.classList.toggle("gseek", gscan === idx);
+      el.classList.toggle("gcand", gcand === idx);
+      el.classList.toggle("gpick", gpick === idx);
       el.setAttribute("aria-label", "第 " + (idx + 1) + " 支柱，數值 " + item.value + (badge ? "，" + badge : ""));
     }
   }
@@ -323,6 +565,20 @@
     }
   }
 
+  function updateMergePanel(v, st) {
+    if (!v.mergeEl) return;
+    v.mergeEl.innerHTML = "";
+    if (!st || !st.mBlocks) { v.mergeEl.textContent = "—"; return; }
+    st.mBlocks.forEach(function (b) {
+      var pill = document.createElement("span");
+      pill.className = "mrg-pill";
+      if (st.activeBlock && st.activeBlock[0] === b[0] && st.activeBlock[1] === b[1]) pill.classList.add("active");
+      var vals = st.arr.slice(b[0], b[1] + 1).map(function (o) { return o.value; }).join(" ");
+      pill.textContent = vals;
+      v.mergeEl.appendChild(pill);
+    });
+  }
+
   function applyStep(v, st) {
     v.last = st;
     v.view = st.arr;
@@ -337,6 +593,7 @@
       v.msgEl.classList.remove("done");
       v.msgEl.textContent = st.msg;
     }
+    updateMergePanel(v, st);
   }
 
   function waitForStep(delay, st) {
@@ -365,6 +622,7 @@
       codeEl: cfg.codeEl,
       statsEl: cfg.statsEl,
       arrEl: cfg.arrEl,
+      mergeEl: cfg.mergeEl || null,
       speedEl: cfg.speedEl,
       speedOut: cfg.speedOut,
       makeSteps: cfg.makeSteps,
@@ -392,6 +650,7 @@
       v.last = null;
       v.barsEl.innerHTML = "";
       render(v);
+      updateMergePanel(v, null);
       if (v.msgEl) { v.msgEl.classList.remove("done"); v.msgEl.textContent = INTRO; }
       setStats(v, null);
       updateStepInfo(v);
@@ -463,7 +722,9 @@
   var ALGO_META = {
     bubble: { name: "Bubble Sort", moveLabel: "交換" },
     selection: { name: "Selection Sort", moveLabel: "交換" },
-    insertion: { name: "Insertion Sort", moveLabel: "移動" }
+    insertion: { name: "Insertion Sort", moveLabel: "移動" },
+    merge: { name: "Merge Sort", moveLabel: "合併" },
+    greedy: { name: "Greedy Sort", moveLabel: "交換" }
   };
 
   var compare = {
@@ -500,7 +761,9 @@
       var makers = [
         { key: "bubble", fn: bubbleSteps },
         { key: "selection", fn: selectionSteps },
-        { key: "insertion", fn: insertionSteps }
+        { key: "insertion", fn: insertionSteps },
+        { key: "merge", fn: mergeSteps },
+        { key: "greedy", fn: greedySteps }
       ];
       compare.runners = makers.map(function (m) { return compare.buildRunner(m.key, m.fn); });
       compare.runners.forEach(function (r) {
@@ -693,10 +956,35 @@
       speedOut: $("#insertion-speed-out"),
       makeSteps: insertionSteps
     });
+    visualizers.merge = createVisualizer({
+      key: "merge",
+      barsEl: $("#merge-bars"),
+      msgEl: $("#merge-msg"),
+      codeEl: $("#merge-code"),
+      statsEl: $("#merge .stats"),
+      arrEl: $("#merge-arr"),
+      mergeEl: $("#merge-blocks"),
+      speedEl: $("#merge-speed"),
+      speedOut: $("#merge-speed-out"),
+      makeSteps: mergeSteps
+    });
+    visualizers.greedy = createVisualizer({
+      key: "greedy",
+      barsEl: $("#greedy-bars"),
+      msgEl: $("#greedy-msg"),
+      codeEl: $("#greedy-code"),
+      statsEl: $("#greedy .stats"),
+      arrEl: $("#greedy-arr"),
+      speedEl: $("#greedy-speed"),
+      speedOut: $("#greedy-speed-out"),
+      makeSteps: greedySteps
+    });
 
     wireSection("bubble");
     wireSection("selection");
     wireSection("insertion");
+    wireSection("merge");
+    wireSection("greedy");
 
     $("#data-count").addEventListener("input", function (e) {
       dataCount = +e.target.value;
@@ -725,6 +1013,8 @@
       bubbleSteps: bubbleSteps,
       selectionSteps: selectionSteps,
       insertionSteps: insertionSteps,
+      mergeSteps: mergeSteps,
+      greedySteps: greedySteps,
       generateArray: generateArray,
       makeItem: makeItem,
       clone: clone

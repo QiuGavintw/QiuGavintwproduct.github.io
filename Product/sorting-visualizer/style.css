@@ -259,6 +259,73 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); }
 .sw.min { background: linear-gradient(180deg, #fbbf24, var(--amber)); }
 .sw.done { background: linear-gradient(180deg, #4ade80, var(--green)); }
 .sw.cur { background: transparent; border: 2px dashed var(--accent); }
+/* Merge Sort 專屬 */
+.sw.split { background: linear-gradient(180deg, #c4b5fd, var(--violet)); }
+.sw.gcmp { background: linear-gradient(180deg, #fbbf24, var(--amber)); }
+.sw.mrg { background: linear-gradient(180deg, #60a5fa, var(--blue)); }
+/* Greedy Sort 專屬 */
+.sw.gseek { background: linear-gradient(180deg, #fde047, #f59e0b); }
+.sw.gcand { background: linear-gradient(180deg, #fbbf24, var(--amber)); }
+.sw.gpick { background: linear-gradient(180deg, #a78bfa, var(--violet)); }
+
+/* 教學型標示：Greedy 非單一標準定義 */
+.teach-pill {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 5px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 999px;
+}
+
+/* 合併排序：目前區塊面板 */
+.mrg-panel {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.mrg-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--blue);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.mrg-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 22px;
+  font-family: Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.mrg-pill {
+  display: inline-block;
+  padding: 2px 9px;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mrg-pill.active {
+  background: #eef2ff;
+  border-color: var(--violet);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.18);
+}
+.mrg-note {
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: var(--soft);
+}
 
 /* 各演算法專屬狀態（Key / 最小值）的小圖例 */
 .algo-legend {
@@ -362,7 +429,8 @@ main { max-width: 1080px; margin: 0 auto; padding: 12px 16px 48px; }
 /* ---------------- Bar states（色彩語意固定） ----------------
    🔵 比較中  🟣 交換中  🟠 最小值 / Key  🟢 已排序  ⚪ 未處理 */
 .bar.cmp { background: linear-gradient(180deg, #60a5fa, var(--blue)); transform: scale(1.14); z-index: 2; box-shadow: inset 0 -6px 10px rgba(15,23,42,.18), 0 0 16px rgba(37,99,235,.5); }
-.bar.cmp .bmark, .bar.mv .bmark, .bar.key .bmark, .bar.min .bmark, .bar.sorted .bmark { opacity: 1; }
+.bar.cmp .bmark, .bar.mv .bmark, .bar.key .bmark, .bar.min .bmark, .bar.sorted .bmark,
+.bar.split .bmark, .bar.mcmp .bmark, .bar.mput .bmark, .bar.gseek .bmark, .bar.gcand .bmark, .bar.gpick .bmark { opacity: 1; }
 .bar.cmp .bmark { background: var(--blue); }
 
 .bar.mv { background: linear-gradient(180deg, #a78bfa, var(--violet)); z-index: 2; box-shadow: inset 0 -6px 10px rgba(15,23,42,.18), 0 0 16px rgba(124,58,237,.55); }
@@ -380,6 +448,48 @@ main { max-width: 1080px; margin: 0 auto; padding: 12px 16px 48px; }
 .bar.sorted .bmark { background: var(--green); }
 
 .bar.region { background: linear-gradient(180deg, #5eead4, var(--teal)); opacity: 0.95; }
+
+/* ---------------- Merge Sort 狀態 ----------------
+   🟣 拆分中  🟠 比較中  🔵 合併中 */
+.bar.split { background: linear-gradient(180deg, #c4b5fd, var(--violet)); opacity: 0.95; z-index: 1; }
+.bar.split .bmark { background: var(--violet); }
+
+.bar.mrg { background: linear-gradient(180deg, #60a5fa, var(--blue)); opacity: 0.92; }
+.bar.mcmp {
+  background: linear-gradient(180deg, #fbbf24, var(--amber));
+  transform: scale(1.12);
+  z-index: 2;
+  box-shadow: inset 0 -6px 10px rgba(15, 23, 42, 0.15), 0 0 16px rgba(217, 119, 6, 0.5);
+}
+.bar.mcmp .bmark { background: var(--amber); color: #451a03; }
+
+.bar.mput {
+  background: linear-gradient(180deg, #93c5fd, var(--blue));
+  z-index: 2;
+  box-shadow: inset 0 0 0 3px rgba(37, 99, 235, 0.55);
+}
+.bar.mput .bmark { background: var(--blue); }
+
+/* ---------------- Greedy Sort 狀態 ----------------
+   🟡 搜尋中  🟠 候選  🟣 Greedy 選擇 */
+.bar.gseek { background: linear-gradient(180deg, #fde047, #f59e0b); opacity: 0.95; }
+.bar.gseek .bmark { background: #d97706; color: #fff7ed; }
+
+.bar.gcand {
+  background: linear-gradient(180deg, #fbbf24, var(--amber));
+  transform: scale(1.08);
+  z-index: 2;
+  box-shadow: inset 0 -6px 10px rgba(15, 23, 42, 0.15), 0 0 14px rgba(217, 119, 6, 0.5);
+}
+.bar.gcand .bmark { background: var(--amber); color: #451a03; }
+
+.bar.gpick {
+  background: linear-gradient(180deg, #a78bfa, var(--violet));
+  transform: scale(1.1);
+  z-index: 3;
+  box-shadow: inset 0 -6px 10px rgba(15, 23, 42, 0.15), 0 0 16px rgba(124, 58, 237, 0.55);
+}
+.bar.gpick .bmark { background: var(--violet); }
 
 /* ---------------- 目前操作 / toolbar ---------------- */
 .current-op { margin: 14px 0 12px; }
@@ -538,7 +648,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 12px 16px 48px; }
 
 .compare-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 }
 
@@ -560,6 +670,12 @@ main { max-width: 1080px; margin: 0 auto; padding: 12px 16px 48px; }
 .mini:nth-child(2) h3 { color: #b45309; }
 .mini:nth-child(3) { border-top-color: var(--blue); }
 .mini:nth-child(3) h3 { color: #1d4ed8; }
+.mini:nth-child(4) { border-top-color: var(--teal); }
+.mini:nth-child(4) h3 { color: #0f766e; }
+.mini:nth-child(5) { border-top-color: var(--violet); }
+.mini:nth-child(5) h3 { color: #6d28d9; }
+/* 2+2+1：第五個窗格橫跨整列 */
+.mini:last-child { grid-column: 1 / -1; }
 
 .mini-chart { position: relative; height: 150px; background: #f8fafc; border-radius: 8px; padding: 26px 3px 4px; }
 .mini-chart .bar .num { top: -20px; font-size: 10px; }

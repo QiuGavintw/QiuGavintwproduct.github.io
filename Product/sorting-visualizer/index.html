@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="排序演算法視覺化教學網站 - 用動畫看懂氣泡排序、選擇排序、插入排序">
-<title>排序演算法視覺化 | 用動畫看懂排序</title>
+<meta name="description" content="排序演算法視覺化教學網站 - 用動畫看懂氣泡排序、選擇排序、插入排序、合併排序、貪心排序">
+<title>排序演算法視覺化 | 用動畫看懂 5 種排序</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +15,8 @@
     <a href="#bubble">氣泡排序</a>
     <a href="#selection">選擇排序</a>
     <a href="#insertion">插入排序</a>
+    <a href="#merge">合併排序</a>
+    <a href="#greedy">貪心排序</a>
     <a href="#compare">比較模式</a>
     <a href="#complexity">複雜度</a>
   </nav>
@@ -23,12 +25,14 @@
 <header class="hero" id="hero">
   <div class="hero-inner">
     <h1>排序演算法視覺化</h1>
-    <p class="hero-sub">用動畫看懂排序演算法，從比較、交換到完成排序</p>
-    <p class="hero-tag">看見資料如何一步一步被排列整齊</p>
+    <p class="hero-sub">用動畫看懂 5 種排序演算法</p>
+    <p class="hero-tag">看見資料如何比較、交換、拆分與重新排列</p>
     <nav class="hero-btns" aria-label="快速導覽">
-      <a href="#bubble" class="btn heronav">氣泡排序</a>
-      <a href="#selection" class="btn heronav">選擇排序</a>
-      <a href="#insertion" class="btn heronav">插入排序</a>
+      <a href="#bubble" class="btn heronav">Bubble Sort</a>
+      <a href="#selection" class="btn heronav">Selection Sort</a>
+      <a href="#insertion" class="btn heronav">Insertion Sort</a>
+      <a href="#merge" class="btn heronav">Merge Sort</a>
+      <a href="#greedy" class="btn heronav">Greedy Sort</a>
     </nav>
   </div>
 </header>
@@ -37,7 +41,7 @@
   <div class="panel-head">
     <div class="panel-info">
       <h2 id="data-title">產生新資料</h2>
-      <p class="hint">三種演算法共用同一組資料，方便比較差異。</p>
+      <p class="hint">五種演算法共用同一組資料，方便公平比較差異。</p>
     </div>
     <label class="count-ctl" for="data-count">
       <span>資料數量：<output id="data-count-val" for="data-count">8</output></span>
@@ -254,14 +258,155 @@
     </div>
   </section>
 
+  <!-- ================= Merge Sort ================= -->
+  <section class="algo-card" id="merge" aria-labelledby="merge-title">
+    <header class="algo-head">
+      <span class="algo-tag">04</span>
+      <h2 id="merge-title">Merge Sort<span class="slash">｜</span>合併排序法</h2>
+    </header>
+    <p class="algo-intro">
+      先把資料不斷拆成更小的區塊，再把排序好的區塊重新合併。
+    </p>
+    <p class="algo-legend">本排序法狀態：<span class="lg"><i class="sw split"></i>拆分中</span><span class="lg"><i class="sw gcmp"></i>比較中</span><span class="lg"><i class="sw mrg"></i>合併中</span></p>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="merge-bars" role="img" aria-label="合併排序柱狀圖"></div></div>
+      <div class="mrg-panel">
+        <span class="mrg-tag">🧩 目前區塊</span>
+        <div class="mrg-blocks" id="merge-blocks" aria-live="polite">—</div>
+        <p class="mrg-note">拆分階段：區塊越切越細；合併階段：相鄰的已排序區塊結合成更大的已排序區塊。</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="merge-start" type="button">▶ 開始</button>
+        <button class="btn" id="merge-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="merge-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="merge-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="merge-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="merge-speed">
+        <span>慢</span>
+        <input type="range" id="merge-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="merge-speed-out" for="merge-speed">5</output>
+      </label>
+      <div class="current-op">
+        <span class="cop-tag">🔍 目前操作</span>
+        <p class="msg" id="merge-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</p>
+        <p class="cop-hint">按 ⏭ 下一步可以一格一格慢慢看「拆分」與「合併」</p>
+      </div>
+      <div class="stats">
+        <div class="chip"><span class="k">目前區塊</span><b data-f="range">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">合併次數</span><b data-f="merges">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="merge-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="merge-code" aria-label="合併排序偽程式碼">
+        <div class="line" data-line="0"><pre>function mergeSort(arr, lo, hi) {</pre></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;if (lo &gt;= hi) return;</pre><em class="cm">// ① 只剩一個元素就不用拆</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;let mid = Math.floor((lo + hi) / 2);</pre><em class="cm">// ② 拆成左右兩半</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;mergeSort(arr, lo, mid);</pre><em class="cm">// ③ 排序左半</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;mergeSort(arr, mid + 1, hi);</pre><em class="cm">// ④ 排序右半</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;merge(arr, lo, mid, hi);</pre><em class="cm">// ⑤ 合併兩個已排序區塊</em></div>
+        <div class="line" data-line="6"><pre>}</pre></div>
+        <div class="line" data-line="7"><pre>function merge(arr, lo, mid, hi) {</pre></div>
+        <div class="line" data-line="8"><pre>&nbsp;&nbsp;/* ⑥ 比較左右開頭，較小的先放 */</pre></div>
+        <div class="line" data-line="9"><pre>&nbsp;&nbsp;/* ⑦ 依序放回 [lo..hi]，完成合併 */</pre></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>先拆：把資料不斷切半，直到只剩單一元素</li>
+        <li>再合：合併兩個「已經排好」的區塊</li>
+        <li>比較兩個區塊的開頭，較小的先放入結果</li>
+        <li>最差時間複雜度穩定的 O(n log n)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Greedy Sort ================= -->
+  <section class="algo-card" id="greedy" aria-labelledby="greedy-title">
+    <header class="algo-head">
+      <span class="algo-tag">05</span>
+      <h2 id="greedy-title">Greedy Sort<span class="slash">｜</span>貪心排序法</h2>
+    </header>
+    <p class="algo-intro">
+      每一步從剩餘資料中挑出「目前看起來最好」的元素，逐步排出結果。
+    </p>
+    <p class="teach-pill">⚠️ 教學型 Greedy Sort 示範：貪心法並非唯一標準的排序演算法</p>
+    <p class="algo-legend">本排序法狀態：<span class="lg"><i class="sw gseek"></i>搜尋中</span><span class="lg"><i class="sw gcand"></i>候選</span><span class="lg"><i class="sw gpick"></i>Greedy 選擇</span><span class="lg"><i class="sw done"></i>已排序</span></p>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="greedy-bars" role="img" aria-label="貪心排序柱狀圖"></div></div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="greedy-start" type="button">▶ 開始</button>
+        <button class="btn" id="greedy-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="greedy-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="greedy-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="greedy-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="greedy-speed">
+        <span>慢</span>
+        <input type="range" id="greedy-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="greedy-speed-out" for="greedy-speed">5</output>
+      </label>
+      <div class="current-op">
+        <span class="cop-tag">🔍 目前操作</span>
+        <p class="msg" id="greedy-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</p>
+        <p class="cop-hint">按 ⏭ 下一步看看每一步如何「選出目前看起來最好」的元素</p>
+      </div>
+      <div class="stats">
+        <div class="chip"><span class="k">目前輪次</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前候選</span><b data-f="candVal">–</b></div>
+        <div class="chip"><span class="k">最佳選擇</span><b data-f="bestVal">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">交換次數</span><b data-f="swaps">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="greedy-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="greedy-code" aria-label="貪心排序偽程式碼">
+        <div class="line" data-line="0"><pre>let sortedResult = [];</pre><em class="cm">// 排序結果</em></div>
+        <div class="line" data-line="1"><pre>for (let i = 0; i &lt; n; i++) {</pre><em class="cm">// ① 每一輪挑一個</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;let best = 剩餘資料[0];</pre><em class="cm">// ② 先假設第一筆最好</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;for (let j = 1; j &lt; 剩餘長度; j++) {</pre><em class="cm">// ③ 掃描剩餘資料</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;if (剩餘資料[j] &lt; best) {</pre><em class="cm">// ④ 找到「目前看起來更好」的</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;best = 剩餘資料[j];</pre><em class="cm">// ⑤ 更新目前最佳選擇</em></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="8"><pre>&nbsp;&nbsp;sortedResult.push(best);</pre><em class="cm">// ⑥ 貪心選擇：排進結果</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 Greedy 是什麼？</h3>
+      <ul>
+        <li>「每一步先做出目前看起來最好的選擇。」</li>
+        <li>不必回頭考慮所有組合，只看當下最有利的選項</li>
+        <li>提醒：貪心法不代表每一個問題都能得到全域最佳答案</li>
+        <li>這個示範只是把「每次挑最小」延伸成一個教學型排序法</li>
+      </ul>
+    </div>
+  </section>
+
   <!-- ================= Compare mode ================= -->
   <section class="section-block" id="compare" aria-labelledby="compare-title">
-    <h2 id="compare-title">三種排序法一起比較</h2>
+    <h2 id="compare-title">五種排序法一起比較</h2>
     <p class="block-intro">
-      使用同一組資料（<output class="mono" id="compare-arr">[]</output>），同時觀看三種演算法的動畫，
-      觀察哪一個比較多次、交換多、最早完成。
+      使用同一組資料（<output class="mono" id="compare-arr">[]</output>），同時觀看五種演算法的動畫，
+      觀察哪一個比較多次、交換/合併多、最早完成。
     </p>
-    <p class="compare-note">使用相同資料，比較三種排序方法的操作效率</p>
+    <p class="compare-note">使用相同資料，比較五種排序方法的操作效率</p>
     <div class="compare-toolbar">
       <button class="btn btn-go" id="c-start" type="button">▶ 全部開始</button>
       <button class="btn" id="c-pause" type="button">⏸ 全部暫停</button>
@@ -279,7 +424,7 @@
     <div class="compare-grid">
       <article class="mini" aria-label="氣泡排序比較視窗">
         <h3>Bubble Sort</h3>
-        <div class="mini-chart"><div class="bars" id="cm-bubble"></div></div>
+        <div class="mini-chart"><div class="bars" id="cm-bubble" role="img" aria-label="氣泡排序比較柱狀圖"></div></div>
         <p class="mini-msg" id="cm-bubble-msg" aria-live="polite">等待開始…</p>
         <div class="mini-stats">
           <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
@@ -290,7 +435,7 @@
       </article>
       <article class="mini" aria-label="選擇排序比較視窗">
         <h3>Selection Sort</h3>
-        <div class="mini-chart"><div class="bars" id="cm-selection"></div></div>
+        <div class="mini-chart"><div class="bars" id="cm-selection" role="img" aria-label="選擇排序比較柱狀圖"></div></div>
         <p class="mini-msg" id="cm-selection-msg" aria-live="polite">等待開始…</p>
         <div class="mini-stats">
           <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
@@ -301,11 +446,33 @@
       </article>
       <article class="mini" aria-label="插入排序比較視窗">
         <h3>Insertion Sort</h3>
-        <div class="mini-chart"><div class="bars" id="cm-insertion"></div></div>
+        <div class="mini-chart"><div class="bars" id="cm-insertion" role="img" aria-label="插入排序比較柱狀圖"></div></div>
         <p class="mini-msg" id="cm-insertion-msg" aria-live="polite">等待開始…</p>
         <div class="mini-stats">
           <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
           <span class="chip"><span class="k">移動</span><b data-f="moves">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="合併排序比較視窗">
+        <h3>Merge Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-merge" role="img" aria-label="合併排序比較柱狀圖"></div></div>
+        <p class="mini-msg" id="cm-merge-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">合併</span><b data-f="merges">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="貪心排序比較視窗">
+        <h3>Greedy Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-greedy" role="img" aria-label="貪心排序比較柱狀圖"></div></div>
+        <p class="mini-msg" id="cm-greedy-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">交換</span><b data-f="swaps">0</b></span>
           <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
           <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
         </div>
@@ -325,8 +492,8 @@
 
   <!-- ================= Complexity table ================= -->
   <section class="section-block" id="complexity" aria-labelledby="complexity-title">
-    <h2 id="complexity-title">三種排序法比較</h2>
-    <p class="block-intro">以下複雜度是針對常見實作與條件的教學簡化表示，重點是理解三種演算法的差異。</p>
+    <h2 id="complexity-title">五種演算法比較</h2>
+    <p class="block-intro">以下複雜度是針對常見實作與條件的教學簡化表示，重點是理解五種演算法的差異。Greedy Sort 的數值依本教學示範的實作計算。</p>
     <div class="table-wrap">
       <table class="cmp-table">
         <thead>
@@ -336,6 +503,8 @@
           <tr><td><b>氣泡排序</b></td><td>相鄰比較與交換</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
           <tr><td><b>選擇排序</b></td><td>找出最小值</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
           <tr><td><b>插入排序</b></td><td>插入正確位置</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+          <tr><td><b>合併排序</b></td><td>拆分後合併</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td></tr>
+          <tr><td><b>貪心排序</b></td><td>每次挑目前最好</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
         </tbody>
       </table>
     </div>
@@ -344,9 +513,14 @@
       <p><b>O(n)</b>：資料增加一倍，大約就多做一倍的事情。</p>
       <p><b>O(n²)</b>：資料增加一倍，工作量可能增加到約四倍。</p>
       <p class="why-demo">10 個資料 → 約 100 次工作　｜　100 個資料 → 約 10,000 次工作</p>
+      <p><b>合併排序　O(n log n)：</b>先把資料一直切半，所以會有大約 log₂(n) 層；每一層都要處理 n 個資料，因此是 O(n log n)。</p>
+      <p class="why-demo">8 個資料 → 3 層（8→4→2→1）｜100 個資料 → 約 7 層，每層都處理全部資料</p>
+      <p><b>貪心排序　O(n²)：</b>依本示範的實作，每一輪都要把「剩下還沒排」的資料從頭到尾掃一遍找最小的：第一次看 n 個、第二次看 n−1 個、第三次看 n−2 個…全部加起來大約 n(n−1)/2，所以資料變兩倍，工作量變約四倍。</p>
+      <p class="why-demo">10 個資料 → 約 45 次比較　｜　100 個資料 → 約 4,950 次比較</p>
     </div>
     <div class="note-card">
-      <p><b>記憶小技巧：</b>三種演算法都是「比較型」排序，平均時間複雜度都是 O(n²)；若資料「接近排序完成」，氣泡排序與插入排序可以做到最佳時間 O(n)。</p>
+      <p><b>記憶小技巧：</b>比較型排序中，氣泡、選擇、插入、貪心平均都是 O(n²)；若資料「接近排序完成」，氣泡與插入可做到最佳 O(n)。合併排序不管資料怎麼排都是 O(n log n)，缺點是通常需要額外的暫存空間。</p>
+      <p><b>空間：</b>氣泡、選擇、插入、貪心（本示範實作）通常額外空間 O(1)；合併排序需要暫存左右兩半，額外空間 O(n)。</p>
     </div>
   </section>
 
@@ -355,7 +529,7 @@
 <footer>
   <p class="f-brand">排序演算法視覺化</p>
   <p class="f-text">透過視覺化理解演算法，讓抽象的程式邏輯變得看得見。</p>
-  <p class="f-algos">Bubble Sort · Selection Sort · Insertion Sort</p>
+  <p class="f-algos">Bubble Sort · Selection Sort · Insertion Sort · Merge Sort · Greedy Sort</p>
 </footer>
 
 <script src="script.js"></script>
