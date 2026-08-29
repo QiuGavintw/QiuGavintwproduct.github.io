@@ -160,7 +160,13 @@ const GameState = {
   GAME_OVER: 'gameover',
   CLEAR: 'clear',
   END: 'end',
-  HELP: 'help'
+  HELP: 'help',
+  /* Bonus｜潮間帶探索（獨立於主釣魚玩法的 Bonus 小遊戲） */
+  BONUS_MENU: 'bonus_menu',
+  BONUS_PLAY: 'bonus_play',
+  BONUS_CATCH: 'bonus_catch',
+  BONUS_ENCY: 'bonus_ency',
+  BONUS_END: 'bonus_end'
 };
 
 /* --- 隨機與數學工具 --- */
@@ -196,7 +202,8 @@ function saveState(state) {
       totalCatch: state.totalCatch,
       levelIndex: state.levelIndex,
       oceanCleaned: state.oceanCleaned || 0,
-      achievements: state.achievements || {}
+      achievements: state.achievements || {},
+      bonusEncyclopedia: state.bonusEncyclopedia || {}   /* Bonus 潮間帶圖鑑（獨立於主圖鑑） */
     }));
   } catch (e) { /* 忽略寫入錯誤 */ }
 }
@@ -3004,6 +3011,8 @@ class Game {
     /* 海洋保育：累計清除物件數 + 成就紀錄（id/category/name/description/unlocked/progress） */
     this.oceanCleaned = save.oceanCleaned || 0;
     this.achievements = save.achievements || {};
+    /* Bonus 潮間帶圖鑑：獨立於主圖鑑（encyclopedia），向下相容（舊存檔無此欄位→空物件） */
+    this.bonusEncyclopedia = save.bonusEncyclopedia || {}
     /* 橫幅佇列（成就解鎖 / 海洋保育提示；自動消失、不阻塞遊戲） */
     this.banners = [];
 
@@ -3066,6 +3075,9 @@ class Game {
     this.fsFade = 0;              // 全螢幕切換淡入動畫
     this.boatShake = 0;           // 收穫時船隻晃動強度
     this.camShake = 0;            // 相機震動（噴墨/逃離）
+
+    /* Bonus：潮間帶探索（獨立物件，Game 僅負責狀態/存檔/研究點/dispatch） */
+    this.bonus = new BonusGame(this);
   }
 
   /* ---------- 關卡初始化 ---------- */
@@ -3266,7 +3278,8 @@ class Game {
   isModal() {
     return this.state === 'card' || this.state === 'choice' || this.state === 'shop' ||
       this.state === 'settings' || this.state === 'help' || this.state === 'encyclopedia' ||
-      this.state === 'end' || this.state === 'paused' || this.state === 'test';
+      this.state === 'end' || this.state === 'paused' || this.state === 'test' ||
+      this.state === 'bonus_catch' || this.state === 'bonus_ency' || this.state === 'bonus_end';
   }
 
   /* ---------- 主更新迴圈 ---------- */
@@ -3320,6 +3333,7 @@ class Game {
     switch (this.state) {
       case 'play': this.updatePlay(dt); break;
       case 'menu': this.updateMenu(dt); break;
+      case 'bonus_play': this.bonus.update(dt); break;
     }
     Sfx.seagull();
   }
@@ -3889,6 +3903,11 @@ class Game {
       case 'paused': this.drawPauseMenu(); break;
       case 'achievements': this.drawAchievements(); break;
       case 'test': this.drawTestMode(); break;
+      case 'bonus_menu': this.bonus.drawMenu(); break;
+      case 'bonus_play': this.bonus.drawPlay(); break;
+      case 'bonus_catch': this.bonus.drawCatch(); break;
+      case 'bonus_ency': this.bonus.drawEncyclopedia(); break;
+      case 'bonus_end': this.bonus.drawEnd(); break;
     }
     /* 測試模式：遊玩中顯示測試工具列 + Debug Panel */
     if (this.state === 'play' && this.test.active) {
@@ -4212,6 +4231,11 @@ drawHUD() {
     this.buttons = [];
     Sfx.click();
   }
+  /* Bonus｜潮間帶探索：從主選單進入 Bonus 主選單 */
+  openBonus() {
+    if (this.bonus) this.bonus.openMenu();
+    else this.toast('Bonus 尚未載入', 2);
+  }
   drawEncyclopedia() {
     /* 半透明覆蓋讓文字清晰 */
     ctx.fillStyle = 'rgba(4,20,34,0.5)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
@@ -4405,27 +4429,28 @@ drawHUD() {
     /* 中央透明面板 */
     ctx.fillStyle = 'rgba(4,20,34,0.35)';
     ctx.fillRect(0, 0, CFG.W, CFG.H);
-    const fl = new UIFlow(0, 120, CFG.W, { pad: 0 });
+    const fl = new UIFlow(0, 82, CFG.W, { pad: 0 });
     /* 標題 */
     ctx.save(); glow('#7ef0ff', 20);
-    fl.text('澎湖頭足探險', { size: 46, bold: true, color: '#eaf9ff', align: 'center', maxW: CFG.W, lh: 60 });
+    fl.text('澎湖頭足探險', { size: 44, bold: true, color: '#eaf9ff', align: 'center', maxW: CFG.W, lh: 54 });
     ctx.restore();
-    fl.text('Penghu Cephalopod Explorer', { size: 18, bold: true, color: '#7ef0ff', align: 'center', maxW: CFG.W, lh: 26 });
-    fl.text('「探索澎湖海域，認識頭足世界」', { size: 16, color: '#cfe9ff', align: 'center', maxW: CFG.W, lh: 24 });
+    fl.text('Penghu Cephalopod Explorer', { size: 16, bold: true, color: '#7ef0ff', align: 'center', maxW: CFG.W, lh: 21 });
+    fl.text('「探索澎湖海域，認識頭足世界」', { size: 14, color: '#cfe9ff', align: 'center', maxW: CFG.W, lh: 19 });
 
     /* 徽章與統計 */
     const testActive = this.test && this.test.active;
     const encyCount = testActive ? SPECIES.length : Object.keys(this.encyclopedia).length;
-    fl.gap(6);
-    fl.text((testActive ? '🧪 測試模式　' : '') + '圖鑑 ' + encyCount + '/' + SPECIES.length + '　研究點 ' + this.testPointsText() + '　保育點 ' + this.conserve + '　徽章 ' + this.badges.length, { size: 15, color: '#e6c7ff', align: 'center', maxW: CFG.W, lh: 22 });
+    fl.gap(3);
+    fl.text((testActive ? '🧪 測試模式　' : '') + '圖鑑 ' + encyCount + '/' + SPECIES.length + '　研究點 ' + this.testPointsText() + '　保育點 ' + this.conserve + '　徽章 ' + this.badges.length, { size: 13, color: '#e6c7ff', align: 'center', maxW: CFG.W, lh: 18 });
 
-    /* 按鈕（由 Flow 提供垂直間距） */
+    /* 主要按鈕：標題→間距→按鈕群 建立垂直層級；bh < bgap 保持不重疊，尾端與底部功能列保有間距 */
     this.buttons = [];
-    const bw = 260, bh = 48, by0 = fl.cursor + 14, bgap = 54;
+    const bw = 260, bh = 46, by0 = fl.cursor + 16, bgap = 56;
     this.addBtn('▶　開始研究探險', CFG.W / 2 - bw / 2, by0, bw, bh, () => { this.startLevel(this.levelIndex); Sfx.click(); }, '#2a8f4a');
     this.addBtn('澎湖頭足圖鑑', CFG.W / 2 - bw / 2, by0 + bgap, bw, bh, () => this.openEncyclopedia(), '#6a4fa0');
-    this.addBtn('澎湖海洋研究中心（商店）', CFG.W / 2 - bw / 2, by0 + bgap * 2, bw, bh, () => this.openShop(), '#1d6fa5');
-    this.addBtn('研究員手冊（玩法說明）', CFG.W / 2 - bw / 2, by0 + bgap * 3, bw, bh, () => { this.state = 'help'; Sfx.click(); }, '#3a5a8a');
+    this.addBtn('🌊 BONUS｜潮間帶探索', CFG.W / 2 - 150, by0 + bgap * 2, 300, bh, () => this.openBonus(), '#1d7a6a');
+    this.addBtn('澎湖海洋研究中心（商店）', CFG.W / 2 - bw / 2, by0 + bgap * 3, bw, bh, () => this.openShop(), '#1d6fa5');
+    this.addBtn('研究員手冊（玩法說明）', CFG.W / 2 - bw / 2, by0 + bgap * 4, bw, bh, () => { this.state = 'help'; Sfx.click(); }, '#3a5a8a');
     this.addBtn('⚙ 設定', CFG.W / 2 - 240, CFG.H - 100, 160, 40, () => { this.state = 'settings'; Sfx.click(); }, '#44505a');
     this.addBtn('🏆 成就', CFG.W / 2 - 80, CFG.H - 100, 160, 40, () => { this.state = 'achievements'; Sfx.click(); }, '#8a6a2a');
     this.addBtn('⛶ 全螢幕：' + (isFullscreen() || this.fsPref ? '開' : '關'), CFG.W / 2 + 80, CFG.H - 100, 160, 40, () => this.toggleFullscreen(), '#1d6fa5');
@@ -4752,9 +4777,13 @@ drawHUD() {
   onMouseDown(x, y) {
     this.mouse.x = x; this.mouse.y = y; this.mouse.down = true;
     Sfx.init(); Sfx.resume();
+    /* Bonus 遊玩：按住型觸控按鈕（←/→/抓取） */
+    if (this.state === 'bonus_play' && this.bonus) this.bonus.onPointerDown(x, y);
   }
   onMouseUp(x, y) {
     this.mouse.x = x; this.mouse.y = y;
+    /* Bonus 遊玩：解除按住型觸控按鈕 */
+    if (this.state === 'bonus_play' && this.bonus) this.bonus.onPointerUp(x, y);
     /* 處理按鈕點擊（disabled / purchased 不可點擊） */
     for (const b of this.buttons) {
       if (this.hitButton(b)) {
@@ -4780,7 +4809,13 @@ drawHUD() {
       else if (this.state === 'card' && this.cardData) { this.cardData = null; this.state = 'play'; }
       else if (this.state === 'choice' && this.pendingCatch) { this.chooseDefault(); }
       else if (this.state === 'paused') { this.resumeGame(); }
+      else if (this.state === 'bonus_play' && this.bonus) { this.bonus.grab(); Sfx.click(); }
     }
+  }
+  /* Bonus 方向鍵：←/→ 或 A/D 移動（按住），↓/S 抓取（於 BonusGame.onKey 處理） */
+  onBonusKey(code, down) {
+    if (this.state !== 'bonus_play' || !this.bonus) return;
+    this.bonus.onKey(code, down);
   }
   chooseDefault() {
     /* 預設：帶回研究（教育引導） */
@@ -5155,6 +5190,676 @@ function shadeHex(hex, f) {
 }
 
 /* ============================================================
+   [模組 11.5] BONUS｜潮間帶探索
+   ── 獨立於主釣魚玩法的 Bonus 小遊戲 ──
+   玩家在潮間帶上方左右移動，向下伸抓取工具捕捉潮間帶生物。
+   · 首抓    → 解鎖「潮間帶圖鑑」並顯示發現卡
+   · 重複抓   → 可選擇是否兌換研究點（與主遊戲共用 game.points）
+   Bonus 圖鑑（game.bonusEncyclopedia）與主頭足類圖鑑（encyclopedia）完全分離。
+   ※ 物種中文名／學名：本階段為「暫定資料」，尚未正式確認；
+     定版前請與領域專家核對（見 #032 紀錄），僅供教學展示用。
+   ============================================================ */
+const BONUS_REDEEM = {
+  1: { first: 0, dup: 1 },   // 普通：首抓獎勵極少，重複兌換少
+  2: { first: 1, dup: 3 },   // 少見
+  3: { first: 1, dup: 5 }    // 稀有
+};
+const BONUS_SESSION = { time: 60, maxCatch: 14, maxActive: 4, spawnMin: 1.2, spawnMax: 2.6, speed: 260 };
+const BONUS_GRAB = { range: { 1: 22, 2: 20, 3: 18 }, escape: { 1: 0.10, 2: 0.28, 3: 0.46 }, contact: 13 };
+const BONUS_GRAB_REACH = 145;   // 抓取工具最大延伸（px）
+const BONUS_TOOL_Y = 402;       // 抓取工具起點 Y（玩家手部）
+const BONUS_PLAYER_Y = 418;     // 玩家站立基準線 Y
+const BONUS_NET_RING = 16;      // 長柄撈網網頭半徑（網頭中心 = 工具末端）
+/* 依生物型態（type）微調逃脫率：螃蟹會左右掙扎、彈塗魚難抓、海參/海星/海膽較易入網 */
+const BONUS_ESCAPE_MOD = { crab: 0.06, fish: 0.16, cuke: -0.05, star: -0.06, urchin: -0.05, hermit: 0.02 };
+
+const BONUS_SPECIES = [
+  { id: 'crab',        cn: '鋸緣青蟳',     latin: 'Scylla serrata',         type: 'crab',  rarity: 2, difficulty: 2, move: 'crab',  habitat: '泥灘・紅樹林', researchValue: 6, color: '#3a8440', fact: '俗稱沙蟳／紅蟳，螯足有深綠網紋，藏身泥灘洞穴。' },
+  { id: 'hermit',      cn: '寄居蟹',       latin: 'Calcinus laevimanus',    type: 'hermit', rarity: 1, difficulty: 1, move: 'slow', habitat: '潮池邊緣・礁石縫', researchValue: 3, color: '#d08a4a', fact: '腹部柔軟，需揹著螺殼當家，動作迅速。' },
+  { id: 'oyster',      cn: '黑齒牡蠣',     latin: 'Saccostrea mordax',      type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁・潮池壁', researchValue: 2, color: '#cfc3b0', fact: '固著在岩壁上，殼緣波浪狀，退潮緊閉防失水。' },
+  { id: 'limpet',      cn: '笠螺',         latin: 'Cellana spp.',           type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁高潮帶', researchValue: 2, color: '#9aa97a', fact: '腹足吸附力強，殼面低平，可抵擋海浪衝擊。' },
+  { id: 'urchin',      cn: '馬糞海膽',     latin: 'Tripneustes gratilla',   type: 'urchin', rarity: 2, difficulty: 2, move: 'slow', habitat: '珊瑚淺坪・潮池', researchValue: 5, color: '#6a56a8', fact: '全身棘刺與管足，海藻與碎屑為食。' },
+  { id: 'star',        cn: '飛白楓海星',   latin: 'Archaster typicus',      type: 'star',  rarity: 2, difficulty: 2, move: 'slow', habitat: '泥沙潮間帶', researchValue: 5, color: '#e0914a', fact: '以管足吸附移動，具再生能力。' },
+  { id: 'seacucumber', cn: '蕩皮參',       latin: 'Holothuria leucospilota', type: 'cuke', rarity: 1, difficulty: 2, move: 'slow', habitat: '礁岩・潮池', researchValue: 4, color: '#6a5a4a', fact: '底棲清道夫，受擾時可能排出黏液或內臟禦敵。' },
+  { id: 'mudskipper',  cn: '彈塗魚',       latin: 'Periophthalmus spp.',    type: 'fish',  rarity: 3, difficulty: 3, move: 'jump', habitat: '泥灘', researchValue: 6, color: '#7a9a5a', fact: '可離水存活與彈跳，鰓腔儲水呼吸。' }
+];
+
+class BonusGame {
+  constructor(game) {
+    this.game = game;
+    this.mode = 'menu';            // menu / play / reveal / encyclopedia / end
+    this.creatures = [];
+    this.spawnTimer = 0;
+    this.playerX = CFG.W / 2;
+    this.face = 1;
+    this.keys = { left: false, right: false };
+    this.press = { left: false, right: false, grab: false };
+    this.grabState = 'idle';       // idle / down / grabbing / return
+    this.grabExtend = 0;
+    this.grabStruggle = 0;        // 生物入網掙扎動畫計時
+    this.grabTarget = null;
+    this.grabResult = null;
+    this.reach = BONUS_GRAB_REACH;
+    this.touchRects = [];
+    this.session = { time: 0, catch: 0, new: 0, dup: 0, points: 0 };
+    this.catchState = null;
+    this.encyPage = 0;
+    this.hint = 0;
+    this.paused = false;          // 暫停：計時器/生物/移動/抓取全部凍結
+    this.species = BONUS_SPECIES;
+  }
+
+  /* ---------- 狀態／導覽 ---------- */
+  isDiscovered(id) { return !!this.game.bonusEncyclopedia[id]; }
+  openMenu() { this.mode = 'menu'; this.game.state = 'bonus_menu'; this.game.buttons = []; Sfx.click(); }
+  openEncyclopedia() { this.mode = 'encyclopedia'; this.encyPage = 0; this.game.state = 'bonus_ency'; this.game.buttons = []; Sfx.click(); }
+  goMenu() { Sfx.click(); this.openMenu(); }
+  goHome() { this.mode = 'menu'; this.game.state = 'menu'; this.game.buttons = []; Sfx.click(); }
+
+  /* ---------- Pause / Resume / Restart（#22） ---------- */
+  pause() { if (this.mode !== 'play' || this.paused) return; this.paused = true; this.touchRects = []; Sfx.click(); }
+  resume() { if (this.mode !== 'play' || !this.paused) return; this.paused = false; Sfx.click(); }
+  togglePause() { if (this.paused) this.resume(); else this.pause(); }
+  /* Restart：只重置本場資料（session/生物/計時器），不清除 bonusEncyclopedia 與 game.points */
+  restartSession() { this.startSession(); }
+
+  startSession() {
+    this.mode = 'play';
+    this.creatures = [];
+    this.spawnTimer = 0.6;
+    this.playerX = CFG.W / 2;
+    this.face = 1;
+    this.keys.left = false; this.keys.right = false;
+    this.press.left = false; this.press.right = false; this.press.grab = false;
+    this.grabState = 'idle'; this.grabExtend = 0; this.grabStruggle = 0; this.grabTarget = null;
+    this.session = { time: BONUS_SESSION.time, catch: 0, new: 0, dup: 0, points: 0 };
+    this.paused = false;
+    for (let i = 0; i < 3; i++) this.spawnCreature();
+    this.game.state = 'bonus_play';
+    this.game.buttons = [];
+    Sfx.click();
+  }
+
+  /* ---------- 生物生成（測試可用 spawnSpecies* 精準放置） ---------- */
+  makeCreature(sp, x, y, originX, dir) {
+    return { spec: sp, x, y, originX, baseY: y, dir, phase: 0, active: true };
+  }
+  spawnCreature() {
+    const r = Math.random();
+    const rarity = r < 0.6 ? 1 : (r < 0.9 ? 2 : 3);
+    const pool = BONUS_SPECIES.filter(s => s.rarity === rarity);
+    const sp = (pool.length ? pool[Math.floor(Math.random() * pool.length)] : pick(BONUS_SPECIES));
+    const x = rand(80, CFG.W - 80);
+    const y = rand(446, 520);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    this.creatures.push(this.makeCreature(sp, x, y, x, dir));
+  }
+  clearCreatures() { this.creatures = []; }
+  spawnSpecies(sp) { const c = this.makeCreature(sp, rand(80, CFG.W - 80), rand(446, 520), 0, 1); this.creatures.push(c); return c; }
+  spawnSpeciesAt(sp, x, y) { const c = this.makeCreature(sp, x, y, x, 1); this.creatures.push(c); return c; }
+
+  /* ---------- 輸入 ---------- */
+  onKey(code, down) {
+    if (code === 'ArrowLeft' || code === 'KeyA') this.keys.left = down;
+    else if (code === 'ArrowRight' || code === 'KeyD') this.keys.right = down;
+    else if ((code === 'ArrowDown' || code === 'KeyS') && down) this.triggerGrab();
+  }
+  grab() { this.triggerGrab(); }
+  triggerGrab() {
+    if (this.mode !== 'play' || this.paused || this.grabState !== 'idle') return;
+    this.grabState = 'down';
+    this.grabExtend = 0;
+    this.grabStruggle = 0;
+    this.grabTarget = null;
+    Sfx.drop();
+  }
+  move(dir) {
+    this.press.left = dir < 0;
+    this.press.right = dir > 0;
+  }
+  getMoveDir() {
+    let d = 0;
+    if (this.keys.left || this.press.left) d -= 1;
+    if (this.keys.right || this.press.right) d += 1;
+    return d;
+  }
+  onPointerDown(x, y) {
+    for (const r of this.touchRects) {
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        if (r.id === 'left') this.press.left = true;
+        else if (r.id === 'right') this.press.right = true;
+        else if (r.id === 'grab') { this.press.grab = true; this.triggerGrab(); }
+      }
+    }
+  }
+  onPointerUp() {
+    this.press.left = false; this.press.right = false; this.press.grab = false;
+  }
+
+  /* ---------- 更新 ---------- */
+  update(dt) {
+    if (this.mode !== 'play') return;
+    if (this.paused) return;   // 暫停：計時器/生物/移動/生成全部凍結
+    this.session.time -= dt;
+    if (this.session.time <= 0) { this.session.time = 0; this.endSession(); return; }
+    const dir = this.getMoveDir();
+    if (dir !== 0) {
+      this.playerX = clamp(this.playerX + dir * BONUS_SESSION.speed * dt, 40, CFG.W - 40);
+      this.face = dir;
+    }
+    this.updateGrab(dt);
+    for (const c of this.creatures) this.updateCreature(c, dt);
+    this.spawnTimer -= dt;
+    if (this.spawnTimer <= 0 && this.creatures.length < BONUS_SESSION.maxActive) {
+      this.spawnCreature();
+      this.spawnTimer = rand(BONUS_SESSION.spawnMin, BONUS_SESSION.spawnMax);
+    }
+    if (this.hint > 0) this.hint -= dt;
+  }
+  updateGrab(dt) {
+    const GRAB_SPEED = 280;
+    if (this.grabState === 'down') {
+      /* 撈網沿人物位置向下伸，逐幀偵測網頭是否「實際碰到」生物 */
+      this.grabExtend = Math.min(this.reach, this.grabExtend + GRAB_SPEED * dt);
+      const caught = this.evaluateGrab();
+      if (caught) {
+        caught.active = false;       /* 生物進網，不再獨立於場景 */
+        this.grabTarget = caught;
+        this.grabStruggle = 0;
+        this.grabState = 'grabbing'; /* 入網 → 撈網帶起生物準備收回 */
+        Sfx.catchPop();
+      } else if (this.grabExtend >= this.reach) {
+        this.grabState = 'return';   /* 撈網碰到最低點仍沒碰到生物 → 空手收回 */
+        this.hint = 1.2;
+        Sfx.miss();
+      }
+    } else if (this.grabState === 'grabbing') {
+      /* 撈網連同生物一起上升收回（生物輕微掙扎） */
+      this.grabExtend = Math.max(40, this.grabExtend - GRAB_SPEED * dt);
+      this.grabStruggle += dt;
+      if (this.grabExtend <= 40) {
+        const sp = this.grabTarget.spec;
+        this.creatures = this.creatures.filter(c => c !== this.grabTarget);
+        this.grabTarget = null;
+        this.grabState = 'idle'; this.grabExtend = 0;
+        this.completeCatch(sp);
+      }
+    } else if (this.grabState === 'return') {
+      this.grabExtend = Math.max(0, this.grabExtend - GRAB_SPEED * dt);
+      if (this.grabExtend <= 0) { this.grabState = 'idle'; this.grabExtend = 0; }
+    }
+  }
+  updateCreature(c, dt) {
+    if (!c.active) return;
+    const m = c.spec.move;
+    if (m === 'fixed') return;
+    if (m === 'crab') {
+      c.x += c.dir * 40 * dt;
+      if (c.x < c.originX - 42 || c.x > c.originX + 42) c.dir *= -1;
+      c.x = clamp(c.x, 20, CFG.W - 20);
+    } else if (m === 'jump') {
+      c.x += c.dir * 60 * dt;
+      if (c.x < c.originX - 34 || c.x > c.originX + 34) c.dir *= -1;
+      c.phase += dt;
+      const jp = Math.sin(c.phase * 3.5);
+      c.y = c.baseY - Math.max(0, jp) * 26;
+      c.x = clamp(c.x, 20, CFG.W - 20);
+    } else { /* slow */
+      c.phase += dt;
+      c.x = clamp(c.originX + Math.sin(c.phase * 0.8) * 26, 20, CFG.W - 20);
+    }
+  }
+  evaluateGrab() {
+    /* 網頭中心 = 工具末端。生物必須位在撈網頭「實際涵蓋」範圍內才算碰到：
+       水平在撈網寬度內、且其 Y 與當前網頭 Y 差距小於網頭接觸帶。 */
+    const tipY = BONUS_TOOL_Y + this.grabExtend;
+    let best = null, bestD = 1e9;
+    for (const c of this.creatures) {
+      if (!c.active) continue;
+      const dx = Math.abs(c.x - this.playerX);
+      const range = BONUS_GRAB.range[c.spec.difficulty] || 30;
+      if (dx > range) continue;
+      if (Math.abs(c.y - tipY) > BONUS_GRAB.contact) continue;
+      const esc = this.effectiveEscape(c.spec);
+      if (Math.random() < esc) continue;
+      if (dx < bestD) { bestD = dx; best = c; }
+    }
+    return best;
+  }
+  /* 依生物型態微調逃生率（螃蟹會甩、彈塗魚難撈、濕滑海參/海星/海膽較易入網） */
+  effectiveEscape(sp) {
+    const base = BONUS_GRAB.escape[sp.difficulty] || 0;
+    const mod = (sp.type && BONUS_ESCAPE_MOD[sp.type]) || 0;
+    return clamp(base + mod, 0, 0.8);
+  }
+  completeCatch(sp) {
+    const isNew = !this.isDiscovered(sp.id);
+    this.catchState = { sp, isNew, resolved: false };
+    this.session.catch++;
+    if (isNew) this.session.new++; else this.session.dup++;
+    this.mode = 'reveal';
+    this.game.state = 'bonus_catch';
+    this.game.buttons = [];
+    if (isNew) Sfx.unlockJingle(); else Sfx.coin();
+  }
+  applyReward(g) {
+    if (g > 0) { this.session.points += g; this.game.addPoints(g); Sfx.coin(); }
+  }
+  confirmNew() {
+    const cs = this.catchState;
+    if (!cs || cs.resolved) return;
+    cs.resolved = true;
+    const sp = cs.sp;
+    if (this.game.bonusEncyclopedia[sp.id]) this.game.bonusEncyclopedia[sp.id]++;
+    else this.game.bonusEncyclopedia[sp.id] = 1;
+    this.applyReward(BONUS_REDEEM[sp.rarity].first);
+    this.returnToPlay();
+  }
+  confirmKeep() {
+    const cs = this.catchState;
+    if (!cs || cs.resolved) return;
+    cs.resolved = true;
+    const sp = cs.sp;
+    this.game.bonusEncyclopedia[sp.id] = (this.game.bonusEncyclopedia[sp.id] || 0) + 1;
+    this.returnToPlay();
+  }
+  confirmRedeem() {
+    const cs = this.catchState;
+    if (!cs || cs.resolved) return;
+    cs.resolved = true;
+    const sp = cs.sp;
+    this.game.bonusEncyclopedia[sp.id] = (this.game.bonusEncyclopedia[sp.id] || 0) + 1;
+    this.applyReward(BONUS_REDEEM[sp.rarity].dup);
+    this.returnToPlay();
+  }
+  returnToPlay() {
+    this.grabState = 'idle'; this.grabExtend = 0;
+    this.mode = 'play';
+    this.game.state = 'bonus_play';
+    this.game.buttons = [];
+    Sfx.click();
+  }
+  endSession() {
+    this.mode = 'end';
+    this.game.state = 'bonus_end';
+    this.game.buttons = [];
+    if (this.session.dup > 0) Sfx.researchChime(); else Sfx.click();
+  }
+
+  /* ---------- 繪製：場景 ---------- */
+  drawBackground() {
+    ctx.fillStyle = '#8fd0ef'; ctx.fillRect(0, 0, CFG.W, 600);
+    ctx.fillStyle = '#fff3b0';
+    ctx.beginPath(); ctx.arc(820, 70, 34, 0, 7); ctx.fill();
+    const gg = ctx.createLinearGradient(0, 180, 0, 400);
+    gg.addColorStop(0, '#7ec8e8'); gg.addColorStop(1, '#c8eef8');
+    ctx.fillStyle = gg; ctx.fillRect(0, 180, CFG.W, 220);
+    ctx.fillStyle = '#e7d9a8'; ctx.fillRect(0, 400, CFG.W, 140);
+    ctx.fillStyle = 'rgba(180,160,110,0.5)';
+    for (let i = 0; i < 26; i++) {
+      const x = (i * 37) % 960, y = 416 + (i * 23) % 110, r = 6 + (i % 4) * 4;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = '#d8c69a'; ctx.fillRect(0, 520, CFG.W, 80);
+    ctx.fillStyle = '#b7a175';
+    ctx.beginPath(); ctx.moveTo(0, 600);
+    for (let x = 0; x <= 960; x += 40) ctx.lineTo(x, 600 - ((Math.sin(x * 0.02) + 1) * 10));
+    ctx.lineTo(960, 600); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(10,40,50,0.35)'; ctx.fillRect(0, 548, CFG.W, 52);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, 548); ctx.lineTo(CFG.W, 548); ctx.stroke();
+  }
+  drawTouchButtons() {
+    const yBtn = 554, btnH = 44;
+    let b = { id: 'left',  x: 30,  y: yBtn, w: 130, h: btnH };
+    this.touchRects = [b];
+    this.drawTouchBtn('◀', b.x, b.y, b.w, b.h, this.press.left, '#1d6fa5');
+    b = { id: 'grab',  x: CFG.W / 2 - 75, y: yBtn, w: 150, h: btnH };
+    this.touchRects.push(b);
+    this.drawTouchBtn('抓取', b.x, b.y, b.w, b.h, this.press.grab, '#2a8f4a');
+    b = { id: 'right', x: CFG.W - 160, y: yBtn, w: 130, h: btnH };
+    this.touchRects.push(b);
+    this.drawTouchBtn('▶', b.x, b.y, b.w, b.h, this.press.right, '#1d6fa5');
+  }
+  drawTouchBtn(label, x, y, w, h, pressed, color) {
+    ctx.save();
+    ctx.globalAlpha = pressed ? 0.85 : 0.95;
+    ctx.fillStyle = pressed ? shadeHex(color, 0.6) : color;
+    roundRect(x, y, w, h, 10); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = 'bold 16px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, x + w / 2, y + h / 2 + 1);
+    ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  drawBonusHUD() {
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; roundRect(10, 58, 160, 30, 8); ctx.fill();
+    ctx.font = 'bold 15px ' + FONT; ctx.fillStyle = '#ffe08a'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('⏱ ' + Math.ceil(this.session.time) + ' 秒', 20, 74);
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; roundRect(CFG.W - 300, 12, 290, 34, 8); ctx.fill();
+    ctx.font = '13px ' + FONT; ctx.fillStyle = '#e6c7ff'; ctx.textAlign = 'right';
+    ctx.fillText('捕獲 ' + this.session.catch + '　新發現 ' + this.session.new + '　重複 ' + this.session.dup, CFG.W - 20, 30);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  drawPlayer(t) {
+    const px = this.playerX;
+    const moving = this.getMoveDir() !== 0;
+    const bob = Math.sin(t * 10) * (moving ? 2 : 0.6);
+    ctx.fillStyle = '#33475a';
+    if (moving) { ctx.fillRect(px - 12, 424, 7, 10); ctx.fillRect(px + 5, 424, 7, 10); }
+    else { ctx.fillRect(px - 10, 424, 8, 9); ctx.fillRect(px + 2, 424, 8, 9); }
+    ctx.fillStyle = '#e0793a';
+    roundRect(px - 13, 404 + bob - 6, 26, 30, 7); ctx.fill();
+    /* 手臂：人物從肩膀往下握住撈網柄頂端（方向一致、不會錯位） */
+    ctx.strokeStyle = '#e0793a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px + this.face * 6, 408 + bob); ctx.lineTo(px, BONUS_TOOL_Y + 3); ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#f4c58a';
+    ctx.beginPath(); ctx.arc(px, BONUS_TOOL_Y + 3, 5, 0, 7); ctx.fill(); /* 握住網柄的手 */
+    ctx.fillStyle = '#f4c58a';
+    ctx.beginPath(); ctx.arc(px + this.face * 1, 404 + bob - 16, 12, 0, 7); ctx.fill(); /* 頭 */
+    ctx.fillStyle = '#223';
+    ctx.beginPath(); ctx.arc(px + this.face * 6, 404 + bob - 18, 2.2, 0, 7); ctx.fill(); /* 眼睛 */
+  }
+  drawGrabTool() {
+    const px = this.playerX;
+    const tipY = BONUS_TOOL_Y + this.grabExtend;
+    /* 長柄：從玩家手部往下延伸到網頭 */
+    ctx.save();
+    ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px, BONUS_TOOL_Y); ctx.lineTo(px, tipY); ctx.stroke();
+    /* 網頭框（上半緣 + 半圓網嘴） */
+    ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, tipY, BONUS_NET_RING, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px, tipY, BONUS_NET_RING, Math.PI / 2, Math.PI * 1.5); ctx.stroke();
+    /* 網袋紋路（半透明） */
+    ctx.strokeStyle = 'rgba(200,214,224,0.55)'; ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(px + i * 10, tipY + 5);
+      ctx.quadraticCurveTo(px + i * 5, tipY + BONUS_NET_RING + 10, px, tipY + BONUS_NET_RING + 14);
+      ctx.stroke();
+    }
+    /* 生物入網：網內生物輕微掙扎，隨抬起時間漸趨平穩 */
+    if (this.grabState === 'grabbing' && this.grabTarget) {
+      /* 生物在網袋內（網頭下方）小幅挣扎，隨撈網抬起而漸趨平穩 */
+      const dec = Math.max(0.2, 1 - this.grabStruggle / 1.1);
+      const wob = Math.sin(this.grabStruggle * 18) * 3 * dec;
+      this.drawCreature(this.grabTarget.spec, px + wob, tipY + 8, this.game.time, true);
+    }
+    ctx.restore();
+  }
+
+  /* ---------- 繪製：生物 ---------- */
+  drawCreature(sp, x, y, t, small) {
+    const s = small ? 0.8 : 1;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    if (sp.move !== 'fixed' && sp.type !== 'fish') {
+      ctx.translate(0, Math.sin(t * 6 + sp.id.length) * 2);
+    }
+    switch (sp.type) {
+      case 'crab': this.drawCrab(sp); break;
+      case 'hermit': this.drawHermit(sp); break;
+      case 'shell': this.drawShell(sp); break;
+      case 'urchin': this.drawUrchin(sp); break;
+      case 'star': this.drawStar(sp); break;
+      case 'cuke': this.drawCuke(sp); break;
+      case 'fish': this.drawFish(sp, t); break;
+    }
+    ctx.restore();
+  }
+  drawCrab(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.ellipse(0, 0, 16, 13, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#223'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(-22, 2, 5, 0, 7); ctx.arc(22, 2, 5, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const side = i % 2 ? -1 : 1;
+      ctx.beginPath(); ctx.moveTo(side * (6 + i * 3), 2); ctx.lineTo(side * (14 + i * 4), 14); ctx.stroke();
+    }
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-6, -9, 2.5, 0, 7); ctx.arc(6, -9, 2.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-6, -9, 1.2, 0, 7); ctx.arc(6, -9, 1.2, 0, 7); ctx.fill();
+  }
+  drawHermit(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.ellipse(-10, 0, 14, 18, -0.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.moveTo(-14, -8); ctx.lineTo(6, -14); ctx.lineTo(8, 0); ctx.lineTo(-14, 12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#8a6a4a';
+    ctx.beginPath(); ctx.arc(8, -2, 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(14, -2 + i * 3); ctx.lineTo(22, -6 + i * 3); ctx.stroke(); }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, -10, 2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(4, -10, 1, 0, 7); ctx.fill();
+  }
+  drawShell(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(14, 8); ctx.lineTo(-14, 8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#5a6a5a'; ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-8 + i * 8, 2); ctx.lineTo(0, -8 + i * 3); ctx.stroke(); }
+  }
+  drawUrchin(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.arc(0, 0, 13, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#3a2a6a'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * 6.28;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * 13, Math.sin(a) * 13); ctx.lineTo(Math.cos(a) * 20, Math.sin(a) * 20); ctx.stroke();
+    }
+    ctx.fillStyle = '#e8c8ff';
+    ctx.beginPath(); ctx.arc(0, 0, 5, 0, 7); ctx.fill();
+  }
+  drawStar(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * 6.28;
+      const r = i % 2 ? 18 : 8;
+      const x = Math.cos(a) * r, y = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#7a4a1a'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(0, 0, 2, 0, 7); ctx.fill();
+  }
+  drawCuke(sp) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.ellipse(0, 0, 22, 9, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#3a3030'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.quadraticCurveTo(0, -6, 14, 0); ctx.stroke();
+    ctx.fillStyle = '#3a3030';
+    ctx.beginPath(); ctx.arc(-22, 0, 3, 0, 7); ctx.fill();
+  }
+  drawFish(sp, t) {
+    ctx.fillStyle = sp.color;
+    ctx.beginPath(); ctx.ellipse(0, 0, 16, 9, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#3a5230'; ctx.lineWidth = 1.5;
+    const w = Math.sin(t * 8);
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-20 + w * 3, -6); ctx.lineTo(-20 + w * 3, 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -3, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(9, -3, 1.5, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#3a5230';
+    ctx.beginPath(); ctx.moveTo(0, 9); ctx.lineTo(-3, 14); ctx.moveTo(3, 9); ctx.lineTo(0, 14); ctx.stroke();
+  }
+
+  /* ---------- 繪製：各畫面 ---------- */
+  drawMenu() {
+    this.drawBackground();
+    ctx.fillStyle = 'rgba(4,20,34,0.55)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    const fl = this.game.panelFrame(280, 110, CFG.W - 560, 380, '🌊 潮間帶探索');
+    fl.text('在退潮的潮間帶探索，捕捉潮間帶生物！', { size: 16, color: '#d8ecf8', maxW: fl.w, lh: lineH(16) });
+    fl.gap(6);
+    const known = Object.keys(this.game.bonusEncyclopedia).length;
+    fl.text('已發現：' + known + ' / ' + BONUS_SPECIES.length + ' 種', { size: 15, color: '#e6c7ff', maxW: fl.w, lh: lineH(15) });
+    fl.gap(12);
+    this.game.buttons = [];
+    const bw = 240, bh = 46;
+    let y = fl.cursor + 10;
+    /* 主要動作（開始探索）較醒目，次要按鈕間距拉開以建立清晰層次 */
+    this.game.addBtn('▶ 開始探索', CFG.W / 2 - bw / 2, y, bw, bh, () => this.startSession(), '#2a8f4a');
+    this.game.addBtn('📖 潮間帶圖鑑', CFG.W / 2 - bw / 2, y + 66, bw, bh, () => this.openEncyclopedia(), '#1d6fa5');
+    this.game.addBtn('返回首頁', CFG.W / 2 - bw / 2, y + 128, bw, bh, () => this.goHome(), '#3a5a8a');
+    this.game.drawButtons();
+  }
+  drawPlay() {
+    this.drawBackground();
+    for (const c of this.creatures) if (c.active) this.drawCreature(c.spec, c.x, c.y, this.game.time, false);
+    this.drawGrabTool();
+    this.drawPlayer(this.game.time);
+    this.drawBonusHUD();
+    this.touchRects = [];
+    if (this.paused) {
+      /* 暫停：計時器/生物/移動已凍結（update 提前 return）；覆蓋層提供 繼續/重新開始/離開 */
+      ctx.fillStyle = 'rgba(4,12,24,0.55)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+      const fl = this.game.panelFrame(260, 120, CFG.W - 520, 360, '⏸ 已暫停');
+      fl.gap(12);
+      fl.text('計時器與潮間帶生物已暫停。', { size: 16, color: '#d8ecf8', align: 'center', maxW: fl.w, lh: lineH(16) });
+      fl.gap(20);
+      this.game.buttons = [];
+      const bw = 240, bh = 46;
+      let by = fl.cursor + 8;
+      this.game.addBtn('▶ 繼續', CFG.W / 2 - bw / 2, by, bw, bh, () => this.resume(), '#2a8f4a');
+      this.game.addBtn('🔄 重新開始', CFG.W / 2 - bw / 2, by + 58, bw, bh, () => this.restartSession(), '#b8860b');
+      this.game.addBtn('⬅ 返回潮間帶選單', CFG.W / 2 - bw / 2, by + 116, bw, bh, () => this.goMenu(), '#3a5a8a');
+      this.game.drawButtons();
+      return;
+    }
+    this.drawTouchButtons();
+    if (this.hint > 0) {
+      ctx.globalAlpha = Math.min(1, this.hint);
+      ctx.font = 'bold 16px ' + FONT; ctx.fillStyle = '#ffd28a'; ctx.textAlign = 'center';
+      ctx.fillText('沒抓中，再試試！', CFG.W / 2, 120);
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+    }
+    this.game.buttons = [];
+    this.game.addBtn('⬅ 離開', 8, 12, 84, 34, () => this.exitToMenu(), '#3a5a8a');
+    this.game.addBtn('⏸ 暫停', 96, 12, 84, 34, () => this.pause(), '#8a5a2a');
+    this.game.drawButtons();
+  }
+  exitToMenu() { Sfx.click(); this.openMenu(); }
+  drawCatch() {
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    const cs = this.catchState;
+    if (!cs) { this.game.state = 'bonus_play'; this.game.buttons = []; return; }
+    const sp = cs.sp, isNew = cs.isNew;
+    const px = 160, py = 50, pw = CFG.W - 320, ph = 500;
+    const fl = this.game.panelFrame(px, py, pw, ph, isNew ? '🌊 新發現！' : '已發現');
+    this.drawCreature(sp, CFG.W / 2, py + 80, this.game.time, true);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 24px ' + FONT; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(sp.cn, CFG.W / 2, py + 148);
+    ctx.font = '15px ' + FONT;
+    ctx.fillStyle = isNew ? '#ffe08a' : '#9fd8f0';
+    ctx.fillText(isNew ? '首次發現潮間帶生物！' : '這你已經發現過了', CFG.W / 2, py + 176);
+    ctx.font = '14px ' + FONT; ctx.fillStyle = '#cfe9ff';
+    ctx.fillText('學名 ' + (sp.latin || '尚未確認'), CFG.W / 2, py + 202);
+    ctx.fillText('棲地：' + sp.habitat + '　　研究價值：' + sp.researchValue, CFG.W / 2, py + 228);
+    ctx.textAlign = 'left';
+    const fx = px + UI.pad + 10;
+    const lines = wrapLines('教育小知識：' + sp.fact, pw - 40, 14, false);
+    ctx.font = '14px ' + FONT; ctx.fillStyle = '#d8ecf8';
+    let fy = py + 258;
+    for (const ln of lines) { ctx.fillText(ln, fx, fy); fy += lineH(14); }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    this.game.buttons = [];
+    const by = py + ph - 62;
+    if (isNew) {
+      this.game.addBtn('繼續探索', CFG.W / 2 - 110, by, 220, 44, () => this.confirmNew(), '#2a8f4a');
+    } else if (cs.resolved) {
+      this.game.addBtn('繼續探索', CFG.W / 2 - 110, by, 220, 44, () => this.returnToPlay(), '#2a8f4a');
+    } else {
+      const dup = BONUS_REDEEM[sp.rarity] ? BONUS_REDEEM[sp.rarity].dup : 0;
+      this.game.addBtn('兌換 +' + dup + ' 研究點', CFG.W / 2 - 200, by, 190, 44, () => this.confirmRedeem(), '#b8860b');
+      this.game.addBtn('保留', CFG.W / 2 + 10, by, 190, 44, () => this.confirmKeep(), '#3a5a8a');
+    }
+    this.game.drawButtons();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  drawEncyclopedia() {
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    const fl = this.game.panelFrame(30, 40, CFG.W - 60, 540, '🌊 潮間帶圖鑑');
+    const known = Object.keys(this.game.bonusEncyclopedia).length;
+    fl.gap(UI.gap);
+    fl.text('已發現：' + known + ' / ' + BONUS_SPECIES.length + ' 種', { size: 16, bold: true, color: '#e6c7ff', maxW: fl.w, lh: lineH(16) });
+    fl.gap(UI.gap);
+    const PER_PAGE = 6;
+    const totalPages = Math.max(1, Math.ceil(BONUS_SPECIES.length / PER_PAGE));
+    if (this.encyPage > totalPages - 1) this.encyPage = totalPages - 1;
+    if (this.encyPage < 0) this.encyPage = 0;
+    const page = BONUS_SPECIES.slice(this.encyPage * PER_PAGE, this.encyPage * PER_PAGE + PER_PAGE);
+    const gy0 = fl.cursor + 10;
+    const gap = UI.gap + 4;
+    const gw = Math.floor((fl.w - gap * 2) / 3), gh = 190;
+    page.forEach((sp, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const cx = fl.x + col * (gw + gap), cy = gy0 + row * (gh + gap);
+      this.drawEncyCard(sp, cx, cy, gw, gh, this.game.bonusEncyclopedia[sp.id] || 0);
+    });
+    this.game.buttons = [];
+    if (totalPages > 1) {
+      this.game.addBtn('◀', CFG.W - 356, CFG.H - 60, 60, 36, () => { this.encyPage = Math.max(0, this.encyPage - 1); Sfx.click(); });
+      this.game.addBtn('▶', CFG.W - 184, CFG.H - 60, 60, 36, () => { this.encyPage = Math.min(totalPages - 1, this.encyPage + 1); Sfx.click(); });
+    }
+    this.game.addBtn('返回', CFG.W - 130, CFG.H - 60, 100, 40, () => this.openMenu());
+    this.game.drawButtons();
+  }
+  drawEncyCard(sp, x, y, w, h, count) {
+    const card = new UICard({});
+    card.open(x, y, w, h, {});
+    if (count > 0) {
+      this.drawCreature(sp, x + w / 2, y + 60, this.game.time, true);
+      ctx.textAlign = 'center'; ctx.font = 'bold 16px ' + FONT; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(sp.cn, x + w / 2, y + 110);
+      ctx.font = '12px ' + FONT; ctx.fillStyle = '#9fd8f0';
+      ctx.fillText(sp.latin || '學名未確認', x + w / 2, y + 128);
+      ctx.fillStyle = '#cfe9ff';
+      ctx.fillText('棲地：' + sp.habitat, x + w / 2, y + 150);
+      ctx.fillStyle = '#ffe08a';
+      ctx.fillText('捕獲 ×' + count, x + w / 2, y + 174);
+    } else {
+      ctx.textAlign = 'center'; ctx.font = 'bold 34px ' + FONT; ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('？', x + w / 2, y + h / 2 + 6);
+      ctx.font = '14px ' + FONT; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText('尚未發現', x + w / 2, y + h / 2 + 32);
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    card.close();
+  }
+  drawEnd() {
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    const s = this.session;
+    const fl = this.game.panelFrame(220, 80, CFG.W - 440, 440, '🌊 潮間帶探索完成');
+    fl.gap(10);
+    fl.text('本場探索完成！', { size: 20, bold: true, color: '#fff', align: 'center', maxW: fl.w, lh: lineH(20) });
+    fl.gap(6);
+    fl.text('本場抓到：' + s.catch + ' 隻', { size: 15, color: '#d8ecf8', align: 'center', maxW: fl.w, lh: lineH(15) });
+    fl.text('新發現：' + s.new + ' 種', { size: 15, color: '#ffe08a', align: 'center', maxW: fl.w, lh: lineH(15) });
+    fl.text('重複兌換：' + s.dup + ' 隻', { size: 15, color: '#9fd8f0', align: 'center', maxW: fl.w, lh: lineH(15) });
+    fl.text('研究點：+' + s.points, { size: 18, bold: true, color: '#ffe08a', align: 'center', maxW: fl.w, lh: lineH(18) });
+    fl.gap(6);
+    const known = Object.keys(this.game.bonusEncyclopedia).length;
+    fl.text('累積潮間帶圖鑑：' + known + ' / ' + BONUS_SPECIES.length + ' 種', { size: 14, color: '#cfe9ff', align: 'center', maxW: fl.w, lh: lineH(14) });
+    fl.gap(12);
+    this.game.buttons = [];
+    const bw = 240, bh = 46;
+    let y = fl.cursor + 6;
+    this.game.addBtn('🔁 再玩一次', CFG.W / 2 - bw / 2, y, bw, bh, () => this.restartSession(), '#2a8f4a');
+    this.game.addBtn('📖 潮間帶圖鑑', CFG.W / 2 - bw / 2, y + 54, bw, bh, () => this.openEncyclopedia(), '#1d6fa5');
+    this.game.addBtn('🏠 返回主選單', CFG.W / 2 - bw / 2, y + 108, bw, bh, () => this.goHome(), '#3a5a8a');
+    this.game.drawButtons();
+  }
+}
+
+/* ============================================================
    [模組 12] 初始化與主迴圈
    ============================================================ */
 (function boot() {
@@ -5235,7 +5940,12 @@ function shadeHex(hex, f) {
   canvas.addEventListener('pointerup', pointerUp);
   canvas.addEventListener('pointercancel', pointerUp);
   document.addEventListener('keydown', ev => {
-    if (ev.code === 'Space') { ev.preventDefault(); game.onKey(true); }
+    if (ev.code === 'Space') { ev.preventDefault(); game.onKey(true); return; }
+    /* Bonus 方向鍵：←/→（A/D）移動、↓/S 抓取（僅 bonus_play 生效） */
+    if (game.onBonusKey) game.onBonusKey(ev.code, true);
+  });
+  document.addEventListener('keyup', ev => {
+    if (game.onBonusKey) game.onBonusKey(ev.code, false);
   });
 
   /* 背景音樂於進入正式遊戲場景（startLevel）時啟動；此處僅初始化
