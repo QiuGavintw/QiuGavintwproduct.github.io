@@ -166,7 +166,8 @@ const GameState = {
   BONUS_PLAY: 'bonus_play',
   BONUS_CATCH: 'bonus_catch',
   BONUS_ENCY: 'bonus_ency',
-  BONUS_END: 'bonus_end'
+  BONUS_END: 'bonus_end',
+  BONUS_SHOP: 'bonus_shop'
 };
 
 /* --- 隨機與數學工具 --- */
@@ -203,7 +204,8 @@ function saveState(state) {
       levelIndex: state.levelIndex,
       oceanCleaned: state.oceanCleaned || 0,
       achievements: state.achievements || {},
-      bonusEncyclopedia: state.bonusEncyclopedia || {}   /* Bonus 潮間帶圖鑑（獨立於主圖鑑） */
+      bonusEncyclopedia: state.bonusEncyclopedia || {},  /* Bonus 潮間帶圖鑑（獨立於主圖鑑） */
+      conservationTools: state.conservationTools || []   /* Bonus 保育商店已購道具（保育網/潮間帶觀察器） */
     }));
   } catch (e) { /* 忽略寫入錯誤 */ }
 }
@@ -3013,6 +3015,8 @@ class Game {
     this.achievements = save.achievements || {};
     /* Bonus 潮間帶圖鑑：獨立於主圖鑑（encyclopedia），向下相容（舊存檔無此欄位→空物件） */
     this.bonusEncyclopedia = save.bonusEncyclopedia || {}
+    /* Bonus 保育商店已購道具（保育網 / 潮間帶觀察器），向下相容（舊存檔無此欄位→空陣列） */
+    this.conservationTools = save.conservationTools || [];
     /* 橫幅佇列（成就解鎖 / 海洋保育提示；自動消失、不阻塞遊戲） */
     this.banners = [];
 
@@ -3279,7 +3283,8 @@ class Game {
     return this.state === 'card' || this.state === 'choice' || this.state === 'shop' ||
       this.state === 'settings' || this.state === 'help' || this.state === 'encyclopedia' ||
       this.state === 'end' || this.state === 'paused' || this.state === 'test' ||
-      this.state === 'bonus_catch' || this.state === 'bonus_ency' || this.state === 'bonus_end';
+      this.state === 'bonus_catch' || this.state === 'bonus_ency' || this.state === 'bonus_end' ||
+      this.state === 'bonus_shop';
   }
 
   /* ---------- 主更新迴圈 ---------- */
@@ -3669,6 +3674,14 @@ class Game {
     this.conserve += n;
     saveState(this);
   }
+  spendConserve(n) {
+    /* 測試模式：無限保育點（購買不扣款） */
+    if (this.test && this.test.active && this.test.cfg.infiniteConserve) { Sfx.coin(); return true; }
+    if (this.conserve < n || n < 0) return false;
+    this.conserve -= n;
+    saveState(this);
+    return true;
+  }
 
   /* 顯示資訊卡（第一次完整 / 之後簡短） */
   showCard(ceph, firstTime, pts) {
@@ -3782,6 +3795,7 @@ class Game {
     /* 成就與海洋保育計數一併清除，不留殘留 */
     this.achievements = {};
     this.oceanCleaned = 0;
+    this.conservationTools = [];
     this.banners = [];
     Sfx.stopMusic();
     this.fsPref = loadFsPref();
@@ -3908,6 +3922,7 @@ class Game {
       case 'bonus_catch': this.bonus.drawCatch(); break;
       case 'bonus_ency': this.bonus.drawEncyclopedia(); break;
       case 'bonus_end': this.bonus.drawEnd(); break;
+      case 'bonus_shop': this.bonus.drawShop(); break;
     }
     /* 測試模式：遊玩中顯示測試工具列 + Debug Panel */
     if (this.state === 'play' && this.test.active) {
@@ -4903,7 +4918,8 @@ drawHUD() {
       totalCatch: this.totalCatch,
       levelIndex: this.levelIndex,
       oceanCleaned: this.oceanCleaned || 0,
-      achievements: JSON.parse(JSON.stringify(this.achievements || {}))
+      achievements: JSON.parse(JSON.stringify(this.achievements || {})),
+      conservationTools: this.conservationTools.slice()
     };
     /* 測試模式的「有效」研究點：最大安全值（runtime override，不寫入存檔） */
     this.test.researchPoints = Number.MAX_SAFE_INTEGER;
@@ -4928,6 +4944,7 @@ drawHUD() {
       this.levelIndex = this.test.snapshot.levelIndex;
       this.oceanCleaned = this.test.snapshot.oceanCleaned || 0;
       this.achievements = JSON.parse(JSON.stringify(this.test.snapshot.achievements || {}));
+      this.conservationTools = (this.test.snapshot.conservationTools || []).slice();
       saveState(this);
     }
     this.test.snapshot = null;
@@ -5208,23 +5225,29 @@ const BONUS_REDEEM = {
 const BONUS_SESSION = { time: 60, maxCatch: 14, maxActive: 4, spawnMin: 1.2, spawnMax: 2.6, speed: 260 };
 /* 抓取判定：網頭必須實際下降到生物所在高度（contact 垂直帶），水平範圍與網頭視覺寬度一致
    （難度差異改由逃脫率/生物移動提供，不縮小 hitbox，避免「網子罩住卻顯示沒碰到」） */
-const BONUS_GRAB = { range: { 1: 20, 2: 20, 3: 20 }, escape: { 1: 0.10, 2: 0.28, 3: 0.46 }, contact: 13 };
-const BONUS_GRAB_REACH = 145;   // 抓取工具最大延伸（px）
-const BONUS_TOOL_Y = 402;       // 抓取工具起點 Y（玩家手部）
+const BONUS_GRAB = { range: { 1: 23, 2: 23, 3: 23 }, escape: { 1: 0.10, 2: 0.28, 3: 0.46 }, contact: 13 };
+const BONUS_GRAB_REACH = 167;   // 抓取工具最大延伸（px）：人物加高後由更高位置下探，實際可及範圍約 +15%
+const BONUS_TOOL_Y = 392;       // 抓取工具起點 Y（玩家手部，隨人物加高上移）
 const BONUS_PLAYER_Y = 418;     // 玩家站立基準線 Y
-const BONUS_NET_RING = 16;      // 長柄撈網網頭半徑（網頭中心 = 工具末端）
+const BONUS_NET_RING = 18;      // 長柄撈網網頭半徑（網頭中心 = 工具末端）
 /* 依生物型態（type）微調逃脫率：螃蟹會左右掙扎、彈塗魚難抓、海參/海星/海膽較易入網 */
 const BONUS_ESCAPE_MOD = { crab: 0.06, fish: 0.16, cuke: -0.05, star: -0.06, urchin: -0.05, hermit: 0.02 };
 
+/* Bonus 保育商店：以「保育點」（與主遊戲共用 game.conserve）購買，改善潮間帶探索體感 */
+const BONUS_SHOP = [
+  { id: 'net',    label: '保育網',       price: 20, desc: '網目更細、抓取更穩：逃脫率 ×0.6' },
+  { id: 'scope',  label: '潮間帶觀察器', price: 30, desc: '辨識更敏銳：稀有生物出現率提升、生成更頻繁' }
+];
+
 const BONUS_SPECIES = [
-  { id: 'crab',        cn: '鋸緣青蟳',     latin: 'Scylla serrata',         type: 'crab',  rarity: 2, difficulty: 2, move: 'crab',  habitat: '泥灘・紅樹林', researchValue: 6, color: '#3a8440', fact: '俗稱沙蟳／紅蟳，螯足有深綠網紋，藏身泥灘洞穴。' },
-  { id: 'hermit',      cn: '寄居蟹',       latin: 'Calcinus laevimanus',    type: 'hermit', rarity: 1, difficulty: 1, move: 'slow', habitat: '潮池邊緣・礁石縫', researchValue: 3, color: '#d08a4a', fact: '腹部柔軟，需揹著螺殼當家，動作迅速。' },
-  { id: 'oyster',      cn: '黑齒牡蠣',     latin: 'Saccostrea mordax',      type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁・潮池壁', researchValue: 2, color: '#cfc3b0', fact: '固著在岩壁上，殼緣波浪狀，退潮緊閉防失水。' },
-  { id: 'limpet',      cn: '笠螺',         latin: 'Cellana spp.',           type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁高潮帶', researchValue: 2, color: '#9aa97a', fact: '腹足吸附力強，殼面低平，可抵擋海浪衝擊。' },
-  { id: 'urchin',      cn: '馬糞海膽',     latin: 'Tripneustes gratilla',   type: 'urchin', rarity: 2, difficulty: 2, move: 'slow', habitat: '珊瑚淺坪・潮池', researchValue: 5, color: '#6a56a8', fact: '全身棘刺與管足，海藻與碎屑為食。' },
-  { id: 'star',        cn: '飛白楓海星',   latin: 'Archaster typicus',      type: 'star',  rarity: 2, difficulty: 2, move: 'slow', habitat: '泥沙潮間帶', researchValue: 5, color: '#e0914a', fact: '以管足吸附移動，具再生能力。' },
-  { id: 'seacucumber', cn: '蕩皮參',       latin: 'Holothuria leucospilota', type: 'cuke', rarity: 1, difficulty: 2, move: 'slow', habitat: '礁岩・潮池', researchValue: 4, color: '#6a5a4a', fact: '底棲清道夫，受擾時可能排出黏液或內臟禦敵。' },
-  { id: 'mudskipper',  cn: '彈塗魚',       latin: 'Periophthalmus spp.',    type: 'fish',  rarity: 3, difficulty: 3, move: 'jump', habitat: '泥灘', researchValue: 6, color: '#7a9a5a', fact: '可離水存活與彈跳，鰓腔儲水呼吸。' }
+  { id: 'crab',        cn: '鋸緣青蟳',     latin: 'Scylla serrata',         type: 'crab',  rarity: 2, difficulty: 2, move: 'crab',  habitat: '泥灘・紅樹林', researchValue: 6, conservation: 3, color: '#3a8440', fact: '俗稱沙蟳／紅蟳，螯足有深綠網紋，藏身泥灘洞穴。' },
+  { id: 'hermit',      cn: '寄居蟹',       latin: 'Calcinus laevimanus',    type: 'hermit', rarity: 1, difficulty: 1, move: 'slow', habitat: '潮池邊緣・礁石縫', researchValue: 3, conservation: 2, color: '#d08a4a', fact: '腹部柔軟，需揹著螺殼當家，動作迅速。' },
+  { id: 'oyster',      cn: '黑齒牡蠣',     latin: 'Saccostrea mordax',      type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁・潮池壁', researchValue: 2, conservation: 1, color: '#cfc3b0', fact: '固著在岩壁上，殼緣波浪狀，退潮緊閉防失水。' },
+  { id: 'limpet',      cn: '笠螺',         latin: 'Cellana spp.',           type: 'shell', rarity: 1, difficulty: 1, move: 'fixed', habitat: '岩礁高潮帶', researchValue: 2, conservation: 1, color: '#9aa97a', fact: '腹足吸附力強，殼面低平，可抵擋海浪衝擊。' },
+  { id: 'urchin',      cn: '馬糞海膽',     latin: 'Tripneustes gratilla',   type: 'urchin', rarity: 2, difficulty: 2, move: 'slow', habitat: '珊瑚淺坪・潮池', researchValue: 5, conservation: 2, color: '#6a56a8', fact: '全身棘刺與管足，海藻與碎屑為食。' },
+  { id: 'star',        cn: '飛白楓海星',   latin: 'Archaster typicus',      type: 'star',  rarity: 2, difficulty: 2, move: 'slow', habitat: '泥沙潮間帶', researchValue: 5, conservation: 2, color: '#e0914a', fact: '以管足吸附移動，具再生能力。' },
+  { id: 'seacucumber', cn: '蕩皮參',       latin: 'Holothuria leucospilota', type: 'cuke', rarity: 1, difficulty: 2, move: 'slow', habitat: '礁岩・潮池', researchValue: 4, conservation: 3, color: '#6a5a4a', fact: '底棲清道夫，受擾時可能排出黏液或內臟禦敵。' },
+  { id: 'mudskipper',  cn: '彈塗魚',       latin: 'Periophthalmus spp.',    type: 'fish',  rarity: 3, difficulty: 3, move: 'jump', habitat: '泥灘', researchValue: 6, conservation: 4, color: '#7a9a5a', fact: '可離水存活與彈跳，鰓腔儲水呼吸。' }
 ];
 
 class BonusGame {
@@ -5244,7 +5267,7 @@ class BonusGame {
     this.grabResult = null;
     this.reach = BONUS_GRAB_REACH;
     this.touchRects = [];
-    this.session = { time: 0, catch: 0, new: 0, dup: 0, points: 0 };
+    this.session = { time: 0, catch: 0, new: 0, dup: 0, points: 0, conservation: 0 };
     this.catchState = null;
     this.encyPage = 0;
     this.hint = 0;
@@ -5252,10 +5275,26 @@ class BonusGame {
     this.species = BONUS_SPECIES;
   }
 
+  /* ---------- 保育點（與主遊戲共用 game.conserve，單一錢包） ---------- */
+  conservation() { return this.game.conserve; }
+  hasTool(id) { return Array.isArray(this.game.conservationTools) && this.game.conservationTools.indexOf(id) !== -1; }
+  addConservation(n) { if (n > 0) { this.game.addConserve(n); Sfx.coin(); } }
+  buyTool(id) {
+    const it = BONUS_SHOP.find(x => x.id === id);
+    if (!it || this.hasTool(id)) return false;
+    if (!this.game.spendConserve(it.price)) return false;
+    this.game.conservationTools.push(id);
+    saveState(this.game);
+    this.game.toast('已購入『' + it.label + '』！', 2);
+    Sfx.click();
+    return true;
+  }
+
   /* ---------- 狀態／導覽 ---------- */
   isDiscovered(id) { return !!this.game.bonusEncyclopedia[id]; }
   openMenu() { this.mode = 'menu'; this.game.state = 'bonus_menu'; this.game.buttons = []; Sfx.click(); }
   openEncyclopedia() { this.mode = 'encyclopedia'; this.encyPage = 0; this.game.state = 'bonus_ency'; this.game.buttons = []; Sfx.click(); }
+  openShop() { this.mode = 'shop'; this.game.state = 'bonus_shop'; this.game.buttons = []; Sfx.click(); }
   goMenu() { Sfx.click(); this.openMenu(); }
   goHome() { this.mode = 'menu'; this.game.state = 'menu'; this.game.buttons = []; Sfx.click(); }
 
@@ -5275,7 +5314,7 @@ class BonusGame {
     this.keys.left = false; this.keys.right = false;
     this.press.left = false; this.press.right = false; this.press.grab = false;
     this.grabState = 'idle'; this.grabExtend = 0; this.grabStruggle = 0; this.grabTarget = null;
-    this.session = { time: BONUS_SESSION.time, catch: 0, new: 0, dup: 0, points: 0 };
+    this.session = { time: BONUS_SESSION.time, catch: 0, new: 0, dup: 0, points: 0, conservation: 0 };
     this.paused = false;
     for (let i = 0; i < 3; i++) this.spawnCreature();
     this.game.state = 'bonus_play';
@@ -5287,9 +5326,18 @@ class BonusGame {
   makeCreature(sp, x, y, originX, dir) {
     return { spec: sp, x, y, originX, baseY: y, dir, phase: 0, active: true };
   }
+  /* 生成節奏：觀察器縮短生成間隔（update 共用） */
+  spawnWindow() {
+    const scope = this.hasTool('scope');
+    const min = BONUS_SESSION.spawnMin * (scope ? 0.85 : 1);
+    const max = BONUS_SESSION.spawnMax * (scope ? 0.85 : 1);
+    return { min, max };
+  }
   spawnCreature() {
     const r = Math.random();
-    const rarity = r < 0.6 ? 1 : (r < 0.9 ? 2 : 3);
+    /* 潮間帶觀察器：稀有（rarity3）出現率由 0.10 → 0.20（閾值 0.6/0.9 → 0.5/0.8） */
+    const scope = this.hasTool('scope');
+    const rarity = r < (scope ? 0.5 : 0.6) ? 1 : (r < (scope ? 0.8 : 0.9) ? 2 : 3);
     const pool = BONUS_SPECIES.filter(s => s.rarity === rarity);
     const sp = (pool.length ? pool[Math.floor(Math.random() * pool.length)] : pick(BONUS_SPECIES));
     const x = rand(80, CFG.W - 80);
@@ -5355,7 +5403,8 @@ class BonusGame {
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0 && this.creatures.length < BONUS_SESSION.maxActive) {
       this.spawnCreature();
-      this.spawnTimer = rand(BONUS_SESSION.spawnMin, BONUS_SESSION.spawnMax);
+      const w = this.spawnWindow();
+      this.spawnTimer = rand(w.min, w.max);
     }
     if (this.hint > 0) this.hint -= dt;
   }
@@ -5429,17 +5478,19 @@ class BonusGame {
     }
     return best;
   }
-  /* 依生物型態微調逃生率（螃蟹會甩、彈塗魚難撈、濕滑海參/海星/海膽較易入網） */
+  /* 依生物型態微調逃生率（螃蟹會甩、彈塗魚難撈、濕滑海參/海星/海膽較易入網）；
+     「保育網」購入後整體逃脫率 ×0.6（更穩更好撈） */
   effectiveEscape(sp) {
     const base = BONUS_GRAB.escape[sp.difficulty] || 0;
     const mod = (sp.type && BONUS_ESCAPE_MOD[sp.type]) || 0;
-    return clamp(base + mod, 0, 0.8);
+    const e = base + mod;
+    return clamp(this.hasTool('net') ? e * 0.6 : e, 0, 0.8);
   }
   completeCatch(sp) {
     const isNew = !this.isDiscovered(sp.id);
     /* 只有「收網完成、正式判定成功捕獲」才寫入圖鑑；生成/看到/碰到/逃脫/失敗都不會到這裡 */
     this.game.bonusEncyclopedia[sp.id] = (this.game.bonusEncyclopedia[sp.id] || 0) + 1;
-    this.catchState = { sp, isNew, resolved: false };
+    this.catchState = { sp, isNew, resolved: false, conserved: false };
     this.session.catch++;
     if (isNew) this.session.new++; else this.session.dup++;
     this.mode = 'reveal';
@@ -5457,10 +5508,30 @@ class BonusGame {
     this.applyReward(BONUS_REDEEM[cs.sp.rarity].first);
     this.returnToPlay();
   }
+  /* 兌換保育點：只有玩家在捕獲結算卡明確選擇才 +（單次、防雙擊）。
+     首次捕獲仍附帶原 first 研究獎勵，不改變既有研究點經濟。 */
+  confirmConserve() {
+    const cs = this.catchState;
+    if (!cs || cs.resolved) return;
+    const v = cs.sp.conservation || 0;
+    if (v > 0) {
+      cs.resolved = true;
+      cs.conserved = true;
+      this.session.conservation += v;
+      this.addConservation(v);
+      if (cs.isNew) this.applyReward(BONUS_REDEEM[cs.sp.rarity].first);
+      this.game.toast('護生成功！🌱 保育點 +' + v, 1.8);
+      this.returnToPlay();
+    } else {
+      this.confirmKeep();
+    }
+  }
   confirmKeep() {
     const cs = this.catchState;
     if (!cs || cs.resolved) return;
     cs.resolved = true;
+    /* 保留：不加保育點；首次捕獲仍領 first 研究獎勵（與原本「繼續探索」相同），重複捕獲不領 */
+    if (cs.isNew) this.applyReward(BONUS_REDEEM[cs.sp.rarity].first);
     this.returnToPlay();
   }
   confirmRedeem() {
@@ -5535,6 +5606,10 @@ class BonusGame {
     ctx.fillStyle = 'rgba(4,20,34,0.6)'; roundRect(10, 58, 160, 30, 8); ctx.fill();
     ctx.font = 'bold 15px ' + FONT; ctx.fillStyle = '#ffe08a'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText('⏱ ' + Math.ceil(this.session.time) + ' 秒', 20, 74);
+    /* 保育點（與主遊戲共用 game.conserve）：清楚標示、不與研究點混淆 */
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; roundRect(180, 58, 150, 30, 8); ctx.fill();
+    ctx.font = 'bold 14px ' + FONT; ctx.fillStyle = '#b5f2c0';
+    ctx.fillText('🌱 保育點：' + this.game.conserve, 190, 74);
     ctx.fillStyle = 'rgba(4,20,34,0.6)'; roundRect(CFG.W - 300, 12, 290, 34, 8); ctx.fill();
     ctx.font = '13px ' + FONT; ctx.fillStyle = '#e6c7ff'; ctx.textAlign = 'right';
     ctx.fillText('捕獲 ' + this.session.catch + '　新發現 ' + this.session.new + '　重複 ' + this.session.dup, CFG.W - 20, 30);
@@ -5552,19 +5627,20 @@ class BonusGame {
     ctx.fillStyle = '#33475a';
     if (moving) { ctx.fillRect(px - 12, 424, 7, 10); ctx.fillRect(px + 5, 424, 7, 10); }
     else { ctx.fillRect(px - 10, 424, 8, 9); ctx.fillRect(px + 2, 424, 8, 9); }
+    /* 加高約 20%：頭/身整體上移（腳底板仍貼在沙面 y≈434，不浮空也不穿透） */
     ctx.fillStyle = '#e0793a';
-    roundRect(px - 13, 404 + bob - 6, 26, 30, 7); ctx.fill();
+    roundRect(px - 14, 392 + bob - 8, 28, 40, 8); ctx.fill();
     /* 手臂：人物從肩膀往下握住撈網柄頂端（方向一致、不會錯位）；抓取時手部沿柄略下滑＝手臂微微伸出 */
     const handY = BONUS_TOOL_Y + 3 + this.grabHandOffset();
     ctx.strokeStyle = '#e0793a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(px + this.face * 6, 408 + bob); ctx.lineTo(px, handY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + this.face * 6, 400 + bob); ctx.lineTo(px, handY); ctx.stroke();
     ctx.lineCap = 'butt';
     ctx.fillStyle = '#f4c58a';
     ctx.beginPath(); ctx.arc(px, handY, 5, 0, 7); ctx.fill(); /* 握住網柄的手 */
     ctx.fillStyle = '#f4c58a';
-    ctx.beginPath(); ctx.arc(px + this.face * 1, 404 + bob - 16, 12, 0, 7); ctx.fill(); /* 頭 */
+    ctx.beginPath(); ctx.arc(px + this.face * 1, 392 + bob - 15, 13, 0, 7); ctx.fill(); /* 頭 */
     ctx.fillStyle = '#223';
-    ctx.beginPath(); ctx.arc(px + this.face * 6, 404 + bob - 18, 2.2, 0, 7); ctx.fill(); /* 眼睛 */
+    ctx.beginPath(); ctx.arc(px + this.face * 6, 392 + bob - 17, 2.2, 0, 7); ctx.fill(); /* 眼睛 */
   }
   drawGrabTool() {
     const px = this.playerX;
@@ -5709,10 +5785,40 @@ class BonusGame {
     this.game.buttons = [];
     const bw = 240, bh = 46;
     let y = fl.cursor + 14;
-    /* 主要動作（開始探索）較醒目；三顆按鈕間距一致、彼此不擠（分散但不致過度） */
+    /* 主要動作（開始探索）較醒目；四顆按鈕間距一致、彼此不擠（分散但不致過度） */
     this.game.addBtn('▶ 開始探索', CFG.W / 2 - bw / 2, y, bw, bh, () => this.startSession(), '#2a8f4a');
-    this.game.addBtn('📖 潮間帶圖鑑', CFG.W / 2 - bw / 2, y + 70, bw, bh, () => this.openEncyclopedia(), '#1d6fa5');
-    this.game.addBtn('返回首頁', CFG.W / 2 - bw / 2, y + 140, bw, bh, () => this.goHome(), '#3a5a8a');
+    this.game.addBtn('🌱 保育商店', CFG.W / 2 - bw / 2, y + 70, bw, bh, () => this.openShop(), '#1d6fa5');
+    this.game.addBtn('📖 潮間帶圖鑑', CFG.W / 2 - bw / 2, y + 140, bw, bh, () => this.openEncyclopedia(), '#1d6fa5');
+    this.game.addBtn('返回首頁', CFG.W / 2 - bw / 2, y + 210, bw, bh, () => this.goHome(), '#3a5a8a');
+    this.game.drawButtons();
+  }
+  drawShop() {
+    ctx.fillStyle = 'rgba(4,20,34,0.6)'; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    this.game.buttons = [];
+    const fl = this.game.panelFrame(200, 60, CFG.W - 400, 480, '🌱 保育商店');
+    fl.gap(UI.gap);
+    fl.text('以「保育點」兌換保育道具，讓潮間帶探索更順利。', { size: 15, color: '#d8ecf8', maxW: fl.w, lh: lineH(15) });
+    fl.text('目前保育點：🌱 ' + this.game.conserve, { size: 17, bold: true, color: '#b5f2c0', maxW: fl.w, lh: lineH(17) });
+    fl.gap(UI.gap);
+    const bh = 46, iw = fl.w;
+    for (const it of BONUS_SHOP) {
+      const owned = this.hasTool(it.id);
+      const afford = this.game.conserve >= it.price;
+      fl.text(it.label + '　　🌱 ' + it.price + ' 保育點', { size: 16, bold: true, color: owned ? '#8fd0a0' : '#fff', maxW: fl.w, lh: lineH(16) });
+      fl.text(it.desc, { size: 13, color: '#cfe9ff', maxW: fl.w, lh: lineH(13) });
+      fl.gap(6);
+      const hy = fl.cursor;
+      this.game.addBtn(owned ? '✓ 已擁有' : (afford ? '兌換' : '兌換（保育點不足）'),
+        fl.x + iw - 200, hy, 200, bh - 6,
+        () => { if (!owned && this.buyTool(it.id)) this.game.render(); },
+        owned ? '#2a8f4a' : (afford ? '#1d6fa5' : '#44505a'),
+        owned ? 'purchased' : (afford ? 'normal' : 'disabled'));
+      fl.gap(2);
+      /* 道具效果說明（已購入時標示啟用中） */
+      if (owned) fl.text('✓ 已購入，效果啟用中', { size: 12, color: '#8fd0a0', maxW: fl.w, lh: lineH(12) });
+      fl.gap(UI.gap + 6);
+    }
+    this.game.addBtn('返回', CFG.W / 2 - 50, CFG.H - 60, 100, 40, () => this.openMenu());
     this.game.drawButtons();
   }
   drawPlay() {
@@ -5767,7 +5873,7 @@ class BonusGame {
     ctx.fillText(isNew ? '首次發現潮間帶生物！' : '這你已經發現過了', CFG.W / 2, py + 176);
     ctx.font = '14px ' + FONT; ctx.fillStyle = '#cfe9ff';
     ctx.fillText('學名 ' + (sp.latin || '尚未確認'), CFG.W / 2, py + 202);
-    ctx.fillText('棲地：' + sp.habitat + '　　研究價值：' + sp.researchValue, CFG.W / 2, py + 228);
+    ctx.fillText('棲地：' + sp.habitat + '　　研究價值：' + sp.researchValue + '　　保育價值：🌱 +' + (sp.conservation || 0), CFG.W / 2, py + 228);
     ctx.textAlign = 'left';
     const fx = px + UI.pad + 10;
     const lines = wrapLines('教育小知識：' + sp.fact, pw - 40, 14, false);
@@ -5777,14 +5883,20 @@ class BonusGame {
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     this.game.buttons = [];
     const by = py + ph - 62;
-    if (isNew) {
-      this.game.addBtn('繼續探索', CFG.W / 2 - 110, by, 220, 44, () => this.confirmNew(), '#2a8f4a');
-    } else if (cs.resolved) {
+    const cv = sp.conservation || 0;
+    if (cs.resolved) {
       this.game.addBtn('繼續探索', CFG.W / 2 - 110, by, 220, 44, () => this.returnToPlay(), '#2a8f4a');
+    } else if (cs.isNew) {
+      /* 首抓結算：兌換保育點 / 保留（保留仍領 first 研究獎勵） */
+      const bw = 190;
+      this.game.addBtn('🌱 兌換保育點 +' + cv, CFG.W / 2 - 200, by, bw, 44, () => this.confirmConserve(), '#2a8f4a');
+      this.game.addBtn('保留', CFG.W / 2 + 10, by, bw, 44, () => this.confirmKeep(), '#3a5a8a');
     } else {
       const dup = BONUS_REDEEM[sp.rarity] ? BONUS_REDEEM[sp.rarity].dup : 0;
-      this.game.addBtn('兌換 +' + dup + ' 研究點', CFG.W / 2 - 200, by, 190, 44, () => this.confirmRedeem(), '#b8860b');
-      this.game.addBtn('保留', CFG.W / 2 + 10, by, 190, 44, () => this.confirmKeep(), '#3a5a8a');
+      const bw = 186;
+      this.game.addBtn('🌱 兌換保育點 +' + cv, CFG.W / 2 - 291, by, bw, 44, () => this.confirmConserve(), '#2a8f4a');
+      this.game.addBtn('🧪 兌換 +' + dup + ' 研究點', CFG.W / 2 - 97, by, bw, 44, () => this.confirmRedeem(), '#b8860b');
+      this.game.addBtn('保留', CFG.W / 2 + 97, by, bw, 44, () => this.confirmKeep(), '#3a5a8a');
     }
     this.game.drawButtons();
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -5850,6 +5962,7 @@ class BonusGame {
     fl.text('新發現：' + s.new + ' 種', { size: 15, color: '#ffe08a', align: 'center', maxW: fl.w, lh: lineH(15) });
     fl.text('重複兌換：' + s.dup + ' 隻', { size: 15, color: '#9fd8f0', align: 'center', maxW: fl.w, lh: lineH(15) });
     fl.text('研究點：+' + s.points, { size: 18, bold: true, color: '#ffe08a', align: 'center', maxW: fl.w, lh: lineH(18) });
+    fl.text('🌱 保育點：+' + s.conservation, { size: 16, bold: true, color: '#b5f2c0', align: 'center', maxW: fl.w, lh: lineH(16) });
     fl.gap(6);
     const known = Object.keys(this.game.bonusEncyclopedia).length;
     fl.text('累積潮間帶圖鑑：' + known + ' / ' + BONUS_SPECIES.length + ' 種', { size: 14, color: '#cfe9ff', align: 'center', maxW: fl.w, lh: lineH(14) });
