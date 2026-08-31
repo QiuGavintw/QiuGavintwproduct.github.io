@@ -2,7 +2,7 @@
 // 決定性：不做任何 Math.random；引擎 seed 固定可重現。DEBUG_UI 預設 false。
 import { GameEngineAdapter } from './GameEngineAdapter.js';
 import { GameUI } from './GameUI.js';
-import { CanvasTable } from './canvas/CanvasTable.js';
+import { CanvasTable, detectReducedMotion } from './canvas/CanvasTable.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 const DEBUG_UI = false; // 調整為 true 可顯示 phase/currentSeat/wallRemaining/events 等調試資訊
@@ -47,16 +47,11 @@ export function boot(root = document.querySelector('#app')) {
   const canvas = document.querySelector('#mahjong-table');
   let table = null;
   if (canvas) {
-    const reduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     table = new CanvasTable({
       canvas,
       onTile: (key) => ui.selectTile(key),
       onIdle: () => ui.refresh(), // 動畫完成 → 重繪（解除輸入鎖後更新按鈕）
-      reducedMotion: !!reduced
+      reducedMotion: detectReducedMotion(window) // matchMedia 不存在時安全回 false
     });
     table.resize();
     ui.canvasTable = table;

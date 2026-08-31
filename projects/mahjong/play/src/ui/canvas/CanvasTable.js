@@ -14,11 +14,26 @@ import { AnimationController } from './animation/AnimationController.js';
 import { buildTimelines } from './animation/visualEvents.js';
 import { AnimationOverlay } from './animation/AnimationOverlay.js';
 
+// 安全偵測 reduced-motion（window.matchMedia 不存在／拋錯時一律回 false）
+export function detectReducedMotion(win) {
+  if (!win || typeof win.matchMedia !== 'function') return false;
+  try {
+    return !!win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeDpr(dpr) {
+  const d = Number(dpr);
+  return Number.isFinite(d) && d > 0 ? d : 1;
+}
+
 export class CanvasTable {
   constructor({ canvas, doc, dpr, raf, caf, onTile = null, onIdle = null, clock = null, controller = null, reducedMotion = false } = {}) {
     this.canvas = canvas;
     this.doc = doc || (typeof window !== 'undefined' ? window : null);
-    this.dpr = dpr || (typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1);
+    this.dpr = normalizeDpr(dpr != null ? dpr : typeof window !== 'undefined' ? window.devicePixelRatio : 1);
     this.onTile = onTile;
     this.onIdle = onIdle;
     this.ctx = canvas.getContext('2d');
@@ -56,8 +71,10 @@ export class CanvasTable {
   // 依 canvas 實際 CSS 尺寸調整解析度（DPR），回傳新尺寸
   resize() {
     const rect = this.canvas.getBoundingClientRect();
-    const cssW = Math.max(1, Math.round(rect.width || this.canvas.clientWidth || 0));
-    const cssH = Math.max(1, Math.round(rect.height || this.canvas.clientHeight || 0));
+    const rawW = Number.isFinite(rect.width) ? rect.width : this.canvas.clientWidth || 0;
+    const rawH = Number.isFinite(rect.height) ? rect.height : this.canvas.clientHeight || 0;
+    const cssW = Math.max(1, Math.round(rawW || 0));
+    const cssH = Math.max(1, Math.round(rawH || 0));
     this.canvas.width = Math.round(cssW * this.dpr);
     this.canvas.height = Math.round(cssH * this.dpr);
     this.canvas.style.width = `${cssW}px`;

@@ -81,7 +81,19 @@ export class AudioContextAdapter {
       g.connect(this.sfxBus || this.ctx.destination);
       osc.start(t0);
       osc.stop(t0 + Math.max(0.02, duration + 0.02));
-      const handle = { stop: () => { try { osc.stop(); } catch { /* already stopped */ } } };
+      const handle = {
+        stop: () => {
+          try {
+            osc.stop();
+          } catch {
+            /* already stopped */
+          }
+        }
+      };
+      // 結束後自追蹤集合移除，避免長局無限量累積
+      const onEnded = () => this._tones.delete(handle);
+      if (typeof osc.addEventListener === 'function') osc.addEventListener('ended', onEnded);
+      else if (osc) osc.onended = onEnded;
       this._tones.add(handle);
       return handle;
     } catch {
@@ -106,16 +118,18 @@ export class AudioContextAdapter {
         osc.start(now);
         return { osc, g };
       });
-      const handle = {
-        stop: () => {
-          const t = this.ctx.currentTime;
-          for (const { osc, g } of parts) {
-            try {
-              g.gain.setTargetAtTime(0.0001, t, 0.05);
-              osc.stop(t + 0.3);
-            } catch { /* already stopped */ }
+      const handle = { stop: null };
+      handle.stop = () => {
+        const t = this.ctx.currentTime;
+        for (const { osc, g } of parts) {
+          try {
+            g.gain.setTargetAtTime(0.0001, t, 0.05);
+            osc.stop(t + 0.3);
+          } catch {
+            /* already stopped */
           }
         }
+        this._pads.delete(handle); // 停止後自追蹤移除，避免長局無限量累積
       };
       this._pads.add(handle);
       return handle;
