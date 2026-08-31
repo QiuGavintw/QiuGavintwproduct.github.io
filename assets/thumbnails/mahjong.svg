@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="台灣麻將牌桌預覽示意圖（非實機截圖）">
+  <title>台灣麻將牌桌預覽示意圖</title>
+  <desc>以台灣麻將實際 Canvas 牌桌配置繪製的示意圖：下方為真人手牌牌面，上方與左右為 AI 背牌，中央為桌面與河牌。</desc>
+  <rect width="1200" height="675" fill="#1e3a2f"/>
+  <!-- 桌面 -->
+  <rect x="330" y="150" width="540" height="360" rx="18" fill="#1b3529" stroke="#35594a" stroke-width="4"/>
+  <!-- 上方 AI（上）背牌 -->
+  <g>
+    <rect x="430" y="60" width="340" height="34" rx="8" fill="#244638" stroke="#35594a"/>
+    <text x="600" y="83" fill="#9fb8ad" font-family="sans-serif" font-size="18" text-anchor="middle">上｜AI ・ 背牌 17 張</text>
+    <g fill="#2f6f5e" stroke="#173b31">
+      <rect x="500" y="96" width="30" height="40" rx="5"/><rect x="534" y="96" width="30" height="40" rx="5"/>
+      <rect x="568" y="96" width="30" height="40" rx="5"/><rect x="602" y="96" width="30" height="40" rx="5"/>
+      <rect x="636" y="96" width="30" height="40" rx="5"/><rect x="670" y="96" width="30" height="40" rx="5"/>
+    </g>
+  </g>
+  <!-- 左方 AI（左）背牌 -->
+  <g>
+    <rect x="30" y="180" width="210" height="34" rx="8" fill="#244638" stroke="#35594a"/>
+    <text x="135" y="203" fill="#9fb8ad" font-family="sans-serif" font-size="18" text-anchor="middle">左｜AI ・ 背牌 16 張</text>
+    <g fill="#2f6f5e" stroke="#173b31">
+      <rect x="56" y="218" width="30" height="40" rx="5"/><rect x="56" y="262" width="30" height="40" rx="5"/>
+      <rect x="56" y="306" width="30" height="40" rx="5"/><rect x="56" y="350" width="30" height="40" rx="5"/>
+      <rect x="56" y="394" width="30" height="40" rx="5"/><rect x="56" y="438" width="30" height="40" rx="5"/>
+    </g>
+  </g>
+  <!-- 右方 AI（右）背牌 -->
+  <g>
+    <rect x="960" y="180" width="210" height="34" rx="8" fill="#244638" stroke="#35594a"/>
+    <text x="1065" y="203" fill="#9fb8ad" font-family="sans-serif" font-size="18" text-anchor="middle">右｜AI ・ 背牌 14 張</text>
+    <g fill="#2f6f5e" stroke="#173b31">
+      <rect x="1100" y="218" width="30" height="40" rx="5"/><rect x="1100" y="262" width="30" height="40" rx="5"/>
+      <rect x="1100" y="306" width="30" height="40" rx="5"/><rect x="1100" y="350" width="30" height="40" rx="5"/>
+      <rect x="1100" y="394" width="30" height="40" rx="5"/><rect x="1100" y="438" width="30" height="40" rx="5"/>
+    </g>
+  </g>
+  <!-- 中央河牌（公開資訊） -->
+  <g font-family="sans-serif" font-size="20" fill="#22303a" text-anchor="middle">
+    <rect x="360" y="420" width="30" height="38" rx="4" fill="#eef2ea" stroke="#c9d6cb"/>
+    <text x="375" y="445">1萬</text>
+    <rect x="394" y="420" width="30" height="38" rx="4" fill="#eef2ea" stroke="#c9d6cb"/>
+    <text x="409" y="445">9筒</text>
+    <rect x="428" y="420" width="30" height="38" rx="4" fill="#eef2ea" stroke="#c9d6cb"/>
+    <text x="443" y="445">5索</text>
+    <rect x="462" y="420" width="30" height="38" rx="4" fill="#eef2ea" stroke="#c9d6cb"/>
+    <text x="477" y="445">東</text>
+  </g>
+  <!-- 牌牆 -->
+  <g>
+    <rect x="620" y="360" width="180" height="72" rx="10" fill="#17352a" stroke="#2f5243"/>
+    <rect x="634" y="372" width="16" height="24" rx="3" fill="#2f6f5e"/>
+    <rect x="654" y="372" width="16" height="24" rx="3" fill="#2f6f5e"/>
+    <rect x="674" y="372" width="16" height="24" rx="3" fill="#2f6f5e"/>
+    <text x="634" y="420" fill="#f4c95d" font-family="sans-serif" font-size="18">剩 51 張</text>
+  </g>
+  <!-- 下方真人（下）手牌牌面 -->
+  <g>
+    <rect x="300" y="560" width="600" height="40" rx="8" fill="#2f5243" stroke="#35594a"/>
+    <text x="600" y="586" fill="#f4f1e6" font-family="sans-serif" font-size="18" text-anchor="middle">下｜玩家（你）・ 分數 25000</text>
+    <g font-family="sans-serif" font-size="22" fill="#22303a" text-anchor="middle">
+      <rect x="360" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="382" y="636">1萬</text>
+      <rect x="410" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="432" y="636">2萬</text>
+      <rect x="460" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="482" y="636">3萬</text>
+      <rect x="510" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="532" y="636">4萬</text>
+      <rect x="560" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="582" y="636">5萬</text>
+      <rect x="610" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="632" y="636">6萬</text>
+      <rect x="660" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="682" y="636">7萬</text>
+      <rect x="710" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="732" y="636">8萬</text>
+      <rect x="760" y="602" width="44" height="56" rx="6" fill="#fdfde4" stroke="#b9c4a8"/>
+      <text x="782" y="636">9萬</text>
+    </g>
+  </g>
+</svg>

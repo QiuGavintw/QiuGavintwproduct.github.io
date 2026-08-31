@@ -81,6 +81,9 @@ jobs:
       - name: Validate projects.js is loadable
         run: node -e "const p=require('./js/projects.js'); console.log('projects.js OK:', p.length, 'projects');"
 
+      - name: Portfolio × mahjong integration tests
+        run: node --test tests/portfolio-mahjong.test.js
+
   deploy:
     name: Deploy to GitHub Pages
     needs: quality-check

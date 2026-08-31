@@ -234,6 +234,48 @@
         "原始碼位於獨立 Repository：QiuGavintw/lunch-angel",
         "專案在 GitHub Pages 無法直接執行，此頁提供完整介紹與程式碼連結"
       ]
+    },
+    {
+      id: "mahjong",
+      slug: "mahjong",
+      title: "台灣麻將",
+      shortDescription: "以純 JavaScript 打造的四人台灣 16 張麻將單機遊戲，內建 AI 玩家、完整規則與計分、Canvas 牌桌、動畫與音效。",
+      description:
+        "「台灣麻將」是一款以純前端技術打造的四人台灣 16 張麻將單機遊戲。遊戲內建完整規則引擎（摸牌、捨牌、吃、碰、明槓、暗槓、加槓、胡牌、過水、海底河底、流局）與特殊事件（天胡、地胡、人胡、門清自摸、地聽、搶槓、海底撈月、河底撈魚、花牌八仙／七搶一），並以零和結算計算台數與支付。三位 AI 玩家採用向聽數決策與安全張風險加權，牌桌以 Canvas 繪製，真人可完整操作一局：開始、摸牌、捨牌、吃碰槓胡過、自摸／暗槓／加槓確認、結算、下一局、對局結束與重來。",
+      categories: ["遊戲", "教育"],
+      technologies: ["HTML5", "CSS3", "Canvas", "JavaScript", "ES Modules", "Web Audio API"],
+      thumbnail: "assets/thumbnails/mahjong.svg",
+      screenshots: ["assets/thumbnails/mahjong.svg"],
+      detailPage: "projects/mahjong/",
+      demoUrl: "projects/mahjong/play/",
+      githubUrl: "https://github.com/QiuGavintw/QiuGavintwproduct.github.io/tree/master/projects/mahjong",
+      createdAt: "2026-08-31",
+      updatedAt: "2026-08-31",
+      featured: false,
+      accent: "#2f6f5e",
+      features: [
+        "完整台灣 16 張麻將規則：摸牌、捨牌、吃、碰、明槓、暗槓、加槓、胡（自摸／榮胡／一炮多響）、過水、海底河底、流局",
+        "特殊事件：天胡、地胡、人胡、門清自摸、地聽、搶槓、海底撈月、河底撈魚、花牌八仙／七搶一",
+        "台數與零和支付結算，一炮多響逐位計分",
+        "三位 AI 玩家：向聽數決策＋安全張風險加權（balanced／aggressive／defensive 策略）",
+        "Canvas 牌桌：真人手牌牌面、AI 只顯示背牌、河牌、副露、花、牌牆、目前玩家、莊家",
+        "動畫：摸牌、捨牌、吃碰槓、花牌補牌、胡牌、回合切換（確定性時鐘＋requestAnimationFrame）",
+        "音效與 BGM：Web Audio 程序合成、音量／靜音分離、Autoplay Policy 安全處理",
+        "真人互動：自摸／暗槓／加槓確認、結算顯示、下一局、對局結束、重來"
+      ],
+      howToPlay: [
+        "點「開始」發牌；輪到你時按「摸牌」",
+        "點選手牌再按「捨牌」出牌",
+        "AI 捨牌後可選擇「胡／碰／槓／吃／過」",
+        "自摸、暗槓、加槓時會出現確認；一局結束按「結算」查看台數與支付",
+        "本局結束後按「下一局」續局，或按「重來」重新開始"
+      ],
+      highlights: [
+        "純前端、零依賴、ES Modules；決定性 RNG 使同一 seed 完全可重現",
+        "核心規則與 UI 徹底分層：GameEngine → Adapter → GameUI → Canvas，全部 400+ 測試通過",
+        "AI 手牌只顯示背牌與張數，隱私絕不外洩",
+        "動畫與音效皆為確定性、可注入時鐘／fake backend 的可測試抽象"
+      ]
     }
   ];
 

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>台灣麻將｜單機 16 張</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <noscript>此遊戲需要 JavaScript（ES Modules）。</noscript>
+  <main id="app" class="app">
+    <header id="hud" class="hud" aria-label="牌局資訊"></header>
+    <aside id="audio-settings" class="audio-settings" aria-label="音效設定">
+      <label for="sfx-volume">🔊 音效 <input id="sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8" /></label>
+      <label for="bgm-volume">🎵 BGM <input id="bgm-volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
+      <button id="mute-toggle" type="button" aria-label="靜音切換" aria-pressed="false">🔇 靜音（關）</button>
+    </aside>
+    <section id="game" class="game">
+      <canvas id="mahjong-table" class="mahjong-table" aria-label="麻將桌"></canvas>
+      <div id="players" class="players" aria-label="玩家"></div>
+      <div id="table" class="table" aria-label="桌面"></div>
+      <div id="hand" class="hand" aria-label="你的手牌"></div>
+      <div id="actions" class="actions" aria-label="動作"></div>
+      <div id="message" class="message" aria-label="訊息"></div>
+      <div id="settlement" class="settlement" aria-label="結算"></div>
+    </section>
+  </main>
+  <script type="module" src="src/ui/main.js"></script>
+</body>
+</html>

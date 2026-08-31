@@ -36,6 +36,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://qiugavintw.github.io/QiuGavintwproduct.github.io/projects/mahjong/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://qiugavintw.github.io/QiuGavintwproduct.github.io/404.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.1</priority>
