@@ -276,6 +276,46 @@
         "AI 手牌只顯示背牌與張數，隱私絕不外洩",
         "動畫與音效皆為確定性、可注入時鐘／fake backend 的可測試抽象"
       ]
+    },
+    {
+      id: "binary-tree",
+      slug: "binary-tree",
+      title: "二元樹視覺化",
+      shortDescription: "互動式二元搜尋樹教學工具，以動畫逐步展示節點插入、搜尋、刪除與前序／中序／後序／層序走訪。",
+      description:
+        "「二元樹視覺化」是一款互動式二元搜尋樹（Binary Search Tree）教學工具。使用者可以輸入數值建立樹，用動畫觀察插入、搜尋、刪除的執行過程，並以前序、中序、後序、層序四種方式走訪整棵樹。自由模式提供即時操作的彈性，學習模式則以循序漸進的課程搭配即時測驗引導理解，適合課堂展示與自學。",
+      categories: ["視覺化", "教育"],
+      technologies: ["HTML5", "CSS3", "Canvas", "JavaScript"],
+      thumbnail: "assets/thumbnails/binary-tree.svg",
+      screenshots: ["assets/thumbnails/binary-tree.svg"],
+      detailPage: "projects/binary-tree/",
+      demoUrl: "projects/binary-tree/play/",
+      githubUrl: "https://github.com/QiuGavintw/QiuGavintwproduct.github.io/tree/master/projects/binary-tree",
+      createdAt: "2026-09-06",
+      updatedAt: "2026-09-06",
+      featured: false,
+      accent: "#2563eb",
+      features: [
+        "二元搜尋樹完整操作：插入、搜尋、刪除（含三種刪除情形）即時視覺化",
+        "四種走訪動畫：前序、中序、後序、層序，逐步展示節點拜訪順序",
+        "自由模式：輸入即時生效，動畫可選擇性重播、可中斷",
+        "學習模式：循序漸進課程（建立、插入、搜尋、刪除、走訪）＋即時測驗與成績",
+        "教學引導：五個可收納教學面板、首次使用導覽、Help 快捷鍵支援",
+        "完整響應式設計：桌機與手機皆可操作，360px 起全部可用"
+      ],
+      howToPlay: [
+        "在「建立樹」輸入數字（逗號或空格分隔）後按「建立樹」，或按「載入預設樹」",
+        "輸入數值後按 Enter 或點「插入」加入節點",
+        "輸入目標值後按「搜尋／刪除」觀看搜尋與刪除動畫",
+        "在「走訪」面板選擇「前序／中序／後序／層序」觀看走訪動畫",
+        "切換「學習模式」跟著課程一步步練習並完成測驗"
+      ],
+      highlights: [
+        "核心邏輯與 UI 徹底分層：model → layout → renderer → operations，易於維護",
+        "11 套 Node 自動化測試（479 案例）＋真實瀏覽器 CDP 驗證全數通過",
+        "動畫可中斷、可重播，操作結果立即生效、永不遺失",
+        "無第三方框架、零依賴，純前端即可在 GitHub Pages 執行"
+      ]
     }
   ];
 

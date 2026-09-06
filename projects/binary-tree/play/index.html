@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>二元樹視覺化 · 統一互動工作台</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --bg2: #0f172a;
+      --panel: #1e293b;
+      --panel2: #273449;
+      --border: #334155;
+      --border-soft: #2b3a52;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #2563eb;
+      --accent-soft: #3b82f6;
+      --accent2: #16a34a;
+      --danger: #e11d48;
+      --learning: #6366f1;
+      --visited: #64748b;
+      --current: #e11d48;
+      --shadow: 0 14px 44px rgba(0, 0, 0, .38);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+      background:
+        radial-gradient(1100px 420px at 12% -6%, rgba(37, 99, 235, .20), transparent 60%),
+        radial-gradient(900px 380px at 92% -8%, rgba(22, 163, 74, .13), transparent 55%),
+        var(--bg2);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 14px 40px;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .app-header {
+      width: min(1100px, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .brand h1 { font-size: 25px; margin: 0; letter-spacing: .2px; }
+    .brand .subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .mode-switch {
+      display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 999px; padding: 4px;
+    }
+    .mode-btn {
+      border: 0; background: transparent; color: var(--muted);
+      border-radius: 999px; padding: 7px 18px; font-size: 14px; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+    .btn-icon {
+      width: 38px; height: 38px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 17px; flex: 0 0 auto;
+    }
+
+    /* ── Global banner ───────────────────────────────────── */
+    .banner {
+      width: min(1100px, 100%);
+      border-radius: 10px; padding: 8px 14px; margin-bottom: 12px; font-size: 14px;
+      background: var(--panel); border: 1px solid var(--border); min-height: 20px;
+      color: var(--text);
+    }
+    .banner.error { background: #4c0519; border-color: var(--danger); }
+    .banner.info { background: #172449; border-color: var(--accent); }
+
+    /* ── Welcome strip (compact) ─────────────────────────── */
+    .welcome {
+      width: min(1100px, 100%);
+      background: linear-gradient(135deg, #1e3a8a, #14203f);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    }
+    .welcome-title { font-size: 16px; font-weight: 700; }
+    .welcome-body { font-size: 13.5px; color: #bae6fd; margin-top: 2px; }
+    .welcome-actions { flex: 0 0 auto; }
+
+    /* ── Main layout ─────────────────────────────────────── */
+    .scene { width: min(1100px, 100%); }
+
+    .ops-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    /* L1 controls */
+    .sec-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 12px; }
+    .sec-label { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .4px; flex: 0 0 auto; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .group {
+      display: flex; gap: 6px; align-items: center;
+      background: var(--panel2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 6px 8px;
+      flex-wrap: wrap;
+    }
+    .group.grow { flex: 1 1 320px; }
+    .group > .glabel { color: var(--muted); font-size: 12px; margin-right: 2px; }
+    label.visually-hidden, h2.visually-hidden {
+      position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    input[type="text"], input[type="number"] {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 15px;
+      min-width: 0;
+    }
+    input[type="text"] { width: 220px; }
+    input[type="number"] { width: 96px; }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+
+    button {
+      background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; padding: 9px 16px; font-size: 14px; cursor: pointer;
+      min-height: 40px;
+      transition: background .15s, border-color .15s, opacity .15s, transform .05s;
+    }
+    button:hover:not(:disabled):not(.active) { border-color: var(--accent-soft); }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:disabled { opacity: .38; cursor: not-allowed; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, .35); }
+    button.primary:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent-soft); }
+    button.success { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+    button.outline { background: transparent; border-color: var(--accent); color: var(--accent-soft); }
+    button.outline.danger { border-color: var(--danger); color: #fb7185; }
+    button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+    button.ghost.danger { color: #fb7185; }
+    button.ghost:hover:not(:disabled) { border-color: var(--border); color: var(--text); }
+    button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+    button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .transport button, .speed-group button { min-width: 52px; min-height: 36px; }
+
+    /* L2 Canvas focal point */
+    .canvas-wrap {
+      background: var(--panel2); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+    }
+    canvas { display: block; width: 100%; height: 460px; }
+
+    /* L3 Result strip */
+    .result-strip { display: flex; align-items: stretch; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .feedback-line {
+      flex: 1 1 320px;
+      border-radius: 12px; padding: 10px 14px;
+      background: var(--panel2); border: 1px solid var(--border);
+      font-size: 14px; line-height: 1.5; min-height: 46px;
+    }
+    .feedback-line .fl-title { color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+    .feedback-line .fl-text { color: var(--text); }
+    .feedback-line.tone-success { border-color: var(--accent2); background: rgba(22, 163, 74, .08); }
+    .feedback-line.tone-success .fl-title { color: var(--accent2); }
+    .feedback-line.tone-info { border-color: var(--accent); }
+    .feedback-line.tone-info .fl-title { color: #38bdf8; }
+    .feedback-line.tone-playing { border-color: #38bdf8; }
+    .feedback-line.tone-playing .fl-title { color: #38bdf8; }
+    .feedback-line.tone-paused { border-color: #f59e0b; }
+    .feedback-line.tone-paused .fl-title { color: #f59e0b; }
+
+    .mini-status { display: flex; gap: 18px; align-items: center; background: var(--panel2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 0 16px; }
+    .mini-status .ms-item { display: flex; flex-direction: column; gap: 2px; }
+    .mini-status .ms-item .k { color: var(--muted); font-size: 11px; }
+    .mini-status .ms-item .v { font-size: 16px; font-weight: 700; }
+    .mini-status .v[data-tone="complete"] { color: var(--accent2); }
+    .mini-status .v[data-tone="playing"] { color: #38bdf8; }
+    .mini-status .v[data-tone="paused"] { color: #f59e0b; }
+    .mini-status .v[data-tone="idle"] { color: var(--muted); }
+
+    /* Animation preview (optional replay) */
+    .transport-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+    .transport-row .sec-label { align-self: center; }
+
+    /* ── Learning Mode panel (distinct visual) ───────────── */
+    .lesson-panel {
+      background: linear-gradient(180deg, #26214d, #1b1a38);
+      border: 1px solid var(--learning);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 30px rgba(99, 102, 241, .18);
+    }
+    .lesson-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--learning); color: #fff; font-weight: 700;
+      border-radius: 999px; padding: 5px 14px; font-size: 13px; margin-bottom: 12px;
+    }
+    .lesson-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; margin-bottom: 8px; }
+    .lesson-pos { color: var(--muted); font-size: 13px; }
+    .lesson-title { font-size: 18px; font-weight: 700; }
+    .lesson-dots { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .lesson-dots .dot {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--border); background: rgba(255, 255, 255, .04); color: var(--muted);
+      font-size: 13px; padding: 0 6px;
+    }
+    .lesson-dots .dot.done { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+    .lesson-dots .dot.current { background: var(--learning); border-color: var(--learning); color: #fff; }
+    .lesson-complete { margin: 10px 0; color: var(--accent2); font-weight: 700; font-size: 15px; }
+    .lesson-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    body.mode-learning .ops-card { border-color: rgba(99, 102, 241, .55); }
+    body.mode-learning .mode-btn.active#btnLearningMode { background: var(--learning); }
+
+    /* ── Secondary (collapsed) info ──────────────────────── */
+    .info-area { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .info-block { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .info-block > summary {
+      list-style: none; cursor: pointer; user-select: none;
+      padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .info-block > summary::-webkit-details-marker { display: none; }
+    .info-block > summary::before {
+      content: "▸"; color: var(--accent-soft); font-size: 13px; transition: transform .15s;
+    }
+    .info-block[open] > summary::before { transform: rotate(90deg); }
+    .info-block > summary:hover { background: var(--panel2); }
+    .detail-body { padding: 0 16px 16px; }
+    .info-block .panel { background: transparent; border: 0; border-radius: 0; padding: 6px 0 4px; margin-bottom: 10px; }
+    .info-block .panel .title { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .panel { background: var(--panel2); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .panel .title { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .order-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 18px; }
+    .chip {
+      min-width: 36px; text-align: center; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--panel2); color: var(--text);
+      font-size: 14px; font-weight: 500; transition: background .15s, color .15s;
+    }
+    .chip.done { background: var(--visited); border-color: var(--visited); color: #0b1220; }
+    .chip.current { background: var(--current); border-color: var(--current); color: #fff; }
+
+    .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .info-item { background: var(--panel2); border-radius: 10px; padding: 10px 12px; }
+    .info-item .k { color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+    .info-item .v { font-size: 15px; word-break: break-word; }
+    .info-item .v[data-tone="complete"] { color: var(--accent2); }
+    .info-item .v[data-tone="playing"] { color: #38bdf8; }
+    .info-item .v[data-tone="paused"] { color: #f59e0b; }
+    .info-item .v[data-tone="idle"] { color: var(--muted); }
+
+    .legend { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+
+    /* ── Educational learning info (Phase 7) ── */
+    .learn-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; width: 100%; }
+    .learn-grid .panel { margin-bottom: 0; flex: 1 1 280px; background: var(--panel2); border-radius: 10px; padding: 12px; }
+    .learn-concepts { flex: 1.4 1 300px; }
+    .learn-node { flex: 1.6 1 320px; }
+    .learn-tree { flex: 1 1 220px; }
+    .concept-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .concept-chips button { padding: 5px 10px; font-size: 13px; min-height: 28px; }
+    .ctitle { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--accent-soft); }
+    .cbody { color: var(--text); font-size: 14px; line-height: 1.5; margin-bottom: 6px; }
+    .crule { color: var(--muted); font-size: 13px; font-weight: 600; }
+    .node-info { min-height: 40px; font-size: 14px; }
+    .node-info .hint { color: var(--muted); font-style: italic; }
+    .ni-row { display: flex; gap: 10px; line-height: 1.6; }
+    .ni-row .k { color: var(--muted); min-width: 118px; flex: 0 0 118px; }
+    .ni-row .v { color: var(--text); }
+    .teach-title { font-size: 15px; font-weight: 600; margin-top: 10px; color: var(--accent-soft); }
+    .teach-body { font-size: 14px; line-height: 1.55; color: var(--text); min-height: 18px; white-space: pre-line; }
+    .teach-rule { margin-top: 6px; font-size: 13px; color: #38bdf8; font-weight: 600; }
+    .learn-tree .ts-row { display: flex; justify-content: space-between; line-height: 1.7; font-size: 14px; }
+    .learn-tree .ts-row .k { color: var(--muted); }
+    .learn-tree .ts-row .v { color: var(--text); font-weight: 600; }
+
+    /* ── Help modal (Phase 9) ── */
+    .help-overlay {
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, .72);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; padding: 16px;
+    }
+    .help-overlay[hidden] { display: none; }
+    .help-panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; width: min(560px, 100%); max-height: 82vh; overflow: auto; padding: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+    }
+    .help-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .help-title { font-size: 18px; font-weight: 700; }
+    .help-intro { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .help-sections section { margin-bottom: 12px; border-left: 3px solid var(--accent); padding-left: 10px; }
+    .help-sections h3 { font-size: 14px; margin: 0 0 4px; color: var(--accent-soft); }
+    .help-sections p { margin: 2px 0; font-size: 13.5px; line-height: 1.55; color: var(--text); }
+
+    .hint-toast {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: var(--panel); border: 1px solid var(--accent); color: var(--text);
+      border-radius: 10px; padding: 8px 14px; font-size: 13.5px;
+      max-width: min(420px, 90vw);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+      z-index: 40; pointer-events: none; text-align: center;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      body { padding: 10px 10px 30px; }
+      .app-header { flex-direction: column; align-items: stretch; text-align: center; }
+      .header-actions { justify-content: center; }
+      .brand .subtitle { display: none; }
+      .welcome { flex-direction: column; align-items: stretch; text-align: center; }
+      .welcome-actions { align-self: stretch; }
+      .welcome-actions button { width: 100%; }
+      .ops-card { padding: 14px; }
+      .sec-row { flex-direction: column; align-items: stretch; }
+      .bar { flex-direction: column; align-items: stretch; }
+      .group { align-items: stretch; }
+      .group.grow { flex-basis: auto; }
+      .group input { flex: 1 1 100%; }
+      input[type="text"] { width: 100%; }
+      .transport-row { flex-direction: column; align-items: stretch; }
+      .transport { justify-content: center; }
+      .speed-group { justify-content: center; }
+      canvas { height: 300px; }
+      .result-strip { flex-direction: column; }
+      .mini-status { padding: 8px 14px; justify-content: space-between; }
+      .status-grid { grid-template-columns: 1fr 1fr; }
+      button { min-height: 44px; }
+      .help-overlay { padding: 8px; align-items: flex-start; overflow-y: auto; }
+      .help-panel { max-height: none; }
+      .learn-grid { flex-direction: column; }
+      .learn-grid .panel { margin-bottom: 12px; }
+    }
+    @media (max-height: 800px) and (min-width: 721px) {
+      canvas { height: 340px; }
+      .ops-card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>🌳 二元樹視覺化</h1>
+      <div class="subtitle">Binary Tree Visualizer</div>
+    </div>
+    <div class="header-actions">
+      <div class="mode-switch" role="group" aria-label="模式切換">
+        <button id="btnFreeMode" class="mode-btn active" aria-pressed="true">自由操作</button>
+        <button id="btnLearningMode" class="mode-btn" aria-pressed="false">📘 學習模式</button>
+      </div>
+      <button id="btnHelpOpen" class="btn-icon" title="使用說明" aria-label="開啟使用說明">❓</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status" aria-live="polite">就緒</div>
+
+  <!-- Welcome (compact onboarding, once per page load) -->
+  <div id="welcomeCard" class="welcome" role="region" aria-label="歡迎使用二元樹視覺化" hidden>
+    <div>
+      <div class="welcome-title" id="welcomeTitle"></div>
+      <div class="welcome-body" id="welcomeBody"></div>
+    </div>
+    <div class="welcome-actions">
+      <button id="btnWelcomeStart" class="primary" title="關閉歡迎訊息並開始使用"></button>
+    </div>
+  </div>
+
+  <main class="scene">
+    <!-- ═══════ L1+L2+L3 : Primary workspace card ═══════ -->
+    <section class="ops-card" aria-label="操作工作台">
+      <h2 class="visually-hidden">操作工作台</h2>
+
+      <div id="freeOpsArea">
+        <!-- Tree building -->
+        <div class="sec-row" id="barTreeRow">
+          <span class="sec-label">建立樹</span>
+          <div class="group grow">
+            <label class="visually-hidden" for="treeInput">建立樹（逗號或空格分隔的數字）</label>
+            <input type="text" id="treeInput" placeholder="50,30,70,20,40,60,80" aria-label="建立樹：輸入以逗號或空格分隔的數字" />
+            <button id="btnBuild" class="primary" title="建立樹">建立樹</button>
+            <button id="btnLoad" class="outline" title="載入預設平衡樹">載入預設樹</button>
+            <button id="btnClear" class="ghost danger" title="清空樹">清空</button>
+          </div>
+        </div>
+
+        <!-- Node ops + Traversal -->
+        <div class="sec-row" id="barOpsRow">
+          <span class="sec-label">節點操作</span>
+          <div class="group grow">
+            <label class="visually-hidden" for="opVal">操作數值</label>
+            <input type="number" id="opVal" value="40" aria-label="Insert / Search / Delete 數值" />
+            <button id="btnInsert" class="primary" title="插入節點">插入</button>
+            <button id="btnSearch" class="outline" title="搜尋節點">搜尋</button>
+            <button id="btnDelete" class="outline danger" title="刪除節點">刪除</button>
+          </div>
+          <div class="group">
+            <span class="glabel">遍歷</span>
+            <button data-trav="preorder">前序</button>
+            <button data-trav="inorder">中序</button>
+            <button data-trav="postorder">後序</button>
+            <button data-trav="levelorder">層序</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas : main visual focus -->
+      <div class="canvas-wrap">
+        <canvas id="treeCanvas" aria-label="二元樹視覺化畫布"></canvas>
+      </div>
+
+      <!-- L3 result strip -->
+      <div class="result-strip">
+        <div id="feedbackLine" class="feedback-line tone-muted" role="status" aria-live="polite">
+          <div class="fl-title" id="feedbackTitle">目前步驟／結果</div>
+          <div class="fl-text" id="feedbackText">就緒，等待操作。</div>
+        </div>
+        <div class="mini-status" aria-label="狀態摘要">
+          <div class="ms-item">
+            <span class="k">Tree size</span>
+            <span class="v" id="miniSize" data-tone="idle">0</span>
+          </div>
+          <div class="ms-item">
+            <span class="k">狀態</span>
+            <span class="v" id="miniStatus" data-tone="idle">就緒</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animation preview : optional replay of the last operation -->
+      <div class="transport-row">
+        <span class="sec-label">動畫預覽<br />（重播最近一次操作）</span>
+        <div class="group transport">
+          <button id="btnPlay" title="播放動畫" aria-label="播放動畫">▶ 播放</button>
+          <button id="btnPause" title="暫停動畫" aria-label="暫停動畫">⏸ 暫停</button>
+          <button id="btnStepBack" title="上一步" aria-label="上一步">◀ 上一步</button>
+          <button id="btnStep" title="下一步" aria-label="下一步">下一步 ▶</button>
+          <button id="btnRestart" title="回到第一步重播" aria-label="重新開始">↻ 重播</button>
+          <button id="btnSkipEnd" title="跳到動畫結尾" aria-label="跳到動畫結尾">⏭ 到底</button>
+        </div>
+        <div class="group speed-group">
+          <span class="glabel">速度</span>
+          <button data-speed="0.5">0.5x</button>
+          <button data-speed="1" class="active">1x</button>
+          <button data-speed="1.5">1.5x</button>
+          <button data-speed="2">2x</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ Learning Mode lesson panel (distinct visual) ═══════ -->
+    <div id="lessonPanel" class="lesson-panel" role="region" aria-label="互動式學習模式" hidden>
+      <div class="lesson-badge">📘 學習模式 · 教學中</div>
+      <div class="lesson-head">
+        <span id="lessonPos" class="lesson-pos">Lesson 1 / 9</span>
+        <span id="lessonTitle" class="lesson-title"></span>
+      </div>
+      <div id="lessonDots" class="lesson-dots" role="list" aria-label="課程章節進度"></div>
+      <div id="lessonStepTitle" class="teach-title"></div>
+      <div id="lessonBody" class="teach-body"></div>
+      <div id="lessonRule" class="teach-rule"></div>
+      <div id="lessonComplete" class="lesson-complete" hidden></div>
+      <div class="lesson-nav">
+        <button id="btnPrevLesson" title="上一章">← 上一章</button>
+        <button id="btnLessonPrevStep" title="上一個教學步驟">← 上一步</button>
+        <button id="btnLessonNextStep" class="primary" title="下一個教學步驟">下一步 →</button>
+        <button id="btnNextLesson" title="下一章">下一章 →</button>
+        <button id="btnExitLearning" title="回到自由操作">⬅ 返回自由操作</button>
+      </div>
+    </div>
+
+    <!-- ═══════ L4 : Secondary (collapsed) teaching & details ═══════ -->
+    <section class="info-area" id="infoArea" aria-label="教學與詳細資訊">
+      <details class="info-block" id="detailsConcepts">
+        <summary>📘 教學概念</summary>
+        <div class="detail-body">
+          <div class="learn-grid" id="learnGrid">
+            <!-- Concepts -->
+            <div class="panel learn-concepts">
+              <div class="title">二元樹學習（點選概念看說明）</div>
+              <div class="concept-chips">
+                <button data-concept="root">Root</button>
+                <button data-concept="parent">Parent</button>
+                <button data-concept="child">Child</button>
+                <button data-concept="leaf">Leaf</button>
+                <button data-concept="degree">Child Count</button>
+                <button data-concept="depth">Depth</button>
+                <button data-concept="height">Height</button>
+                <button data-concept="bst">BST 規則</button>
+                <button data-concept="inorder-sorted">中序排序</button>
+                <button data-concept="preorder">Preorder</button>
+                <button data-concept="inorder">Inorder</button>
+                <button data-concept="postorder">Postorder</button>
+                <button data-concept="levelorder">Level-order</button>
+              </div>
+              <div id="conceptTitle" class="ctitle"></div>
+              <div id="conceptBody" class="cbody"></div>
+              <div id="conceptRule" class="crule"></div>
+            </div>
+
+            <!-- Node info + teaching -->
+            <div class="panel learn-node" role="region" aria-label="節點資訊與操作教學">
+              <div class="title">節點資訊（點擊樹上的節點查看）</div>
+              <div id="nodeInfo" class="node-info"><span class="hint">點擊樹上的節點查看它的資訊。</span></div>
+              <div id="teachTitle" class="teach-title"></div>
+              <div id="teachBody" class="teach-body"></div>
+              <div id="teachRule" class="teach-rule"></div>
+            </div>
+
+            <!-- Tree summary -->
+            <div class="panel learn-tree">
+              <div class="title">Tree 資訊（Tree Summary）</div>
+              <div id="treeSummary" class="tree-summary"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="info-block" id="detailsTree">
+        <summary>🌳 樹資訊</summary>
+        <div class="detail-body">
+          <div class="panel learn-node" role="region" aria-label="節點資訊">
+            <div class="title">節點資訊（點擊樹上的節點查看）</div>
+            <div id="nodeInfo2" class="node-info"><span class="hint">點擊樹上的節點查看它的資訊。</span></div>
+          </div>
+          <div class="panel learn-tree">
+            <div class="title">Tree 摘要</div>
+            <div id="treeSummary2" class="tree-summary"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="info-block" id="detailsTrav">
+        <summary>🧭 Traversal 結果</summary>
+        <div class="detail-body">
+          <div class="panel">
+            <div class="title">Traversal Order（已訪問 / 目前 / 未訪問）— <span id="travLabel">未選擇</span></div>
+            <div class="order-list" id="orderList"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="info-block" id="detailsResult">
+        <summary>🔎 操作結果與狀態</summary>
+        <div class="detail-body">
+          <div class="status-grid">
+            <div class="info-item"><div class="k">目前操作</div><div class="v" id="infoOp">—</div></div>
+            <div class="info-item"><div class="k">進度</div><div class="v" id="infoStep">—</div></div>
+            <div class="info-item"><div class="k">目前節點</div><div class="v" id="infoCurrent">—</div></div>
+            <div class="info-item"><div class="k">Tree size</div><div class="v" id="infoSize">0</div></div>
+            <div class="info-item"><div class="k">狀態</div><div class="v" id="infoStatus" data-tone="idle">就緒</div></div>
+            <div class="info-item"><div class="k">說明</div><div class="v" id="infoDesc">—</div></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="info-block" id="detailsLegend">
+        <summary>❔ 圖例</summary>
+        <div class="detail-body">
+          <div class="legend">
+            <span><i class="swatch" style="background:#64748b"></i>Visited 已訪問</span>
+            <span><i class="swatch" style="background:#e11d48"></i>Current 目前比較 / 訪問</span>
+            <span><i class="swatch" style="background:#16a34a"></i>Found / 完成節點</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>Root / 頂點</span>
+          </div>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <!-- Help modal (Phase 9): quick-start, non-blocking, Escape/close to dismiss -->
+  <div id="helpDialog" class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="help-panel">
+      <div class="help-head">
+        <div class="help-title" id="helpTitle"></div>
+        <button id="btnHelpClose" class="btn-icon" title="關閉說明" aria-label="關閉說明">✕</button>
+      </div>
+      <div class="help-intro" id="helpIntro"></div>
+      <div class="help-sections" id="helpSections"></div>
+    </div>
+  </div>
+
+  <!-- Contextual hint toast (Phase 9): transient, non-blocking, pointer-events none -->
+  <div id="hintToast" class="hint-toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="tree-model.js"></script>
+  <script src="tree-layout.js"></script>
+  <script src="renderer.js"></script>
+  <script src="animation-controller.js"></script>
+  <script src="bst-operations.js"></script>
+  <script src="traversal-operations.js"></script>
+  <script src="workspace.js"></script>
+  <script src="education.js"></script>
+  <script src="learning-mode.js"></script>
+  <script src="onboarding.js"></script>
+  <script src="feedback.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var createTreeRenderer = TreeRenderer.createTreeRenderer;
+      var canvas = document.getElementById("treeCanvas");
+      var renderer = createTreeRenderer(canvas, { onSelect: onNodeSelect });
+
+      var $ = function (id) { return document.getElementById(id); };
+
+      var workspace = TreeWorkspace.createWorkspace({
+        renderer: renderer,
+        onUi: renderUi,
+      });
+
+      /* ─── Phase 7: Educational Learning Layer ─── */
+      var education = Education.createEducationModule();
+      var educState = { pendingSelected: null, lastSnapshot: null };
+
+      function onNodeSelect(value) {
+        educState.pendingSelected = value;
+        renderEducation(workspace.getState());
+        if ($("detailsTree")) $("detailsTree").open = true;
+      }
+
+      function teachOf() {
+        return Education.explainStep(workspace.getController().getCurrentStepData());
+      }
+
+      function renderTeaching(s) {
+        var tT = $("teachTitle"), tB = $("teachBody"), tR = $("teachRule");
+        if (s.currentIndex < 0) {
+          tT.textContent = ""; tB.textContent = ""; tR.textContent = "";
+          return;
+        }
+        var exp = teachOf();
+        if (!exp || !exp.lines || exp.lines.length === 0) {
+          tT.textContent = ""; tB.textContent = ""; tR.textContent = "";
+          return;
+        }
+        tT.textContent = exp.title || "";
+        tB.textContent = exp.lines.join("\n");
+        tR.textContent = exp.rule || "";
+      }
+
+      function renderNodeInfo(s) {
+        var el = $("nodeInfo");
+        var tree = workspace.getTree();
+        var target = null;
+        var label = "";
+        if (s.active && s.currentIndex >= 0 && s.currentValue !== null && s.currentValue !== undefined) {
+          target = s.currentValue;
+          label = "目前節點（操作中）";
+        } else if (educState.pendingSelected !== null && educState.pendingSelected !== undefined) {
+          target = educState.pendingSelected;
+          label = "點選的節點";
+        }
+        if (target === null || target === undefined) {
+          el.innerHTML = '<span class="hint">點擊樹上的節點查看它的資訊。</span>';
+          return;
+        }
+        var info = Education.getNodeInfo(tree, target);
+        var rowData = [];
+        if (!info.found) {
+          rowData.push(["Value", "Node " + target]);
+          rowData.push(["說明", "節點 " + target + " 已自 Tree 移除，請看上方教學說明"]);
+        } else {
+          rowData.push(["Value", info.value]);
+          rowData.push(["Type", info.typeLabel]);
+          rowData.push(["Depth", info.depth]);
+          rowData.push(["Parent", info.parent === null ? "None" : info.parent]);
+          rowData.push(["Left Child", info.left === null ? "None" : info.left]);
+          rowData.push(["Right Child", info.right === null ? "None" : info.right]);
+          rowData.push(["Child Count", info.childCount]);
+        }
+        if (label) rowData.unshift(["狀態", label]);
+        var html = rowData.map(function (r) {
+          return '<div class="ni-row"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + "</span></div>";
+        }).join("");
+        el.innerHTML = html;
+        if ($("nodeInfo2")) {
+          if (target === null || target === undefined) {
+            $("nodeInfo2").innerHTML = '<span class="hint">點擊樹上的節點查看它的資訊。</span>';
+          } else {
+            $("nodeInfo2").innerHTML = html;
+          }
+        }
+      }
+
+      function renderTreeSummary() {
+        var sum = Education.getTreeSummary(workspace.getTree());
+        var html =
+          '<div class="ts-row"><span class="k">Node Count</span><span class="v">' + sum.nodeCount + "</span></div>" +
+          '<div class="ts-row"><span class="k">Root</span><span class="v">' + (sum.root === null ? "None" : sum.root) + "</span></div>" +
+          '<div class="ts-row"><span class="k">Height</span><span class="v">' + sum.height + "</span></div>" +
+          '<div class="ts-row"><span class="k">Leaf Count</span><span class="v">' + sum.leafCount + "</span></div>";
+        $("treeSummary").innerHTML = html;
+        if ($("treeSummary2")) $("treeSummary2").innerHTML = html;
+      }
+
+      function renderEducation(s) {
+        var last = educState.lastSnapshot;
+        var isRestart = s.mode !== null && s.currentIndex < 0;
+        var treeChanged = !last || (last.treeSize !== s.treeSize);
+        if (isRestart) {
+          educState.pendingSelected = null;
+        } else if (last && !last.active && s.active) {
+          educState.pendingSelected = null;
+        } else if (treeChanged) {
+          educState.pendingSelected = null;
+        }
+        educState.lastSnapshot = { active: s.active, treeSize: s.treeSize, mode: s.mode };
+        renderTeaching(s);
+        renderNodeInfo(s);
+        renderTreeSummary();
+      }
+
+      /* ─── UI rendering ─── */
+      function setBanner(msg, type) {
+        var el = $("banner");
+        el.textContent = msg;
+        el.className = "banner" + (type ? " " + type : "");
+      }
+
+      /* ─── Phase 10: feedback line + status badge ─── */
+      var feedbackStartSize = null;
+
+      function rememberStartSize() {
+        feedbackStartSize = workspace.getTree().size;
+      }
+
+      function renderFeedback(s) {
+        var fl = $("feedbackLine");
+        var ft = $("feedbackTitle");
+        var fx = $("feedbackText");
+        var last = workspace.getController().getCurrentStepData();
+        var title = "目前步驟／結果";
+        var text = "就緒，等待操作。";
+        var cls = "feedback-line tone-muted";
+
+        if (s.mode === null) {
+          text = "就緒，等待操作。（操作結果會顯示在這裡）";
+        } else if (s.complete) {
+          var sum = Feedback.summarize(s, last, feedbackStartSize);
+          if (sum) {
+            title = sum.title;
+            text = sum.text;
+            cls = "feedback-line tone-" + (sum.tone === "success" ? "success" : "info");
+          } else {
+            title = "完成";
+            text = last && last.msg ? last.msg : "動畫完成。";
+            cls = "feedback-line tone-info";
+          }
+        } else if (s.currentIndex < 0) {
+          text = "已回到起點，按下「下一步」開始播放。";
+        } else {
+          var cap = Feedback.startCaption(s.currentIndex, s.mode, last);
+          if (cap) {
+            text = cap;
+            cls = "feedback-line tone-" + (s.playing ? "playing" : "paused");
+          } else {
+            var exp = Education.explainStep(last);
+            var joined = exp && exp.lines && exp.lines.length ? exp.lines.join("　") : (last && last.msg ? last.msg : "…");
+            text = (exp && exp.title ? "［" + exp.title + "］　" : "") + joined;
+            cls = "feedback-line tone-" + (s.playing ? "playing" : "paused");
+          }
+        }
+        /* avoid over-announcement: live region is off while auto-playing */
+        fl.setAttribute("aria-live", s.playing ? "off" : "polite");
+        fl.className = cls;
+        ft.textContent = title;
+        fx.textContent = text;
+      }
+
+      function renderStatusBadge(s) {
+        var st = Feedback.statusOf(s);
+        var tone = st.tone;
+        ["infoStatus", "miniStatus"].forEach(function (id) {
+          var el = $(id);
+          el.textContent = st.label;
+          el.setAttribute("data-tone", tone);
+        });
+        var ms = $("miniSize");
+        ms.textContent = s.treeSize;
+        ms.setAttribute("data-tone", tone);
+      }
+
+      function renderUi(s) {
+        /* order panel */
+        renderOrderPanel(s);
+        /* status */
+        $("infoOp").textContent = s.operationLabel || "—";
+        $("infoCurrent").textContent = s.currentValue !== null && s.currentValue !== undefined ? String(s.currentValue) : "—";
+        $("infoSize").textContent = s.treeSize;
+        var shown = s.currentIndex >= 0 && s.totalSteps > 0 ? (s.currentIndex + 1) + " / " + s.totalSteps : "0 / " + s.totalSteps;
+        $("infoStep").textContent = shown;
+        $("infoDesc").textContent = s.msg || (s.complete ? "動畫完成" : "就緒");
+        updateControls(s);
+        renderFeedback(s);
+        renderStatusBadge(s);
+        renderEducation(s);
+        renderLessonLive(s);
+      }
+
+      function renderOrderPanel(s) {
+        var list = $("orderList");
+        list.innerHTML = "";
+        $("travLabel").textContent = (s.mode === "traversal" ? (s.operationLabel || "") : "未選擇");
+        if (!s.traversalOrder || s.traversalOrder.length === 0) {
+          var span = document.createElement("span");
+          span.textContent = s.mode === "traversal" ? "（空樹）" : "—";
+          span.style.color = "var(--muted)";
+          list.appendChild(span);
+          return;
+        }
+        s.traversalOrder.forEach(function (v, i) {
+          var chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = v;
+          if (i < (s.currentIndex + 1)) chip.classList.add("done");
+          if (i === s.currentIndex) chip.classList.add("current");
+          list.appendChild(chip);
+        });
+      }
+
+      var traversalButtons = Array.prototype.slice.call(document.querySelectorAll("[data-trav]"));
+
+      function updateControls(s) {
+        var bstBusy = s.active && s.mode === "bst";
+        var anyActive = s.active;
+        /* BST buttons: disabled whenever a session is active */
+        ["btnInsert", "btnSearch", "btnDelete"].forEach(function (id) {
+          $(id).disabled = anyActive;
+        });
+        /* traversal buttons: disabled during an active BST session */
+        traversalButtons.forEach(function (b) {
+          b.disabled = bstBusy;
+        });
+        /* build/load/clear: disabled whenever a session is active */
+        ["btnBuild", "btnLoad", "btnClear"].forEach(function (id) {
+          $(id).disabled = anyActive;
+        });
+        /* transport: enabled only when a session exists */
+        var hasSession = s.mode !== null;
+        ["btnPlay", "btnPause", "btnStep", "btnStepBack", "btnRestart", "btnSkipEnd"].forEach(function (id) {
+          $(id).disabled = !hasSession;
+        });
+        if (s.playing) { $("btnPlay").disabled = true; }
+      }
+
+      /* ─── Actions ─── */
+      function parseTreeInput(raw) {
+        var tokens = raw.split(/[,\s;，；]+/).filter(function (t) { return t !== ""; });
+        if (tokens.length === 0) return { ok: false, error: "請輸入數值（例如 50,30,70）" };
+        var nums = [];
+        for (var i = 0; i < tokens.length; i++) {
+          var n = Number(tokens[i]);
+          if (!isFinite(n) || isNaN(n)) return { ok: false, error: "含有非數字：「" + tokens[i] + "」" };
+          nums.push(n);
+        }
+        return { ok: true, values: nums };
+      }
+
+      $("btnBuild").addEventListener("click", function () {
+        var p = parseTreeInput($("treeInput").value.trim());
+        if (!p.ok) { setBanner(p.error, "error"); return; }
+        var r = workspace.buildTree(p.values);
+        feedbackStartSize = null;
+        setBanner(r.ok ? "已建立樹（" + p.values.length + " 節點）" : r.error, r.ok ? null : "error");
+      });
+
+      $("btnLoad").addEventListener("click", function () {
+        var r = workspace.loadDefaultTree();
+        feedbackStartSize = null;
+        setBanner(r.ok ? "已載入預設樹（7 節點）" : r.error, r.ok ? null : "error");
+      });
+
+      $("btnClear").addEventListener("click", function () {
+        workspace.clearTree();
+        feedbackStartSize = null;
+        setBanner("樹已清空");
+      });
+
+      function readOp() {
+        var raw = $("opVal").value.trim();
+        if (raw === "") { setBanner("請輸入數值", "error"); return null; }
+        var n = Number(raw);
+        if (!isFinite(n) || isNaN(n)) { setBanner("數值無效：必須是有限數字", "error"); return null; }
+        if (Math.abs(n) > 1e9) { setBanner("數值過大（限制 ±1e9）", "error"); return null; }
+        return n;
+      }
+
+      /* ─── Free-mode actions (Direct Manipulation: instant, unhockable) ─── */
+      var FREE_BUSY = "動畫正在預覽中，請先按「⏭ 到底」結束重播再操作。";
+
+      function announceResult() {
+        var st = workspace.getState();
+        if (!st.complete) return;
+        var tx = $("feedbackText").textContent;
+        if (tx && tx.indexOf("就緒") !== 0) setBanner(tx);
+      }
+
+      function doInstantFree(fn, v, hint) {
+        rememberStartSize();
+        var r = fn.call(workspace, v, { instant: true });
+        if (!r.ok) { setBanner(r.error === "busy" ? FREE_BUSY : (r.error || "操作失敗"), "error"); return false; }
+        announceResult();
+        if (hint) showHint(hint);
+        return true;
+      }
+
+      $("btnInsert").addEventListener("click", function () {
+        var v = readOp(); if (v === null) return;
+        doInstantFree(workspace.runInsert, v, "insert");
+      });
+      $("btnSearch").addEventListener("click", function () {
+        var v = readOp(); if (v === null) return;
+        doInstantFree(workspace.runSearch, v, "search");
+      });
+      $("btnDelete").addEventListener("click", function () {
+        var v = readOp(); if (v === null) return;
+        doInstantFree(workspace.runDelete, v, null);
+      });
+
+      $("opVal").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); $("btnInsert").click(); }
+      });
+      $("treeInput").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); $("btnBuild").click(); }
+      });
+
+      traversalButtons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          rememberStartSize();
+          var r = workspace.runTraversal(b.getAttribute("data-trav"), { instant: true });
+          if (!r.ok) { setBanner(r.error === "busy" ? "目前有 BST 操作正在預覽，請先按「⏭ 到底」結束重播" : (r.error || "操作失敗"), "error"); return; }
+          traversalButtons.forEach(function (x) {
+            x.classList.toggle("active", x === b);
+          });
+          announceResult();
+          $("detailsTrav").open = true;
+          showHint("traversal");
+        });
+      });
+
+      /* transport */
+      $("btnPlay").addEventListener("click", function () { if (!workspace.getController().isPlaying()) workspace.play(); });
+      $("btnPause").addEventListener("click", function () { workspace.pause(); });
+      $("btnStep").addEventListener("click", function () { if (!workspace.getController().isPlaying()) workspace.stepForward(); });
+      $("btnStepBack").addEventListener("click", function () { workspace.stepBackward(); });
+      $("btnRestart").addEventListener("click", function () { workspace.restart(); setBanner("已回到第一步，按▶播放或逐步觀看"); });
+      $("btnSkipEnd").addEventListener("click", function () {
+        if (workspace.getState().mode === null) return;
+        while (!workspace.getController().isComplete()) workspace.stepForward();
+        setBanner("已跳至動畫結尾", null);
+      });
+
+      document.querySelectorAll(".speed-group [data-speed]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          document.querySelectorAll(".speed-group [data-speed]").forEach(function (x) { x.classList.remove("active"); });
+          b.classList.add("active");
+          workspace.setSpeed(Number(b.getAttribute("data-speed")));
+        });
+      });
+
+      /* hover support is automatic via renderer (Phase 3) */
+
+      /* ─── Phase 7: Concept chips ─── */
+      document.querySelectorAll("[data-concept]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          document.querySelectorAll("[data-concept]").forEach(function (x) { x.classList.remove("active"); });
+          b.classList.add("active");
+          var c = Education.getConceptText(b.getAttribute("data-concept"));
+          $("conceptTitle").textContent = c ? c.title : "";
+          $("conceptBody").textContent = c ? c.body.join("\n") : "";
+          $("conceptRule").textContent = c ? c.rule || "" : "";
+          if ($("detailsConcepts")) $("detailsConcepts").open = true;
+        });
+      });
+      var defaultConcept = document.querySelector('[data-concept="bst"]');
+      if (defaultConcept) defaultConcept.click();
+
+      /* ─── Phase 8: Interactive Learning Mode ─── */
+      var learning = LearningMode.createLearningMode();
+      var freeTreeSnapshot = null;
+
+      function setModeUI(learningOn) {
+        $("barTreeRow").style.display = learningOn ? "none" : "";
+        $("barOpsRow").style.display = learningOn ? "none" : "";
+        $("learnGrid").style.display = learningOn ? "none" : "";
+        $("infoArea").style.display = learningOn ? "none" : "";
+        $("lessonPanel").hidden = !learningOn;
+        document.body.classList.toggle("mode-learning", learningOn);
+        $("btnFreeMode").classList.toggle("active", !learningOn);
+        $("btnFreeMode").setAttribute("aria-pressed", learningOn ? "false" : "true");
+        $("btnLearningMode").classList.toggle("active", learningOn);
+        $("btnLearningMode").setAttribute("aria-pressed", learningOn ? "true" : "false");
+      }
+
+      function renderLessonDots() {
+        var dots = $("lessonDots");
+        dots.innerHTML = "";
+        var lessons = learning.getLessons();
+        var cur = learning.getCurrentLessonIndex();
+        lessons.forEach(function (l, i) {
+          var d = document.createElement("span");
+          d.className = "dot";
+          var done = learning.isCompleted(l.id);
+          var current = i === cur;
+          d.textContent = done ? "✓" : (current ? "●" : "○");
+          if (done) d.classList.add("done");
+          if (current) { d.classList.add("current"); d.setAttribute("aria-current", "step"); }
+          d.setAttribute("role", "listitem");
+          d.setAttribute("aria-label",
+            "Lesson " + l.number + "：" + l.title +
+            (done ? "（完成）" : (current ? "（目前章節）" : "（尚未開始）")));
+          dots.appendChild(d);
+        });
+      }
+
+      function updateLessonButtons() {
+        if (!learning.isInLearningMode()) return;
+        var cs = learning.getCurrentStep();
+        var atEnd = !cs || !cs.step;
+        var isOp = cs && cs.step && cs.step.kind === "op";
+        var opReady = !isOp || workspace.getState().complete;
+        $("btnLessonNextStep").disabled = atEnd || (isOp && !opReady);
+        $("btnLessonPrevStep").disabled = learning.getLessonStep() <= 0;
+        $("btnNextLesson").disabled = isOp && !opReady;
+        $("btnPrevLesson").disabled = learning.getCurrentLessonIndex() <= 0;
+      }
+
+      function renderLesson() {
+        var l = learning.getCurrentLesson();
+        if (!l) return;
+        $("lessonPos").textContent = "Lesson " + l.number + " / " + learning.getLessonCount();
+        $("lessonTitle").textContent = l.title;
+        renderLessonDots();
+        var cs = learning.getCurrentStep();
+        if (!cs || !cs.step) {
+          $("lessonStepTitle").textContent = "";
+          $("lessonBody").textContent = l.completeText;
+          $("lessonRule").textContent = "";
+          $("lessonComplete").hidden = false;
+          $("lessonComplete").textContent = "✓ 本章完成";
+          renderer.clearNodeStates();
+          renderer.clearSelection();
+          renderer.render();
+        } else {
+          $("lessonComplete").hidden = true;
+          $("lessonStepTitle").textContent = cs.step.title || "";
+          $("lessonBody").textContent = cs.step.text || "";
+          $("lessonRule").textContent = cs.step.rule || "";
+          if (cs.step.kind === "concept") {
+            renderer.clearNodeStates();
+            renderer.clearSelection();
+            (cs.step.highlight || []).forEach(function (v) {
+              renderer.setNodeState(v, "selected");
+            });
+            renderer.render();
+          }
+        }
+        updateLessonButtons();
+      }
+
+      /* Build the lesson tree + launch the operation through the EXISTING
+         workspace API (single controller, BSTOperations / TraversalOperations
+         are already integrated there — nothing is re-implemented). */
+      function ensureCurrentStep() {
+        var cs = learning.getCurrentStep();
+        if (!cs || !cs.step) return;
+        var step = cs.step;
+        var l = learning.getCurrentLesson();
+        var vals = step.kind === "op" ? step.tree : (l ? l.tree : learning.getLessons()[0].tree);
+        if (!Array.isArray(vals) || vals.length === 0) return;
+        workspace.buildTree(vals.slice());
+        if (step.kind === "op") {
+          var result;
+          if (step.op === "search") result = workspace.runSearch(step.value);
+          else if (step.op === "insert") result = workspace.runInsert(step.value);
+          else if (step.op === "delete") result = workspace.runDelete(step.value);
+          else if (step.op === "traversal") result = workspace.runTraversal(step.traversal);
+          if (result && result.ok === false) setBanner(result.error || "操作失敗", "error");
+        }
+      }
+
+      function renderLessonLive(s) {
+        if (!learning.isInLearningMode()) return;
+        var cs = learning.getCurrentStep();
+        if (cs && cs.step && cs.step.kind === "op") {
+          var exp = Education.explainStep(workspace.getController().getCurrentStepData());
+          if (s.currentIndex >= 0 && exp && exp.lines && exp.lines.length) {
+            $("lessonStepTitle").textContent = cs.step.title || "";
+            $("lessonBody").textContent = cs.step.text + "\n\n─ 動畫說明 ─\n" + exp.lines.join("\n");
+            $("lessonRule").textContent = exp.rule || cs.step.rule || "";
+          }
+          /* Completion: only auto-complete when the CURRENT op animation
+             itself ran to the end. (s.currentIndex >= 0 excludes the
+             transient emit fired by session reset — workspace resets the
+             controller BEFORE clearing session.complete, so that emit still
+             reports the previous completed session's stale complete=true.) */
+          if (cs.isLast && s.currentIndex >= 0 && s.complete && !learning.isCurrentLessonComplete()) {
+            learning.completeLesson();
+            renderLesson();
+            return;
+          }
+        }
+        updateLessonButtons();
+      }
+
+      function syncLesson() {
+        ensureCurrentStep();
+        renderLesson();
+      }
+
+      function enterLearningMode() {
+        if (learning.isInLearningMode()) return;
+        learning.enterLearningMode();
+        freeTreeSnapshot = LearningMode.captureFreeTree(workspace.getTree());
+        setModeUI(true);
+        syncLesson();
+        setBanner("學習模式：Lesson 1 / 9", "info");
+      }
+
+      function exitLearningMode() {
+        if (!learning.isInLearningMode()) return;
+        workspace.pause();
+        learning.exitLearningMode();
+        /* restore the free workspace tree exactly (level-order rebuild keeps
+           the identical structure); resets the controller + clears states */
+        LearningMode.restoreFreeWorkspace(workspace, freeTreeSnapshot);
+        freeTreeSnapshot = null;
+        educState.pendingSelected = null;
+        renderer.clearNodeStates();
+        renderer.clearSelection();
+        renderer.render();
+        setModeUI(false);
+        renderEducation(workspace.getState());
+        setBanner("已返回自由操作", null);
+      }
+
+      $("btnLearningMode").addEventListener("click", function () {
+        if (!learning.isInLearningMode()) enterLearningMode();
+      });
+      $("btnFreeMode").addEventListener("click", function () {
+        if (learning.isInLearningMode()) exitLearningMode();
+      });
+      $("btnExitLearning").addEventListener("click", exitLearningMode);
+      $("btnPrevLesson").addEventListener("click", function () {
+        var r = learning.previousLesson();
+        if (r.ok) syncLesson();
+      });
+      $("btnNextLesson").addEventListener("click", function () {
+        var r = learning.nextLesson();
+        if (r.ok) syncLesson();
+      });
+      $("btnLessonPrevStep").addEventListener("click", function () {
+        var r = learning.previousStep();
+        if (r.ok) syncLesson();
+      });
+      $("btnLessonNextStep").addEventListener("click", function () {
+        var r = learning.nextStep();
+        if (r.ok) syncLesson();
+      });
+
+      /* ─── Phase 9: Onboarding & Help ─── */
+      var onboarding = Onboarding.createOnboarding();
+      var welcomeCard = $("welcomeCard");
+      var helpDialog = $("helpDialog");
+      var hintToast = $("hintToast");
+      var helpLastFocus = null;
+      var hintTimer = null;
+
+      /* give the icon-first transport buttons explicit accessible names
+         (visible text already exists; aria-label pins the Chinese name) */
+      function applyControlLabels() {
+        var map = {
+          btnPlay: "play", btnPause: "pause", btnStep: "step",
+          btnStepBack: "stepBack", btnRestart: "restart",
+          btnSkipEnd: "skipEnd",
+        };
+        Object.keys(map).forEach(function (id) {
+          var el = $(id);
+          var label = onboarding.getControlLabel(map[id]);
+          if (el && label) el.setAttribute("aria-label", label);
+        });
+      }
+
+      function renderWelcome() {
+        if (onboarding.isWelcomeDismissed()) return;
+        var w = onboarding.getWelcome();
+        $("welcomeTitle").textContent = w.title;
+        $("welcomeBody").textContent = w.body;
+        var gs = $("welcomeGetStarted");
+        if (gs) gs.textContent = w.getStarted;
+        $("btnWelcomeStart").textContent = w.actionLabel;
+        welcomeCard.hidden = false;
+      }
+
+      $("btnWelcomeStart").addEventListener("click", function () {
+        onboarding.dismissWelcome();
+        welcomeCard.hidden = true;
+      });
+
+      function renderHelpContent() {
+        var h = onboarding.getHelp();
+        $("helpTitle").textContent = h.title;
+        $("helpIntro").textContent = h.intro;
+        var box = $("helpSections");
+        box.innerHTML = "";
+        h.sections.forEach(function (s) {
+          var sec = document.createElement("section");
+          var head = document.createElement("h3");
+          head.textContent = s.n + "｜" + s.title;
+          sec.appendChild(head);
+          s.lines.forEach(function (ln) {
+            var p = document.createElement("p");
+            p.textContent = ln;
+            sec.appendChild(p);
+          });
+          box.appendChild(sec);
+        });
+      }
+
+      function openHelp() {
+        if (!helpDialog.hidden) return;
+        helpLastFocus = document.activeElement;
+        renderHelpContent();
+        helpDialog.hidden = false;
+        $("btnHelpClose").focus();
+      }
+
+      function closeHelp() {
+        if (helpDialog.hidden) return;
+        helpDialog.hidden = true;
+        if (helpLastFocus && document.contains(helpLastFocus)) helpLastFocus.focus();
+        helpLastFocus = null;
+      }
+
+      $("btnHelpOpen").addEventListener("click", openHelp);
+      $("btnHelpClose").addEventListener("click", closeHelp);
+      helpDialog.addEventListener("click", function (e) {
+        if (e.target === helpDialog) closeHelp();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (helpDialog.hidden) return;
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeHelp();
+          return;
+        }
+        if (e.key === "Tab") {
+          var els = Array.prototype.slice.call(
+            helpDialog.querySelectorAll(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter(function (el) { return !el.disabled && el.offsetParent !== null; });
+          if (els.length === 0) return;
+          var idx = els.indexOf(document.activeElement);
+          if (e.shiftKey && (idx <= 0 || idx === -1)) { e.preventDefault(); els[els.length - 1].focus(); }
+          else if (!e.shiftKey && (idx === els.length - 1 || idx === -1)) { e.preventDefault(); els[0].focus(); }
+        }
+      });
+
+      function showHint(kind) {
+        if (!onboarding.shouldShowHint(kind)) return;
+        var text = onboarding.getHint(kind);
+        if (!text) return;
+        onboarding.markHintShown(kind);
+        hintToast.textContent = "💡 小提示：" + text;
+        hintToast.hidden = false;
+        if (hintTimer) clearTimeout(hintTimer);
+        hintTimer = setTimeout(function () { hintToast.hidden = true; }, 4000);
+      }
+
+      /* init */
+      applyControlLabels();
+      workspace.loadDefaultTree();
+      setBanner("再輸入 / 選擇操作開始。預設樹已載入。");
+      renderEducation(workspace.getState());
+      renderWelcome();
+
+      /* expose minimal hooks for browser verification */
+      window.__workspace = workspace;
+      window.__renderer = renderer;
+      window.__education = education;
+      window.__learning = learning;
+      window.__onboarding = onboarding;
+      window.__feedback = Feedback;
+      window.__help = { open: openHelp, close: closeHelp };
+    })();
+  </script>
+</body>
+</html>

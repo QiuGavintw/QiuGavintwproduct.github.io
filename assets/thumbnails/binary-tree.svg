@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="二元搜尋樹視覺化預覽示意圖（非實機截圖）">
+  <title>二元搜尋樹視覺化預覽示意圖</title>
+  <desc>以二元搜尋樹實際畫布風格繪製的示意圖：根節點 50 位於中央，左子樹 25（12、38）與右子樹 75（63、87），節點 38 以紅色高亮表示搜尋命中。</desc>
+  <rect width="1200" height="675" fill="#0b1220"/>
+  <!-- 頂部標題列 -->
+  <rect x="0" y="0" width="1200" height="72" fill="#111a2e"/>
+  <text x="600" y="44" fill="#e2e8f0" font-family="sans-serif" font-size="26" text-anchor="middle" font-weight="bold">二元樹視覺化</text>
+  <text x="600" y="120" fill="#64748b" font-family="sans-serif" font-size="18" text-anchor="middle">Binary Search Tree ・ 插入 / 搜尋 / 刪除 / 走訪</text>
+  <!-- 節點連線 -->
+  <g stroke="#3b82f6" stroke-width="4" opacity="0.7">
+    <line x1="600" y1="200" x2="345" y2="340"/>
+    <line x1="600" y1="200" x2="855" y2="340"/>
+    <line x1="345" y1="360" x2="225" y2="500"/>
+    <line x1="345" y1="360" x2="465" y2="500"/>
+    <line x1="855" y1="360" x2="735" y2="500"/>
+    <line x1="855" y1="360" x2="975" y2="500"/>
+  </g>
+  <!-- 節點 -->
+  <g font-family="sans-serif" font-size="28" fill="#e2e8f0" text-anchor="middle">
+    <circle cx="600" cy="200" r="40" fill="#2563eb" stroke="#3b82f6" stroke-width="3"/>
+    <text x="600" y="211">50</text>
+    <circle cx="345" cy="340" r="34" fill="#1e293b" stroke="#2563eb" stroke-width="3"/>
+    <text x="345" y="350">25</text>
+    <circle cx="855" cy="340" r="34" fill="#1e293b" stroke="#2563eb" stroke-width="3"/>
+    <text x="855" y="350">75</text>
+    <circle cx="225" cy="500" r="30" fill="#1e293b" stroke="#2563eb" stroke-width="3"/>
+    <text x="225" y="509">12</text>
+    <circle cx="465" cy="500" r="30" fill="#e03434" stroke="#e11d48" stroke-width="5"/>
+    <text x="465" y="509">38</text>
+    <circle cx="735" cy="500" r="30" fill="#1e293b" stroke="#2563eb" stroke-width="3"/>
+    <text x="735" y="509">63</text>
+    <circle cx="975" cy="500" r="30" fill="#1e293b" stroke="#2563eb" stroke-width="3"/>
+    <text x="975" y="509">87</text>
+  </g>
+  <!-- 底部操作提示 -->
+  <rect x="300" y="600" width="600" height="42" rx="10" fill="#1e293b" stroke="#334155"/>
+  <text x="600" y="628" fill="#94a3b8" font-family="sans-serif" font-size="18" text-anchor="middle">搜尋 38：比較 50 → 25 → 38，命中節點以紅色標示</text>
+</svg>
