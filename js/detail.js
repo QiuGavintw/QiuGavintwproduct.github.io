@@ -123,6 +123,9 @@
   }
 
   function renderNote(p) {
+    if (p.status === "in-development") {
+      return '<p class="detail-note">此作品目前開發中，暫未開放體驗。您可以從上方按鈕前往 GitHub 查看開發進度與原始碼。</p>';
+    }
     if (!p.demoUrl && p.githubUrl) {
       return '<p class="detail-note">此作品為後端服務專案，需 Node.js 環境執行，無法在 GitHub Pages 中直接體驗。您可以透過上方按鈕前往 GitHub 檢視完整原始碼。</p>';
     }
@@ -141,9 +144,11 @@
           '<h1>' + esc(p.title) + '</h1>' +
           '<p>' + esc(p.description) + '</p>' +
           '<div class="detail-hero-actions">' +
-            (p.demoUrl
-              ? '<a class="btn btn-primary" href="' + esc(relUrl(p.demoUrl)) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
-              : '') +
+            (p.status === "in-development"
+              ? '<span class="btn btn-dev" aria-disabled="true">開發中</span>'
+              : (p.demoUrl
+                ? '<a class="btn btn-primary" href="' + esc(relUrl(p.demoUrl)) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
+                : '')) +
             '<a class="btn btn-ghost" href="' + esc(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">GitHub <span class="arrow" aria-hidden="true">↗</span></a>' +
             '<a class="btn btn-ghost" href="' + relUrl("index.html") + '">返回作品集</a>' +
           '</div>' +
@@ -181,7 +186,9 @@
         '<p class="lead">' +
           (p.technologies || []).map(esc).join(" ・ ") +
         '</p>' +
-        '<div class="detail-note">作品採用純前端技術，可直接在 GitHub Pages 靜態環境中運作。</div>' +
+        (p.status === "in-development"
+          ? ""
+          : '<div class="detail-note">作品採用純前端技術，可直接在 GitHub Pages 靜態環境中運作。</div>') +
         renderNote(p) +
       '</div></section>';
 

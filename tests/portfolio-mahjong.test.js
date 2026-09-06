@@ -118,21 +118,49 @@ test('P5. 技術標籤與分類存在', () => {
 });
 
 // ---------- P6–P7：可 render ----------
-test('P6. 作品卡片可以 render（首頁 renderProjects 輸出含台灣麻將）', () => {
+test('P6. 作品卡片可以 render（首頁 renderProjects 輸出含台灣麻將，且標示開發中）', () => {
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js']);
-  assert.ok(sandbox.gridEl.innerHTML.includes('台灣麻將'), '作品卡應包含標題');
-  assert.ok(sandbox.gridEl.innerHTML.includes('projects/mahjong/'), '作品卡應含詳細頁連結');
-  assert.ok(sandbox.gridEl.innerHTML.includes('立即體驗'), '作品卡應含立即體驗按鈕');
+  const html = sandbox.gridEl.innerHTML;
+  const start = html.indexOf('台灣麻將');
+  const cardHtml = html.slice(start, start + 400);
+  assert.ok(html.includes('台灣麻將'), '作品卡應包含標題');
+  assert.ok(html.includes('projects/mahjong/'), '作品卡應含詳細頁連結');
+  assert.ok(html.includes('開發中'), '作品卡應含「開發中」標籤');
+  assert.ok(!cardHtml.includes('立即體驗'), '台灣麻將作品卡不得含「立即體驗」按鈕');
 });
 
-test('P7. 作品詳細頁可以 render（detail.js 輸出含標題與簡介）', () => {
+test('P7. 作品詳細頁可以 render（detail.js 輸出含標題、開發中，且無遊玩入口）', () => {
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js', 'js/detail.js']);
   assert.ok(sandbox.detailEl.innerHTML.includes('台灣麻將'), '詳細頁應含標題');
   assert.ok(sandbox.detailEl.innerHTML.includes('作品簡介'), '詳細頁應含作品簡介區塊');
-  assert.ok(sandbox.detailEl.innerHTML.includes('立即體驗'), '詳細頁應含立即體驗按鈕');
-  assert.ok(sandbox.detailEl.innerHTML.includes('projects/mahjong/play/'), '詳細頁體驗按鈕應指向遊戲入口');
+  assert.ok(sandbox.detailEl.innerHTML.includes('開發中'), '詳細頁應含「開發中」標示');
+  assert.ok(!sandbox.detailEl.innerHTML.includes('立即體驗'), '詳細頁不得含「立即體驗」按鈕');
+  assert.ok(!sandbox.detailEl.innerHTML.includes('projects/mahjong/play/'), '詳細頁不得指向遊戲入口');
+});
+
+// ---------- P9–P10：台灣麻將不可遊玩、其他作品不受影響 ----------
+test('P9. 台灣麻將作品卡無任何遊玩入口（不得指向 play / window.open / iframe）', () => {
+  const sandbox = buildSandbox();
+  loadInSandbox(sandbox, ['js/main.js']);
+  const html = sandbox.gridEl.innerHTML;
+  // 僅台灣麻將卡片：以作品卡區塊範圍內檢查
+  const start = html.indexOf('台灣麻將');
+  const cardHtml = html.slice(start, start + 400);
+  assert.ok(!cardHtml.includes('立即體驗'), '作品卡不得有「立即體驗」入口');
+  assert.ok(!cardHtml.includes('target="_blank"'), '作品卡不得以新視窗開啟任何遊玩連結');
+  // 全頁輸出中也絕不應出現指向麻將遊戲的遊玩連結
+  assert.ok(!html.includes('projects/mahjong/play/'), '首頁不得有指向麻將遊戲的連結');
+  assert.ok(!/window\.open\(/.test(html), '首頁 render 不得使用 window.open');
+  assert.ok(!/<iframe/i.test(html), '首頁 render 不得包含 iframe');
+});
+
+test('P10. 其他作品不受影響：仍含「立即體驗」遊玩按鈕', () => {
+  const sandbox = buildSandbox();
+  loadInSandbox(sandbox, ['js/main.js']);
+  assert.ok(sandbox.gridEl.innerHTML.includes('立即體驗'), '其他作品應保留「立即體驗」按鈕');
+  assert.ok(sandbox.gridEl.innerHTML.includes('projects/cephalopod/play/'), '其他作品應保留遊玩連結');
 });
 
 // ---------- P8：AI 隱私 ----------

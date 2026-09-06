@@ -91,16 +91,27 @@
     });
 
     grid.innerHTML = projects.map(function (p) {
+      var inDevelopment = p.status === "in-development";
       var tags = (p.categories || []).map(function (c) {
         return '<span>' + esc(c) + '</span>';
       }).join("");
-      var demo = p.demoUrl
-        ? '<a class="btn btn-primary btn-sm" href="' + escAttr(p.demoUrl) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
-        : '<a class="btn btn-ghost btn-sm" href="' + escAttr(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">檢視程式碼 <span class="arrow" aria-hidden="true">↗</span></a>';
+      var cardClass = "work-card" + (inDevelopment ? " work-card--dev" : "");
+      var thumbBadge = inDevelopment
+        ? '<span class="work-card-badge">開發中</span>'
+        : "";
+      var demo = "";
+      if (!inDevelopment) {
+        demo = p.demoUrl
+          ? '<a class="btn btn-primary btn-sm" href="' + escAttr(p.demoUrl) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
+          : '<a class="btn btn-ghost btn-sm" href="' + escAttr(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">檢視程式碼 <span class="arrow" aria-hidden="true">↗</span></a>';
+      } else {
+        demo = '<span class="btn btn-dev btn-sm" aria-disabled="true">開發中</span>';
+      }
       return (
-        '<article class="work-card" data-reveal>' +
+        '<article class="' + cardClass + '" data-reveal>' +
           '<a class="work-card-thumb" href="' + escAttr(p.detailPage) + '" tabindex="-1" aria-hidden="true">' +
             '<img src="' + escAttr(p.thumbnail) + '" alt="' + escAttr(p.title) + ' 預覽畫面" loading="lazy" decoding="async">' +
+            thumbBadge +
           '</a>' +
           '<div class="work-card-body">' +
             '<h3 class="work-card-title"><a href="' + escAttr(p.detailPage) + '">' + esc(p.title) + '</a></h3>' +
