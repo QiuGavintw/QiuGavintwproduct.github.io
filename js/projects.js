@@ -318,6 +318,84 @@
         "無第三方框架、零依賴，純前端即可在 GitHub Pages 執行"
       ]
     }
+    {
+      id: "penghu-magistrate",
+      slug: "penghu-magistrate-candidates",
+      title: "澎湖縣長候選人政見分析",
+      shortDescription: "2026 澎湖縣長選舉 6 位候選人政見蒐集、TF-IDF 相似度分析與 OKF 知識庫，含 GitHub Actions 每日自動刷新。",
+      description:
+        "「澎湖縣長候選人政見分析」是一套完整的選舉資料蒐集與分析系統，涵蓋 2026 年澎湖縣長選舉 6 位登記候選人的公開政見資料。系統以澎湖縣選舉委員會選舉公報為最優先來源，輔以候選人官方 Facebook 與主流媒體報導，透過 TF-IDF bigram cosine similarity 計算候選人間的政見相似度，並以 OKF v0.2 格式組織知識庫，供人類與 AI agent 使用。",
+      categories: ["資料分析", "教育"],
+      technologies: ["Python", "GitHub Actions", "OKF", "TF-IDF", "GitHub Pages"],
+      thumbnail: "assets/thumbnails/penghu-magistrate.png",
+      screenshots: [],
+      detailPage: null,
+      demoUrl: "https://qiugavintw.github.io/penghu-magistrate-candidates/",
+      githubUrl: "https://github.com/QiuGavintw/penghu-magistrate-candidates",
+      external: true,
+      createdAt: "2026-11-08",
+      updatedAt: "2026-11-18",
+      featured: false,
+      accent: "#B8956B",
+      features: [
+        "選舉公報 PDF 自動下載與套用（apply_ballot.py）",
+        "TF-IDF bigram cosine similarity 相似度矩陣（6×6）",
+        "跨候選人最相似政見配對 Top 8",
+        "OKF v0.2 知識庫（okf/ 目錄）",
+        "GitHub Actions 每日自動刷新（台北 08:00）",
+        "米色主題互動式網頁，來源標記可逐筆查證"
+      ],
+      howToPlay: [
+        "開啟 GitHub Pages 網頁版",
+        "點擊候選人卡片展開詳細政見",
+        "使用搜尋功能過濾姓名或關鍵字",
+        "查看相似度矩陣與最相似政見配對"
+      ],
+      highlights: [
+        "多來源融合：選舉公報 > 官方 FB > 媒體 > 懶人包",
+        "OKF v0.2 格式，供 AI agent 解析",
+        "每日自動刷新，選前持續更新至投票日"
+      ]
+    },
+    {
+      id: "storing-seat",
+      slug: "storing-seat",
+      title: "教室座位編排工具",
+      shortDescription: "純前端教室座位抽號排座工具，支援 CSV/Excel 匯入、拖曳微調、多格式匯出，資料僅存本機。",
+      description:
+        "「教室座位編排工具」是一個純前端、單頁式的「一般教室座位編排」網頁工具，適合單班級／單教室情境。可在瀏覽器中設定教室佈局、匯入學生名單、依規則自動抽號排座，並支援手動微調與多種匯出方式。資料預設儲存於本機瀏覽器（localStorage），無需後端與資料庫。",
+      categories: ["工具", "教育"],
+      technologies: ["HTML5", "CSS3", "JavaScript", "SheetJS", "html2canvas", "localStorage"],
+      thumbnail: "assets/thumbnails/storing-seat.png",
+      screenshots: [],
+      detailPage: null,
+      demoUrl: "https://qiugavintw.github.io/storing-seat/",
+      githubUrl: "https://github.com/QiuGavintw/storing-seat",
+      external: true,
+      createdAt: "2026-11-01",
+      updatedAt: "2026-11-18",
+      featured: false,
+      accent: "#2f6f5e",
+      features: [
+        "教室佈局自訂：行列數、黑板、教師桌、講台、空區禁用、鎖定座位",
+        "名單管理：貼上 CSV、上傳 CSV/Excel、手動新增與編輯",
+        "排位規則：隨機、依學號、依姓名、男女間隔、分組分散、限制標記分開",
+        "互動調整：拖曳交換、右鍵選單、復原/重做、編排歷史版本",
+        "檢視與輸出：字級調整、全螢幕、匯出 JSON/CSV/PNG、列印 PDF",
+        "隱私設計：所有資料僅存本機 localStorage，不上傳伺服器"
+      ],
+      howToPlay: [
+        "設定教室佈局（行數、列數、黑板、教師桌）",
+        "匯入學生名單（CSV/Excel/手動）",
+        "設定排位規則（隨機/依學號/男女間隔等）",
+        "點「抽號編排座位」，拖曳微調，匯出 PNG 或 PDF"
+      ],
+      highlights: [
+        "純前端、零後端，GitHub Pages 可直接執行",
+        "RWD 響應式，桌機與手機皆可操作",
+        "深色模式與繁體中文介面"
+      ]
+    }
   ];
 
   PROJECTS.forEach(function (p, i) {

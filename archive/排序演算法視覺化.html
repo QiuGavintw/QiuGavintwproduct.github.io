@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>排序演算法視覺化 | 用動畫看懂排序</title>
+
+  <style>
+    /* ============================================================
+   排序演算法視覺化 - style.css
+   現代化、乾淨、具教育風格的響應式設計
+   ============================================================ */
+
+:root {
+  --ink: #0f172a;
+  --mut: #475569;
+  --soft: #64748b;
+  --line: #e2e8f0;
+  --bg1: #eef2ff;
+  --bg2: #f8fafc;
+  --card: #ffffff;
+  --accent: #4f46e5;
+  --accent-2: #7c3aed;
+  --rose: #e11d48;
+  --violet: #7c3aed;
+  --blue: #2563eb;
+  --amber: #d97706;
+  --green: #16a34a;
+  --teal: #0d9488;
+  --radius: 16px;
+  --shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+  --t-move: 0.28s;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 92px;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 100% -10%, #e0e7ff 0%, transparent 55%),
+    radial-gradient(1000px 500px at -10% 30%, #fde8e8 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg2), var(--bg1) 60%, var(--bg2));
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------- Top bar ---------------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.02rem;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.topnav a {
+  color: var(--mut);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.topnav a:hover { background: #eef2ff; color: var(--accent); }
+.topnav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------- Hero ---------------- */
+.hero {
+  background: linear-gradient(135deg, #312e81, #4f46e5 45%, #7c3aed);
+  color: #fff;
+  padding: 72px 24px 56px;
+  text-align: center;
+  position: relative;
+}
+
+.hero-inner { max-width: 760px; margin: 0 auto; }
+
+.hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  letter-spacing: 1px;
+}
+
+.hero-sub {
+  margin: 0 0 8px;
+  font-size: clamp(1.05rem, 2.6vw, 1.4rem);
+  opacity: 0.96;
+  font-weight: 700;
+}
+
+.hero-tag {
+  margin: 0 0 18px;
+  font-size: clamp(0.85rem, 2vw, 0.98rem);
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+.hero-desc {
+  margin: 0 auto 28px;
+  max-width: 620px;
+  font-size: 0.98rem;
+  line-height: 1.8;
+  opacity: 0.85;
+}
+
+.hero-btns { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+.hero-arrow {
+  margin-top: 30px;
+  font-size: 1.1rem;
+  opacity: 0.6;
+  animation: bounce 1.6s infinite;
+}
+
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+/* ---------------- Buttons ---------------- */
+.btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover { border-color: var(--accent); background: #f5f3ff; }
+.btn:active { transform: scale(0.96); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(4px);
+}
+.btn-primary:hover { background: rgba(255, 255, 255, 0.28); border-color: #fff; }
+
+.btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
+.btn-accent:hover { background: linear-gradient(135deg, #4338ca, #6d28d9); border-color: transparent; }
+
+.btn-go { background: linear-gradient(135deg, #16a34a, #059669); color: #fff; border: none; }
+.btn-go:hover { background: linear-gradient(135deg, #15803d, #047857); }
+
+.btn-step { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; border: none; }
+.btn-step:hover { background: linear-gradient(135deg, #1d4ed8, #4338ca); }
+
+.btn-ghost { color: var(--mut); background: #fff; }
+.btn-ghost:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--ink); }
+
+/* ---------------- Data panel ---------------- */
+.data-panel {
+  max-width: 1080px;
+  margin: 28px auto 8px;
+  padding: 22px 26px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.data-panel h2 { margin: 0 0 6px; font-size: 1.25rem; }
+.hint { margin: 0; color: var(--mut); font-size: 0.9rem; }
+
+.panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+
+.count-ctl { display: grid; gap: 4px; min-width: 170px; }
+.count-ctl span { font-size: 0.88rem; font-weight: 700; color: var(--mut); }
+.count-labels { display: flex; justify-content: space-between; font-weight: 400 !important; color: var(--soft) !important; }
+.count-labels small { line-height: 1; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 190px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c7d2fe, var(--accent));
+  outline-offset: 4px;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--accent);
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); }
+
+/* ---------------- Legend ---------------- */
+.legend {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: 0.8rem;
+  color: var(--mut);
+}
+.lg { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(15,23,42,.15); }
+.sw.normal { background: linear-gradient(180deg, #38bdf8, #4f46e5); }
+.sw.cmp { background: linear-gradient(180deg, #fb7185, var(--rose)); }
+.sw.mv { background: linear-gradient(180deg, #a78bfa, var(--violet)); }
+.sw.key { background: linear-gradient(180deg, #60a5fa, var(--blue)); }
+.sw.min { background: linear-gradient(180deg, #fbbf24, var(--amber)); }
+.sw.done { background: linear-gradient(180deg, #4ade80, var(--green)); }
+.sw.cur { background: transparent; border: 2px dashed var(--accent); }
+
+/* ---------------- Layout containers ---------------- */
+main { max-width: 1080px; margin: 0 auto; padding: 12px 16px 48px; }
+
+.algo-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  margin: 28px 0;
+  padding: 30px 30px 32px;
+  scroll-margin-top: 96px;
+}
+
+.algo-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.algo-tag {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.algo-head h2 { margin: 0; font-size: 1.55rem; font-weight: 800; letter-spacing: 0.3px; }
+.slash { color: var(--soft); font-weight: 400; padding: 0 6px; }
+
+.algo-intro { color: var(--mut); line-height: 1.75; margin: 6px 0 10px; }
+
+blockquote.idea {
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  background: #f5f3ff;
+  border-left: 4px solid var(--accent-2);
+  border-radius: 0 10px 10px 0;
+  color: #4c1d95;
+  font-weight: 600;
+}
+
+/* ---------------- Visualizer ---------------- */
+.viz {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  background: #fbfdff;
+}
+
+.chart {
+  position: relative;
+  height: 340px;
+  background:
+    linear-gradient(#f1f5f9 1px, transparent 1px),
+    linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+  background-size: 100% 25%, 25% 100%;
+  border-radius: 8px;
+  padding: 30px 4px 6px;
+}
+
+.bars { position: relative; width: 100%; height: 100%; }
+
+.bar {
+  position: absolute;
+  bottom: 0;
+  min-width: 2px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, #38bdf8, #4f46e5);
+  transition: left var(--t-move) ease, transform 0.22s ease, background 0.28s ease, opacity 0.28s ease, box-shadow 0.28s ease;
+  box-shadow: inset 0 -6px 10px rgba(15, 23, 42, 0.18);
+}
+
+.bar .num {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.bar .bmark {
+  position: absolute;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  line-height: 1.4;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ---------------- Bar states ---------------- */
+.bar.cmp { background: linear-gradient(180deg, #fb7185, var(--rose)); transform: scale(1.14); z-index: 2; box-shadow: inset 0 -6px 10px rgba(15,23,42,.18), 0 0 16px rgba(225,29,72,.5); }
+.bar.cmp .bmark, .bar.mv .bmark, .bar.key .bmark, .bar.min .bmark, .bar.sorted .bmark { opacity: 1; }
+
+.bar.mv { background: linear-gradient(180deg, #a78bfa, var(--violet)); z-index: 2; box-shadow: inset 0 -6px 10px rgba(15,23,42,.18), 0 0 16px rgba(124,58,237,.55); }
+.bar.mv .bmark { background: var(--violet); }
+
+.bar.key { background: linear-gradient(180deg, #60a5fa, var(--blue)); transform: scale(1.1); z-index: 3; box-shadow: inset 0 -6px 10px rgba(15,23,42,.18), 0 0 14px rgba(37,99,235,.55); }
+.bar.key .bmark { background: var(--blue); }
+
+.bar.min { background: linear-gradient(180deg, #fbbf24, var(--amber)); transform: scale(1.08); z-index: 3; box-shadow: inset 0 -6px 10px rgba(15,23,42,.15), 0 0 14px rgba(217,119,6,.5); }
+.bar.min .bmark { background: var(--amber); color: #451a03; }
+
+.bar.cur { box-shadow: inset 0 0 0 3px var(--accent); z-index: 1; }
+
+.bar.sorted { background: linear-gradient(180deg, #4ade80, var(--green)); opacity: 0.86; box-shadow: inset 0 -6px 10px rgba(15,23,42,.15), 0 0 12px rgba(22,163,74,.4); }
+.bar.sorted .bmark { background: var(--green); }
+
+.bar.region { background: linear-gradient(180deg, #5eead4, var(--teal)); opacity: 0.95; }
+
+/* ---------------- Message / toolbar ---------------- */
+.msg {
+  position: relative;
+  margin: 14px 0 12px;
+  padding: 26px 16px 14px;
+  border-radius: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-left: 5px solid var(--accent);
+  color: #1e293b;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.8;
+  min-height: 74px;
+  overflow-wrap: anywhere;
+}
+.msg::before {
+  content: "目前操作";
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+  background: var(--accent);
+  padding: 2px 10px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+}
+.msg.done { background: #ecfdf5; border-color: #6ee7b7; border-left-color: var(--green); color: #14532d; }
+.msg.done::before { content: "✅ 排序完成"; background: var(--green); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+.speed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--mut);
+  margin-bottom: 12px;
+}
+.speed.inline { margin-bottom: 0; }
+.speed output {
+  min-width: 20px;
+  text-align: center;
+  background: #eef2ff;
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: 800;
+}
+.speed input[type="range"] { width: 150px; }
+
+/* ---------------- Stats chips ---------------- */
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+}
+.chip .k { color: var(--soft); }
+.chip b { color: var(--accent); font-size: 0.95rem; }
+
+.arrline { font-size: 0.85rem; color: var(--mut); }
+.arrline output { font-weight: 700; color: var(--ink); }
+
+/* ---------------- Code block ---------------- */
+.codeblock { margin-top: 24px; }
+.codeblock h3, .tips h3, .section-block h2, .race h3 { font-size: 1.1rem; margin: 0 0 10px; }
+
+.code {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 14px 8px;
+  overflow-x: auto;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+.code .line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 1px 10px;
+  border-left: 3px solid transparent;
+  opacity: 0.5;
+  transition: opacity 0.25s, background 0.25s, border-color 0.25s;
+  white-space: pre;
+}
+
+.code .line.active { opacity: 1; background: rgba(79, 70, 229, 0.18); border-left-color: #818cf8; }
+.code .line pre { margin: 0; color: #e2e8f0; font: inherit; }
+.code .cm { color: #64748b; font-style: normal; font-size: 0.86em; }
+.code .line.active .cm { color: #a5b4fc; }
+.code .line .k { color: #7dd3fc; }
+
+/* ---------------- Tips ---------------- */
+.tips {
+  margin-top: 26px;
+  padding: 16px 18px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+}
+.tips h3 { margin-bottom: 8px; color: #92400e; }
+.tips ul { margin: 0; padding-left: 20px; color: #78350f; line-height: 1.9; }
+
+/* ---------------- Compare mode ---------------- */
+.section-block {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  margin: 28px 0;
+  padding: 30px;
+  scroll-margin-top: 96px;
+}
+.section-block > h2 { margin: 0 0 6px; font-size: 1.4rem; }
+.block-intro { color: var(--mut); line-height: 1.75; margin: 4px 0 18px; }
+.mono { font-family: Consolas, monospace; font-weight: 700; }
+
+.compare-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 18px; }
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.mini {
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px;
+  background: #fbfdff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+.mini:nth-child(1) { border-top-color: var(--rose); }
+.mini:nth-child(1) h3 { color: #be123c; }
+.mini:nth-child(2) { border-top-color: var(--amber); }
+.mini:nth-child(2) h3 { color: #b45309; }
+.mini:nth-child(3) { border-top-color: var(--blue); }
+.mini:nth-child(3) h3 { color: #1d4ed8; }
+
+.mini-chart { position: relative; height: 150px; background: #f8fafc; border-radius: 8px; padding: 26px 3px 4px; }
+.mini-chart .bar .num { top: -20px; font-size: 10px; }
+.mini-chart .bar .bmark { top: -36px; font-size: 9px; padding: 1px 5px; }
+
+.mini-msg {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--mut);
+  line-height: 1.6;
+  min-height: 40px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.mini-msg.done { background: #ecfdf5; color: #14532d; font-weight: 700; }
+
+.mini-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.mini-stats .chip { padding: 3px 9px; font-size: 0.76rem; }
+.mini-stats .chip b { font-size: 0.85rem; }
+
+/* ---------------- Race result ---------------- */
+.race {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+}
+.race-winner { margin: 0 0 12px; font-weight: 800; color: #4c1d95; font-size: 1.05rem; }
+.race-note {
+  margin: 12px 0 0;
+  font-size: 0.86rem;
+  color: #4c1d95;
+  line-height: 1.7;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* ---------------- Table ---------------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 420px;
+}
+.cmp-table th, .cmp-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+.cmp-table thead th { background: #eef2ff; color: #3730a3; font-weight: 700; }
+.cmp-table tbody tr:hover { background: #f8fafc; }
+.cmp-table tbody tr:last-child td { border-bottom: none; }
+
+.note-card {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 12px;
+  color: #134e4a;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+/* ---------------- Footer ---------------- */
+footer {
+  text-align: center;
+  padding: 40px 20px 48px;
+  background: #0f172a;
+  color: #cbd5e1;
+  border-top: 4px solid var(--accent-2);
+}
+.f-brand { font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 8px; }
+.f-text { margin: 0 0 10px; color: #94a3b8; }
+.f-algos { margin: 0; color: #818cf8; font-weight: 700; letter-spacing: 1px; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+  .compare-grid { grid-template-columns: 1fr; }
+  .chart { height: 260px; }
+}
+
+@media (max-width: 640px) {
+  .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .topnav { width: 100%; }
+  .hero { padding: 48px 18px 40px; }
+  .algo-card, .section-block { padding: 20px 16px; }
+  .data-panel { padding: 18px 16px; }
+  .chart { height: 200px; padding-top: 24px; }
+  .mini-chart { height: 130px; }
+  .bar .num { top: -18px; font-size: 9px; }
+  .bar .bmark { top: -34px; font-size: 8.5px; padding: 1px 5px; }
+  .msg { padding: 24px 12px 12px; font-size: 0.9rem; min-height: 66px; }
+  .msg::before { font-size: 0.6rem; left: 10px; }
+  .hero-tag { font-size: 0.82rem; letter-spacing: 1.5px; }
+  .toolbar { gap: 6px; }
+  .toolbar .btn { padding: 8px 12px; font-size: 0.84rem; }
+  .compare-toolbar .btn { padding: 8px 12px; font-size: 0.82rem; }
+  input[type="range"] { width: 130px; }
+  .speed input[type="range"] { width: 110px; }
+  .panel-actions { width: 100%; }
+  .panel-actions input[type="range"] { flex: 1; width: auto; }
+}
+
+@media (max-width: 400px) {
+  .chart { height: 170px; }
+  .msg { font-size: 0.86rem; }
+  .speed { gap: 6px; }
+  .speed input[type="range"] { width: 90px; }
+  .count-ctl { min-width: 0; }
+  .chip { padding: 4px 9px; font-size: 0.76rem; }
+  .chip b { font-size: 0.88rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .bar { transition-duration: 0.01s !important; }
+  .hero-arrow { animation: none; }
+}
+
+  </style>
+
+  
+</head>
+<body>
+  <!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="排序演算法視覺化教學網站 - 用動畫看懂氣泡排序、選擇排序、插入排序">
+<title>排序演算法視覺化 | 用動畫看懂排序</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#hero">📊 排序演算法視覺化</a>
+  <nav class="topnav" aria-label="主要導覽">
+    <a href="#bubble">氣泡排序</a>
+    <a href="#selection">選擇排序</a>
+    <a href="#insertion">插入排序</a>
+    <a href="#compare">比較模式</a>
+    <a href="#complexity">複雜度</a>
+  </nav>
+</header>
+
+<header class="hero" id="hero">
+  <div class="hero-inner">
+    <h1>排序演算法視覺化</h1>
+    <p class="hero-sub">用動畫看懂排序演算法，從比較、交換到完成排序</p>
+    <p class="hero-tag">看見資料如何一步一步被排列整齊</p>
+    <p class="hero-desc">
+      排序演算法是電腦科學中非常重要的基礎概念。透過視覺化動畫，可以觀察資料如何比較、交換與移動，進一步理解不同排序方法的核心思想。
+    </p>
+    <div class="hero-btns">
+      <a href="#bubble" class="btn btn-primary">氣泡排序</a>
+      <a href="#selection" class="btn btn-primary">選擇排序</a>
+      <a href="#insertion" class="btn btn-primary">插入排序</a>
+    </div>
+  </div>
+  <div class="hero-arrow" aria-hidden="true">▼</div>
+</header>
+
+<section class="data-panel" id="generator" aria-labelledby="data-title">
+  <div class="panel-head">
+    <div>
+      <h2 id="data-title">產生新資料</h2>
+      <p class="hint">三種演算法與比較模式會共用同一組亂數資料，方便你比較差異。</p>
+    </div>
+    <div class="panel-actions">
+      <label class="count-ctl" for="data-count">
+        <span>資料數量：<output id="data-count-val" for="data-count">8</output></span>
+        <span class="count-labels"><small>5</small><small>20</small></span>
+      </label>
+      <input type="range" id="data-count" min="5" max="20" value="8" step="1" aria-label="資料數量 5 到 20">
+      <button id="btn-newdata" class="btn btn-accent" type="button">🔄 產生新資料</button>
+    </div>
+  </div>
+  <div class="legend" aria-label="圖例">
+    <span class="lg"><i class="sw normal"></i>未處理</span>
+    <span class="lg"><i class="sw cmp"></i>比較中</span>
+    <span class="lg"><i class="sw mv"></i>交換中</span>
+    <span class="lg"><i class="sw key"></i>Key</span>
+    <span class="lg"><i class="sw min"></i>最小值</span>
+    <span class="lg"><i class="sw done"></i>已排序</span>
+    <span class="lg"><i class="sw cur"></i>目前位置</span>
+  </div>
+</section>
+
+<main>
+
+  <!-- ================= Bubble Sort ================= -->
+  <section class="algo-card" id="bubble" aria-labelledby="bubble-title">
+    <header class="algo-head">
+      <span class="algo-tag">01</span>
+      <h2 id="bubble-title">Bubble Sort<span class="slash">｜</span>氣泡排序法</h2>
+    </header>
+    <p class="algo-intro">
+      氣泡排序會不斷比較相鄰的兩個數字：如果左邊比右邊大，就交換。大的數字就會慢慢往右移動，像泡泡一樣浮到最右邊。
+    </p>
+    <blockquote class="idea">💭 想像一群數字排隊，大的數字會一步一步「冒泡」到右邊。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="bubble-bars" role="img" aria-label="氣泡排序柱狀圖"></div></div>
+      <div class="msg" id="bubble-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="bubble-start" type="button">▶ 開始</button>
+        <button class="btn" id="bubble-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="bubble-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="bubble-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="bubble-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="bubble-speed">
+        <span>慢</span>
+        <input type="range" id="bubble-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="bubble-speed-out" for="bubble-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前輪次</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前比較</span><b data-f="cur">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">交換次數</span><b data-f="swaps">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="bubble-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="bubble-code" aria-label="氣泡排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 0; i &lt; n - 1; i++) {</pre><em class="cm">// ① 每一輪確定一個最大值</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;for (let j = 0; j &lt; n - 1 - i; j++) {</pre><em class="cm">// ② 掃描相鄰元素</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;&nbsp;&nbsp;if (arr[j] &gt; arr[j + 1]) {</pre><em class="cm">// ③ 比較相鄰兩數</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(arr[j], arr[j + 1]);</pre><em class="cm">// ④ 左大右小就交換</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="6"><pre>}</pre><em class="cm">// ⑤ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>比較相鄰元素</li>
+        <li>大元素逐漸往右移動</li>
+        <li>每輪會確定一個元素的位置</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Selection Sort ================= -->
+  <section class="algo-card" id="selection" aria-labelledby="selection-title">
+    <header class="algo-head">
+      <span class="algo-tag">02</span>
+      <h2 id="selection-title">Selection Sort<span class="slash">｜</span>選擇排序法</h2>
+    </header>
+    <p class="algo-intro">
+      選擇排序每一輪都從「還沒排好」的數字中找出最小值，再把它放到目前位置。前面排好的區域就會越變越長。
+    </p>
+    <blockquote class="idea">💭 每一輪都從剩下的數字中「挑出最小的」，放到正確位置。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="selection-bars" role="img" aria-label="選擇排序柱狀圖"></div></div>
+      <div class="msg" id="selection-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="selection-start" type="button">▶ 開始</button>
+        <button class="btn" id="selection-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="selection-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="selection-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="selection-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="selection-speed">
+        <span>慢</span>
+        <input type="range" id="selection-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="selection-speed-out" for="selection-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前輪次</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前最小值</span><b data-f="minVal">–</b></div>
+        <div class="chip"><span class="k">目前位置</span><b data-f="pos">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">交換次數</span><b data-f="swaps">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="selection-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="selection-code" aria-label="選擇排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 0; i &lt; n - 1; i++) {</pre><em class="cm">// ① 每輪固定一個位置</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;let minIdx = i;<span class="k"></span></pre><em class="cm">// ② 假設目前位置就是最小值</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;for (let j = i + 1; j &lt; n; j++) {</pre><em class="cm">// ③ 掃描剩餘資料</em></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;&nbsp;&nbsp;if (arr[j] &lt; arr[minIdx]) {</pre><em class="cm">// ④ 找到更小的</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minIdx = j;</pre><em class="cm">// ⑤ 更新最小值位置</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;swap(arr[i], arr[minIdx]);</pre><em class="cm">// ⑥ 交換到正確位置</em></div>
+        <div class="line" data-line="8"><pre>}</pre><em class="cm">// ⑦ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>每輪尋找最小值</li>
+        <li>找到後交換</li>
+        <li>已排序區域逐漸增加</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Insertion Sort ================= -->
+  <section class="algo-card" id="insertion" aria-labelledby="insertion-title">
+    <header class="algo-head">
+      <span class="algo-tag">03</span>
+      <h2 id="insertion-title">Insertion Sort<span class="slash">｜</span>插入排序法</h2>
+    </header>
+    <p class="algo-intro">
+      插入排序把資料分成「左邊已排好」與「右邊還沒排」兩部分。每次從右邊拿出一個數字，像整理撲克牌一樣，插入到左邊正確的位置。
+    </p>
+    <blockquote class="idea">💭 就像整理撲克牌，一張一張拿起來，插到正確的位置。</blockquote>
+
+    <div class="viz">
+      <div class="chart"><div class="bars" id="insertion-bars" role="img" aria-label="插入排序柱狀圖"></div></div>
+      <div class="msg" id="insertion-msg" aria-live="polite">準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。</div>
+      <div class="toolbar">
+        <button class="btn btn-go" id="insertion-start" type="button">▶ 開始</button>
+        <button class="btn" id="insertion-pause" type="button">⏸ 暫停</button>
+        <button class="btn btn-step" id="insertion-step" type="button">⏭ 下一步</button>
+        <button class="btn btn-ghost" id="insertion-regen" type="button">🔄 重新產生資料</button>
+        <button class="btn btn-ghost" id="insertion-reset" type="button">⏹ 重置</button>
+      </div>
+      <label class="speed" for="insertion-speed">
+        <span>慢</span>
+        <input type="range" id="insertion-speed" min="1" max="10" value="5" aria-label="動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="insertion-speed-out" for="insertion-speed">5</output>
+      </label>
+      <div class="stats">
+        <div class="chip"><span class="k">目前處理</span><b data-f="pass">–</b></div>
+        <div class="chip"><span class="k">目前 Key</span><b data-f="keyVal">–</b></div>
+        <div class="chip"><span class="k">比較次數</span><b data-f="compares">0</b></div>
+        <div class="chip"><span class="k">移動次數</span><b data-f="moves">0</b></div>
+        <div class="chip"><span class="k">目前步驟</span><b data-f="stepinfo">0 / 0</b></div>
+      </div>
+      <div class="arrline">目前陣列：<output id="insertion-arr">[]</output></div>
+    </div>
+
+    <div class="codeblock">
+      <h3>演算法程式碼</h3>
+      <div class="code" id="insertion-code" aria-label="插入排序偽程式碼">
+        <div class="line" data-line="0"><pre>for (let i = 1; i &lt; n; i++) {</pre><em class="cm">// ① 從第二個元素開始</em></div>
+        <div class="line" data-line="1"><pre>&nbsp;&nbsp;let key = arr[i];</pre><em class="cm">// ② 取出目前元素（Key）</em></div>
+        <div class="line" data-line="2"><pre>&nbsp;&nbsp;let j = i - 1;</pre></div>
+        <div class="line" data-line="3"><pre>&nbsp;&nbsp;while (j &gt;= 0 &amp;&amp; arr[j] &gt; key) {</pre><em class="cm">// ③ 向左比較</em></div>
+        <div class="line" data-line="4"><pre>&nbsp;&nbsp;&nbsp;&nbsp;arr[j + 1] = arr[j];</pre><em class="cm">// ④ 較大的元素向右移動</em></div>
+        <div class="line" data-line="5"><pre>&nbsp;&nbsp;&nbsp;&nbsp;j--;</pre></div>
+        <div class="line" data-line="6"><pre>&nbsp;&nbsp;}</pre></div>
+        <div class="line" data-line="7"><pre>&nbsp;&nbsp;arr[j + 1] = key;</pre><em class="cm">// ⑤ 插入正確位置</em></div>
+        <div class="line" data-line="8"><pre>}</pre><em class="cm">// ⑥ 排序完成</em></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <h3>💡 學習重點</h3>
+      <ul>
+        <li>維持左側已排序區域</li>
+        <li>每次取出一個元素</li>
+        <li>將元素插入正確位置</li>
+        <li>很像整理撲克牌</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= Compare mode ================= -->
+  <section class="section-block" id="compare" aria-labelledby="compare-title">
+    <h2 id="compare-title">三種排序法一起比較</h2>
+    <p class="block-intro">
+      使用同一組資料（<output class="mono" id="compare-arr">[]</output>），同時觀看三種演算法的動畫，
+      觀察哪一個比較多次、交換多、最早完成。
+    </p>
+    <div class="compare-toolbar">
+      <button class="btn btn-go" id="c-start" type="button">▶ 全部開始</button>
+      <button class="btn" id="c-pause" type="button">⏸ 全部暫停</button>
+      <button class="btn btn-step" id="c-step" type="button">⏭ 全部下一步</button>
+      <button class="btn btn-ghost" id="c-regen" type="button">🔄 產生新資料</button>
+      <button class="btn btn-ghost" id="c-reset" type="button">⏹ 重設</button>
+      <label class="speed inline" for="compare-speed">
+        <span>慢</span>
+        <input type="range" id="compare-speed" min="1" max="10" value="5" aria-label="比較模式動畫速度" class="speed-ctl">
+        <span>快</span>
+        <output id="compare-speed-out" for="compare-speed">5</output>
+      </label>
+    </div>
+
+    <div class="compare-grid">
+      <article class="mini" aria-label="氣泡排序比較視窗">
+        <h3>Bubble Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-bubble"></div></div>
+        <p class="mini-msg" id="cm-bubble-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">交換</span><b data-f="swaps">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="選擇排序比較視窗">
+        <h3>Selection Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-selection"></div></div>
+        <p class="mini-msg" id="cm-selection-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">交換</span><b data-f="swaps">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+      <article class="mini" aria-label="插入排序比較視窗">
+        <h3>Insertion Sort</h3>
+        <div class="mini-chart"><div class="bars" id="cm-insertion"></div></div>
+        <p class="mini-msg" id="cm-insertion-msg" aria-live="polite">等待開始…</p>
+        <div class="mini-stats">
+          <span class="chip"><span class="k">比較</span><b data-f="compares">0</b></span>
+          <span class="chip"><span class="k">移動</span><b data-f="moves">0</b></span>
+          <span class="chip"><span class="k">狀態</span><b data-f="state">待機</b></span>
+          <span class="chip"><span class="k">步驟</span><b data-f="stepinfo">0 / 0</b></span>
+        </div>
+      </article>
+    </div>
+
+    <div class="race" id="race-result" hidden>
+      <h3>🏆 比較結果</h3>
+      <p id="race-winner" class="race-winner"></p>
+      <table class="cmp-table" id="race-table">
+        <thead><tr><th>排序法</th><th>比較次數</th><th>交換 / 移動次數</th><th>完成順序</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="race-note">三種演算法用「同一組資料」都完成了排序，但比較與交換的次數不同——這正是不同處理方法之間的差異。</p>
+    </div>
+  </section>
+
+  <!-- ================= Complexity table ================= -->
+  <section class="section-block" id="complexity" aria-labelledby="complexity-title">
+    <h2 id="complexity-title">三種排序法比較</h2>
+    <p class="block-intro">以下複雜度是針對常見實作與條件的教學簡化表示，重點是理解三種演算法的差異。</p>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>排序法</th><th>核心概念</th><th>最佳時間</th><th>平均時間</th><th>最差時間</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>氣泡排序</b></td><td>相鄰比較與交換</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+          <tr><td><b>選擇排序</b></td><td>找出最小值</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
+          <tr><td><b>插入排序</b></td><td>插入正確位置</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-card">
+      <p><b>記憶小技巧：</b>三種演算法都是「比較型」排序，平均時間複雜度都是 O(n²)；若資料「接近排序完成」，氣泡排序與插入排序可以做到最佳時間 O(n)。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p class="f-brand">排序演算法視覺化</p>
+  <p class="f-text">透過視覺化理解演算法，讓抽象的程式邏輯變得看得見。</p>
+  <p class="f-algos">Bubble Sort · Selection Sort · Insertion Sort</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
+
+  <script>
+    (function (global) {
+  "use strict";
+
+  /* ============================================================
+     Utilities
+     ============================================================ */
+  function $(sel, el) { return (el || document).querySelector(sel); }
+  function $$(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
+
+  var idSeq = 1;
+  function makeItem(value) { return { id: idSeq++, value: value }; }
+  function clone(items) { return items.map(function (o) { return { id: o.id, value: o.value }; }); }
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function maxValue(items) {
+    var m = 1;
+    for (var i = 0; i < items.length; i++) if (items[i].value > m) m = items[i].value;
+    return m;
+  }
+
+  /* ============================================================
+     Data generation
+     ============================================================ */
+  function generateArray(count) {
+    var vals = [];
+    for (var i = 1; i <= count; i++) vals.push(i);
+    shuffle(vals);
+    return vals.map(makeItem);
+  }
+  function defaultData() {
+    return [8, 3, 6, 2, 7, 4, 1, 5].map(makeItem);
+  }
+
+  /* ============================================================
+     Step generators (pure logic, no DOM)
+     Each step: { type, arr, compare, key, min, cur, sorted, region,
+                  stats, msg, code, move }
+     ============================================================ */
+  function bubbleSteps(items) {
+    var w = clone(items), n = w.length, steps = [];
+    var sorted = new Array(n).fill(false);
+    var compares = 0, swaps = 0, i, j;
+
+    for (i = 0; i < n - 1; i++) {
+      var pass = i + 1, len = n - 1 - i;
+      for (j = 0; j < len; j++) {
+        compares++;
+        steps.push({
+          type: "compare", arr: clone(w), compare: [j, j + 1], key: null, min: null, cur: null,
+          sorted: sorted.slice(), region: null,
+          stats: { pass: pass, cur: (j + 1) + " / " + len, compares: compares, swaps: swaps },
+          msg: "比較 A[" + j + "] 和 A[" + (j + 1) + "]（" + w[j].value + " 與 " + w[j + 1].value + "）",
+          code: [2], move: false
+        });
+        if (w[j].value > w[j + 1].value) {
+          swaps++;
+          var big = w[j].value, small = w[j + 1].value;
+          var t = w[j]; w[j] = w[j + 1]; w[j + 1] = t;
+          steps.push({
+            type: "swap", arr: clone(w), compare: [j, j + 1], key: null, min: null, cur: null,
+            sorted: sorted.slice(), region: null,
+            stats: { pass: pass, cur: (j + 1) + " / " + len, compares: compares, swaps: swaps },
+            msg: big + " 大於 " + small + "，交換 A[" + j + "] 與 A[" + (j + 1) + "]",
+            code: [3], move: true
+          });
+        }
+      }
+      sorted[n - 1 - i] = true;
+      steps.push({
+        type: "mark", arr: clone(w), compare: null, key: null, min: null, cur: null,
+        sorted: sorted.slice(), region: null,
+        stats: { pass: pass, cur: len + " / " + len, compares: compares, swaps: swaps },
+        msg: "第 " + pass + " 輪結束，最大的 " + w[n - 1 - i].value + " 已冒泡到位置 A[" + (n - 1 - i) + "]",
+        code: [1], move: false
+      });
+    }
+    sorted.fill(true);
+    steps.push({
+      type: "done", arr: clone(w), compare: null, key: null, min: null, cur: null,
+      sorted: sorted.slice(), region: null,
+      stats: { pass: n - 1, cur: "完成", compares: compares, swaps: swaps },
+      msg: "完成！陣列已升冪排序：" + w.map(function (o) { return o.value; }).join(", "),
+      code: [6], move: false
+    });
+    return steps;
+  }
+
+  function selectionSteps(items) {
+    var w = clone(items), n = w.length, steps = [];
+    var sorted = new Array(n).fill(false);
+    var compares = 0, swaps = 0, i, j;
+
+    for (i = 0; i < n - 1; i++) {
+      var pass = i + 1, minIdx = i;
+      steps.push({
+        type: "mark", arr: clone(w), compare: null, key: null, min: i, cur: i,
+        sorted: sorted.slice(), region: null,
+        stats: { pass: pass, minVal: w[minIdx].value, pos: i + 1, compares: compares, swaps: swaps },
+        msg: "目前位置 A[" + i + "]，假設它是最小值 " + w[minIdx].value,
+        code: [0, 1], move: false
+      });
+      for (j = i + 1; j < n; j++) {
+        compares++;
+        steps.push({
+          type: "compare", arr: clone(w), compare: [minIdx, j], key: null, min: minIdx, cur: i,
+          sorted: sorted.slice(), region: null,
+          stats: { pass: pass, minVal: w[minIdx].value, pos: i + 1, compares: compares, swaps: swaps },
+          msg: "將目前最小值 " + w[minIdx].value + " 與 A[" + j + "]（" + w[j].value + "）比較",
+          code: [3], move: false
+        });
+        if (w[j].value < w[minIdx].value) {
+          minIdx = j;
+          steps.push({
+            type: "min", arr: clone(w), compare: null, key: null, min: minIdx, cur: i,
+            sorted: sorted.slice(), region: null,
+            stats: { pass: pass, minVal: w[minIdx].value, pos: i + 1, compares: compares, swaps: swaps },
+            msg: "找到新的最小值 " + w[minIdx].value + "（位置 A[" + j + "]）！",
+            code: [4], move: false
+          });
+        }
+      }
+      if (i !== minIdx) {
+        swaps++;
+        var a = w[i].value, b = w[minIdx].value;
+        var t = w[i]; w[i] = w[minIdx]; w[minIdx] = t;
+        steps.push({
+          type: "swap", arr: clone(w), compare: [i, minIdx], key: null, min: i, cur: i,
+          sorted: sorted.slice(), region: null,
+          stats: { pass: pass, minVal: w[i].value, pos: i + 1, compares: compares, swaps: swaps },
+          msg: "將最小值 " + b + " 與目前位置 A[" + i + "]（" + a + "）交換",
+          code: [7], move: true
+        });
+      }
+      sorted[i] = true;
+      steps.push({
+        type: "mark", arr: clone(w), compare: null, key: null, min: null, cur: null,
+        sorted: sorted.slice(), region: null,
+        stats: { pass: pass, minVal: w[i].value, pos: i + 1, compares: compares, swaps: swaps },
+        msg: "位置 A[" + i + "] 已放上正確的最小值 " + w[i].value,
+        code: [2], move: false
+      });
+    }
+    sorted[n - 1] = true;
+    steps.push({
+      type: "done", arr: clone(w), compare: null, key: null, min: null, cur: null,
+      sorted: sorted.slice(), region: null,
+      stats: { pass: n - 1, minVal: w[n - 1].value, pos: n, compares: compares, swaps: swaps },
+      msg: "完成！陣列已升冪排序：" + w.map(function (o) { return o.value; }).join(", "),
+      code: [8], move: false
+    });
+    return steps;
+  }
+
+  function insertionSteps(items) {
+    var w = clone(items), n = w.length, steps = [];
+    var region = new Array(n).fill(false);
+    var compares = 0, moves = 0, i;
+
+    region[0] = true;
+    steps.push({
+      type: "mark", arr: clone(w), compare: null, key: null, min: null, cur: 0,
+      sorted: [], region: region.slice(),
+      stats: { pass: 1, keyVal: null, compares: compares, moves: moves },
+      msg: "第 1 格 A[0] 視為已排序區域",
+      code: [0], move: false
+    });
+
+    for (i = 1; i < n; i++) {
+      var pass = i + 1, k = i, keyVal = w[i].value;
+      steps.push({
+        type: "key", arr: clone(w), compare: null, key: k, min: null, cur: null,
+        sorted: [], region: region.slice(),
+        stats: { pass: pass, keyVal: keyVal, compares: compares, moves: moves },
+        msg: "取出目前元素 Key = " + keyVal + "（位置 A[" + i + "]）",
+        code: [1], move: false
+      });
+      while (k > 0) {
+        var left = w[k - 1].value, right = w[k].value;
+        compares++;
+        steps.push({
+          type: "compare", arr: clone(w), compare: [k - 1, k], key: k, min: null, cur: null,
+          sorted: [], region: region.slice(),
+          stats: { pass: pass, keyVal: keyVal, compares: compares, moves: moves },
+          msg: "比較 Key " + keyVal + " 與左邊的 " + left,
+          code: [3], move: false
+        });
+        if (left > right) {
+          moves++;
+          var t = w[k - 1]; w[k - 1] = w[k]; w[k] = t;
+          k--;
+          steps.push({
+            type: "shift", arr: clone(w), compare: [k, k + 1], key: k, min: null, cur: null,
+            sorted: [], region: region.slice(),
+            stats: { pass: pass, keyVal: keyVal, compares: compares, moves: moves },
+            msg: "左邊的 " + left + " 比 Key " + keyVal + " 大，將 " + left + " 向右移動",
+            code: [4], move: true
+          });
+        } else {
+          break;
+        }
+      }
+      steps.push({
+        type: "place", arr: clone(w), compare: null, key: k, min: null, cur: null,
+        sorted: [], region: region.slice(),
+        stats: { pass: pass, keyVal: keyVal, compares: compares, moves: moves },
+        msg: "Key " + keyVal + " 已插入到位置 A[" + k + "]，完成插入",
+        code: [7], move: false
+      });
+      region[i] = true;
+      steps.push({
+        type: "mark", arr: clone(w), compare: null, key: null, min: null, cur: null,
+        sorted: [], region: region.slice(),
+        stats: { pass: pass, keyVal: keyVal, compares: compares, moves: moves },
+        msg: "已排序區域增加到前 " + (i + 1) + " 個元素",
+        code: [8], move: false
+      });
+    }
+    steps.push({
+      type: "done", arr: clone(w), compare: null, key: null, min: null, cur: null,
+      sorted: new Array(n).fill(true), region: region.slice(),
+      stats: { pass: n, keyVal: null, compares: compares, moves: moves },
+      msg: "完成！陣列已升冪排序：" + w.map(function (o) { return o.value; }).join(", "),
+      code: [8], move: false
+    });
+    return steps;
+  }
+
+  /* ============================================================
+     Rendering layer
+     ============================================================ */
+  var INTRO = "準備就緒，按「▶ 開始」自動播放，或「⏭ 下一步」單步學習。";
+
+  function updateStepInfo(v) {
+    if (v.statsEl) {
+      var el = v.statsEl.querySelector('[data-f="stepinfo"]');
+      if (el) el.textContent = v.cursor + " / " + v.steps.length;
+    }
+  }
+
+  function render(v) {
+    var st = v.last;
+    var n = v.view.length;
+    var compare = st && st.compare ? st.compare : [];
+    var key = st && st.key != null ? st.key : -1;
+    var min = st && st.min != null ? st.min : -1;
+    var cur = st && st.cur != null ? st.cur : -1;
+    var isMove = st && (st.type === "swap" || st.type === "shift");
+    var existing = {};
+    var kids = v.barsEl.children;
+    for (var i = 0; i < kids.length; i++) existing[kids[i].getAttribute("data-id")] = kids[i];
+
+    for (var idx = 0; idx < n; idx++) {
+      var item = v.view[idx];
+      var el = existing[String(item.id)];
+      if (!el) {
+        el = document.createElement("div");
+        el.className = "bar";
+        el.innerHTML = '<span class="num"></span><span class="bmark"></span>';
+        el.setAttribute("data-id", item.id);
+        v.barsEl.appendChild(el);
+      }
+      el.style.left = (idx * 100 / n) + "%";
+      el.style.width = "calc(" + (100 / n) + "% - 3px)";
+      el.style.height = (item.value / v.max * 100) + "%";
+      el.querySelector(".num").textContent = item.value;
+      var bm = el.querySelector(".bmark");
+      var slot = (v.barsEl && n) ? (v.barsEl.clientWidth / n) : 100;
+      var compact = slot < 50;
+      var badge = "";
+      if (slot >= 30) {
+        if (cur === idx) badge = "位置";
+        if (!badge && min === idx) badge = compact ? "最小" : "最小值";
+        if (!badge && key === idx) badge = "Key";
+        if (!badge && compare.indexOf(idx) !== -1) badge = isMove ? (compact ? "交換" : "交換中") : (compact ? "比較" : "比較中");
+        if (v.sorted[idx]) badge = compact ? "✓" : "✓ 已排序";
+      }
+      bm.textContent = badge;
+      bm.style.display = badge ? "" : "none";
+
+      el.classList.toggle("cmp", !isMove && compare.indexOf(idx) !== -1);
+      el.classList.toggle("mv", isMove && compare.indexOf(idx) !== -1);
+      el.classList.toggle("key", key === idx);
+      el.classList.toggle("min", min === idx);
+      el.classList.toggle("cur", cur === idx);
+      el.classList.toggle("region", !!v.region[idx]);
+      el.classList.toggle("sorted", !!v.sorted[idx]);
+      el.setAttribute("aria-label", "第 " + (idx + 1) + " 支柱，數值 " + item.value + (badge ? "，" + badge : ""));
+    }
+  }
+
+  function setStats(v, st) {
+    if (!v.statsEl) return;
+    var els = v.statsEl.querySelectorAll("[data-f]");
+    for (var i = 0; i < els.length; i++) {
+      var k = els[i].getAttribute("data-f");
+      if (k === "state" || k === "stepinfo") continue;
+      var val = st && st.stats ? st.stats[k] : undefined;
+      els[i].textContent = (val === undefined || val === null) ? "–" : val;
+    }
+  }
+
+  function setState(v, text) {
+    if (v.statsEl) {
+      var el = v.statsEl.querySelector('[data-f="state"]');
+      if (el) el.textContent = text;
+    }
+  }
+
+  function highlightCode(v, st) {
+    if (!v.codeEl) return;
+    var lines = v.codeEl.querySelectorAll(".line");
+    for (var i = 0; i < lines.length; i++) lines[i].classList.remove("active");
+    if (st && st.code) {
+      for (var c = 0; c < st.code.length; c++) {
+        var ln = v.codeEl.querySelector('.line[data-line="' + st.code[c] + '"]');
+        if (ln) ln.classList.add("active");
+      }
+    }
+  }
+
+  function applyStep(v, st) {
+    v.last = st;
+    v.view = st.arr;
+    v.sorted = st.sorted || [];
+    v.region = st.region || [];
+    v.max = maxValue(st.arr);
+    render(v);
+    setStats(v, st);
+    highlightCode(v, st);
+    if (v.arrEl) v.arrEl.textContent = st.arr.map(function (o) { return o.value; }).join(", ");
+    if (v.msgEl) {
+      v.msgEl.classList.remove("done");
+      v.msgEl.textContent = st.msg;
+    }
+  }
+
+  function waitForStep(delay, st) {
+    if (st.move) return Math.max(delay, 360);
+    if (st.type === "compare") return Math.max(delay, 130);
+    return Math.max(delay, 200);
+  }
+
+  /* ============================================================
+     Global playback guard (only one auto-play at a time)
+     ============================================================ */
+  var activePlay = null;
+  function claimPlay(p) {
+    if (activePlay && activePlay !== p && typeof activePlay.pause === "function") activePlay.pause();
+    activePlay = p;
+  }
+
+  /* ============================================================
+     Visualizer factory (main sections)
+     ============================================================ */
+  function createVisualizer(cfg) {
+    var v = {
+      key: cfg.key,
+      barsEl: cfg.barsEl,
+      msgEl: cfg.msgEl,
+      codeEl: cfg.codeEl,
+      statsEl: cfg.statsEl,
+      arrEl: cfg.arrEl,
+      speedEl: cfg.speedEl,
+      speedOut: cfg.speedOut,
+      makeSteps: cfg.makeSteps,
+      speed: 5,
+      steps: [], cursor: 0, view: [], sorted: [], region: [],
+      playing: false, finished: false, timer: null, last: null, max: 1
+    };
+
+    v.delay = function () { return Math.max(70, 900 - (v.speed - 1) * 92); };
+
+    v.stopTimer = function () {
+      if (v.timer) { clearTimeout(v.timer); v.timer = null; }
+    };
+
+    v.init = function () {
+      v.stopTimer();
+      v.playing = false;
+      v.finished = false;
+      v.steps = v.makeSteps(clone(master));
+      v.cursor = 0;
+      v.sorted = [];
+      v.region = [];
+      v.view = clone(master);
+      v.max = maxValue(v.view);
+      v.last = null;
+      v.barsEl.innerHTML = "";
+      render(v);
+      if (v.msgEl) { v.msgEl.classList.remove("done"); v.msgEl.textContent = INTRO; }
+      setStats(v, null);
+      updateStepInfo(v);
+      if (v.arrEl) v.arrEl.textContent = v.view.map(function (o) { return o.value; }).join(", ");
+      highlightCode(v, null);
+    };
+
+    v.complete = function () {
+      v.stopTimer();
+      v.playing = false;
+      v.finished = true;
+      if (v.msgEl) {
+        v.msgEl.classList.add("done");
+        v.msgEl.textContent = "✅ 排序完成！陣列已按升冪排列。可按下「▶ 開始」重新播放。";
+      }
+      updateStepInfo(v);
+    };
+
+    v.tick = function () {
+      if (!v.playing) return;
+      if (v.cursor >= v.steps.length) { v.complete(); return; }
+      var st = v.steps[v.cursor];
+      applyStep(v, st);
+      v.cursor++;
+      updateStepInfo(v);
+      v.timer = setTimeout(v.tick, waitForStep(v.delay(), st));
+    };
+
+    v.start = function () {
+      if (v.playing) return;
+      claimPlay(v);
+      if (v.finished) v.init();
+      v.playing = true;
+      v.tick();
+    };
+
+    v.pause = function () {
+      if (!v.playing) return;
+      v.stopTimer();
+      v.playing = false;
+      if (v.msgEl && !v.finished) {
+        v.msgEl.textContent = "⏸ 已暫停｜" + (v.last ? v.last.msg : "尚未開始") + " ｜按「▶ 開始」繼續，或「⏭ 下一步」單步執行。";
+      }
+    };
+
+    v.step = function () {
+      if (v.finished) return;
+      if (v.playing) v.pause();
+      if (v.cursor >= v.steps.length) { v.complete(); return; }
+      var st = v.steps[v.cursor];
+      applyStep(v, st);
+      v.cursor++;
+      updateStepInfo(v);
+      if (v.cursor >= v.steps.length) v.complete();
+    };
+
+    v.reset = function () {
+      v.stopTimer();
+      v.playing = false;
+      v.init();
+    };
+
+    return v;
+  }
+
+  /* ============================================================
+     Compare mode
+     ============================================================ */
+  var ALGO_META = {
+    bubble: { name: "Bubble Sort", moveLabel: "交換" },
+    selection: { name: "Selection Sort", moveLabel: "交換" },
+    insertion: { name: "Insertion Sort", moveLabel: "移動" }
+  };
+
+  var compare = {
+    runners: [],
+    playing: false, finished: false, timer: null, speed: 5, rank: 0,
+
+    delay: function () { return Math.max(70, 900 - (compare.speed - 1) * 92); },
+
+    stopTimer: function () {
+      if (compare.timer) { clearTimeout(compare.timer); compare.timer = null; }
+    },
+
+    buildRunner: function (key, makeSteps) {
+      var r = {
+        key: key,
+        makeSteps: makeSteps,
+        barsEl: $("#cm-" + key),
+        msgEl: $("#cm-" + key + "-msg"),
+        statsEl: $(".mini-stats", $("#cm-" + key + "-msg").parentNode),
+        codeEl: null,
+        arrEl: null,
+        steps: [], cursor: 0, view: [], sorted: [], region: [],
+        last: null, max: 1, done: false, rank: 0, finalStats: null
+      };
+      return r;
+    },
+
+    init: function () {
+      compare.stopTimer();
+      compare.playing = false;
+      compare.finished = false;
+      compare.rank = 0;
+      var data = clone(master);
+      var makers = [
+        { key: "bubble", fn: bubbleSteps },
+        { key: "selection", fn: selectionSteps },
+        { key: "insertion", fn: insertionSteps }
+      ];
+      compare.runners = makers.map(function (m) { return compare.buildRunner(m.key, m.fn); });
+      compare.runners.forEach(function (r) {
+        r.steps = r.makeSteps(clone(data));
+        r.cursor = 0;
+        r.view = clone(data);
+        r.sorted = [];
+        r.region = [];
+        r.max = maxValue(r.view);
+        r.last = null;
+        r.done = false;
+        r.rank = 0;
+        r.finalStats = null;
+        r.barsEl.innerHTML = "";
+        render(r);
+        r.msgEl.classList.remove("done");
+        r.msgEl.textContent = "等待開始…";
+        setStats(r, null);
+        setState(r, "待機");
+        updateStepInfo(r);
+      });
+      $("#race-result").hidden = true;
+    },
+
+    applyOne: function (r, st) {
+      applyStep(r, st);
+      setState(r, "進行中");
+    },
+
+    finishRunner: function (r) {
+      r.done = true;
+      compare.rank++;
+      r.rank = compare.rank;
+      r.finalStats = r.steps[r.steps.length - 1].stats;
+      r.msgEl.classList.add("done");
+      r.msgEl.textContent = "🏁 排序完成（第 " + r.rank + " 名）";
+      setState(r, "完成");
+      updateStepInfo(r);
+    },
+
+    tick: function () {
+      if (!compare.playing) return;
+      var live = false;
+      compare.runners.forEach(function (r) {
+        if (r.done) return;
+        live = true;
+        if (r.cursor >= r.steps.length) { compare.finishRunner(r); return; }
+        var st = r.steps[r.cursor];
+        compare.applyOne(r, st);
+        r.cursor++;
+        updateStepInfo(r);
+        if (r.cursor >= r.steps.length) compare.finishRunner(r);
+      });
+      if (!live) { compare.complete(); return; }
+      var wait = waitForStep(compare.delay(), compare.runners[0].steps[compare.runners[0].cursor - 1] || { type: "mark" });
+      compare.timer = setTimeout(compare.tick, wait);
+    },
+
+    start: function () {
+      if (compare.playing) return;
+      claimPlay(compare);
+      if (compare.finished) compare.init();
+      compare.playing = true;
+      compare.tick();
+    },
+
+    pause: function () {
+      if (!compare.playing) return;
+      compare.stopTimer();
+      compare.playing = false;
+      compare.runners.forEach(function (r) {
+        if (!r.done) setState(r, "已暫停");
+      });
+    },
+
+    step: function () {
+      if (compare.finished) return;
+      if (compare.playing) compare.pause();
+      compare.runners.forEach(function (r) {
+        if (r.done) return;
+        if (r.cursor >= r.steps.length) { compare.finishRunner(r); return; }
+        var st = r.steps[r.cursor];
+        compare.applyOne(r, st);
+        r.cursor++;
+        updateStepInfo(r);
+        if (r.cursor >= r.steps.length) compare.finishRunner(r);
+      });
+      if (compare.runners.every(function (r) { return r.done; })) compare.complete();
+    },
+
+    complete: function () {
+      compare.stopTimer();
+      compare.playing = false;
+      compare.finished = true;
+      var box = $("#race-result");
+      box.hidden = false;
+      var sortedRuns = compare.runners.slice().sort(function (a, b) { return a.rank - b.rank; });
+      var winner = sortedRuns[0];
+      var wMeta = ALGO_META[winner.key];
+      var wStats = winner.finalStats || {};
+      $("#race-winner").textContent = "🏆 " + wMeta.name + " 率先完成！它總共比較 " +
+        wStats.compares + " 次、" + wMeta.moveLabel + " " + (wStats.swaps || wStats.moves || 0) + " 次。";
+      var tbody = $("#race-table tbody");
+      tbody.innerHTML = "";
+      compare.runners.forEach(function (r) {
+        var meta = ALGO_META[r.key];
+        var s = r.finalStats || {};
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td><b>" + meta.name + "</b></td><td>" + (s.compares || 0) + "</td><td>" +
+          (s.swaps != null ? s.swaps : s.moves || 0) + "</td><td>" + (r.rank ? "第 " + r.rank + " 名" : "—") + "</td>";
+        tbody.appendChild(tr);
+      });
+    },
+
+    reset: function () {
+      compare.stopTimer();
+      compare.playing = false;
+      compare.init();
+    }
+  };
+
+  /* ============================================================
+     Application state & wiring
+     ============================================================ */
+  var master = [];
+  var dataCount = 8;
+  var visualizers = {};
+  var initialized = false;
+
+  function newData() {
+    master = generateArray(dataCount);
+    refreshAll();
+  }
+
+  function refreshAll() {
+    Object.keys(visualizers).forEach(function (k) { visualizers[k].init(); });
+    compare.init();
+    $("#compare-arr").textContent = master.map(function (o) { return o.value; }).join(", ");
+  }
+
+  function wireSection(key) {
+    var v = visualizers[key];
+    $("#" + key + "-start").addEventListener("click", function () { v.start(); });
+    $("#" + key + "-pause").addEventListener("click", function () { v.pause(); });
+    $("#" + key + "-step").addEventListener("click", function () { v.step(); });
+    $("#" + key + "-regen").addEventListener("click", newData);
+    $("#" + key + "-reset").addEventListener("click", function () { v.reset(); });
+    v.speedEl.addEventListener("input", function (e) {
+      v.speed = +e.target.value;
+      v.speedOut.textContent = v.speed;
+    });
+  }
+
+  function init() {
+    if (initialized) return;
+    initialized = true;
+    master = defaultData();
+    dataCount = 8;
+
+    visualizers.bubble = createVisualizer({
+      key: "bubble",
+      barsEl: $("#bubble-bars"),
+      msgEl: $("#bubble-msg"),
+      codeEl: $("#bubble-code"),
+      statsEl: $("#bubble .stats"),
+      arrEl: $("#bubble-arr"),
+      speedEl: $("#bubble-speed"),
+      speedOut: $("#bubble-speed-out"),
+      makeSteps: bubbleSteps
+    });
+    visualizers.selection = createVisualizer({
+      key: "selection",
+      barsEl: $("#selection-bars"),
+      msgEl: $("#selection-msg"),
+      codeEl: $("#selection-code"),
+      statsEl: $("#selection .stats"),
+      arrEl: $("#selection-arr"),
+      speedEl: $("#selection-speed"),
+      speedOut: $("#selection-speed-out"),
+      makeSteps: selectionSteps
+    });
+    visualizers.insertion = createVisualizer({
+      key: "insertion",
+      barsEl: $("#insertion-bars"),
+      msgEl: $("#insertion-msg"),
+      codeEl: $("#insertion-code"),
+      statsEl: $("#insertion .stats"),
+      arrEl: $("#insertion-arr"),
+      speedEl: $("#insertion-speed"),
+      speedOut: $("#insertion-speed-out"),
+      makeSteps: insertionSteps
+    });
+
+    wireSection("bubble");
+    wireSection("selection");
+    wireSection("insertion");
+
+    $("#data-count").addEventListener("input", function (e) {
+      dataCount = +e.target.value;
+      $("#data-count-val").textContent = dataCount;
+    });
+    $("#btn-newdata").addEventListener("click", newData);
+
+    $("#c-start").addEventListener("click", function () { compare.start(); });
+    $("#c-pause").addEventListener("click", function () { compare.pause(); });
+    $("#c-step").addEventListener("click", function () { compare.step(); });
+    $("#c-regen").addEventListener("click", newData);
+    $("#c-reset").addEventListener("click", function () { compare.reset(); });
+    $("#compare-speed").addEventListener("input", function (e) {
+      compare.speed = +e.target.value;
+      $("#compare-speed-out").textContent = compare.speed;
+    });
+
+    refreshAll();
+  }
+
+  /* ============================================================
+     Exports (module = Node.js test harness; window = browser)
+     ============================================================ */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      bubbleSteps: bubbleSteps,
+      selectionSteps: selectionSteps,
+      insertionSteps: insertionSteps,
+      generateArray: generateArray,
+      makeItem: makeItem,
+      clone: clone
+    };
+  }
+  if (global && global.document && global.addEventListener) {
+    global.addEventListener("DOMContentLoaded", init);
+  }
+
+})(typeof window !== "undefined" ? window : globalThis);
+  </script>
+</body>
+</html>
