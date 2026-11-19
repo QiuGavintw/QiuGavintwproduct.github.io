@@ -34,14 +34,16 @@ function makeEl(attrs) {
 
 function buildSandbox() {
   const gridEl = makeEl();
+  const filtersEl = makeEl();
   const emptyEl = makeEl();
   const detailEl = makeEl({ 'data-detail': 'mahjong' });
   const document = {
     readyState: 'complete',
     documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
     querySelector(sel) {
-      if (sel === '[data-works-grid]') return gridEl;
-      if (sel === '[data-works-empty]') return emptyEl;
+      if (sel === '[data-plates]') return gridEl;
+      if (sel === '[data-filters]') return filtersEl;
+      if (sel === '[data-empty]') return emptyEl;
       if (sel === '[data-detail]') return detailEl;
       return null;
     },
@@ -53,6 +55,7 @@ function buildSandbox() {
     Promise,
     setTimeout: (fn) => { try { fn(); } catch (e) { /* 測試環境：立即觸發 */ } return 0; },
     clearTimeout: () => {},
+    requestAnimationFrame: (fn) => { try { fn(0); } catch (e) {} return 0; },
     document,
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     IntersectionObserver: class {
@@ -62,6 +65,7 @@ function buildSandbox() {
       disconnect() {}
     },
     gridEl,
+    filtersEl,
     emptyEl,
     detailEl
   };
@@ -87,6 +91,7 @@ test('P1. 台灣麻將作品資料存在（PROJECTS 內有 mahjong）', () => {
   const projects = require(path.join(ROOT, 'js/projects.js'));
   assert.ok(Array.isArray(projects));
   assert.ok(mahjong, 'PROJECTS 應包含 mahjong');
+  assert.equal(mahjong.hidden, true, '台灣麻將應標記為 hidden');
 });
 
 test('P2. title 正確', () => {
@@ -118,16 +123,15 @@ test('P5. 技術標籤與分類存在', () => {
 });
 
 // ---------- P6–P7：可 render ----------
-test('P6. 作品卡片可以 render（首頁 renderProjects 輸出含台灣麻將，且標示開發中）', () => {
+test('P6. 首頁渲染可見作品，且已隱藏的台灣麻將不出現', () => {
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js']);
   const html = sandbox.gridEl.innerHTML;
-  const start = html.indexOf('台灣麻將');
-  const cardHtml = html.slice(start, start + 400);
-  assert.ok(html.includes('台灣麻將'), '作品卡應包含標題');
-  assert.ok(html.includes('projects/mahjong/'), '作品卡應含詳細頁連結');
-  assert.ok(html.includes('開發中'), '作品卡應含「開發中」標籤');
-  assert.ok(!cardHtml.includes('立即體驗'), '台灣麻將作品卡不得含「立即體驗」按鈕');
+  assert.ok(html.includes('澎湖頭足探險'), '首頁應包含站內作品');
+  assert.ok(html.includes('打開'), '作品卡應有開啟連結');
+  assert.ok(html.includes('data-cats='), '作品卡應帶分類資料');
+  assert.ok(!html.includes('台灣麻將'), '隱藏作品不應出現在首頁');
+  assert.ok(!html.includes('projects/mahjong/'), '首頁不應連到隱藏作品');
 });
 
 test('P7. 作品詳細頁可以 render（detail.js 輸出含標題、開發中，且無遊玩入口）', () => {
@@ -141,26 +145,22 @@ test('P7. 作品詳細頁可以 render（detail.js 輸出含標題、開發中�
 });
 
 // ---------- P9–P10：台灣麻將不可遊玩、其他作品不受影響 ----------
-test('P9. 台灣麻將作品卡無任何遊玩入口（不得指向 play / window.open / iframe）', () => {
+test('P9. 首頁不得出現台灣麻將遊戲入口（不得指向 play / window.open / iframe）', () => {
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js']);
   const html = sandbox.gridEl.innerHTML;
-  // 僅台灣麻將卡片：以作品卡區塊範圍內檢查
-  const start = html.indexOf('台灣麻將');
-  const cardHtml = html.slice(start, start + 400);
-  assert.ok(!cardHtml.includes('立即體驗'), '作品卡不得有「立即體驗」入口');
-  assert.ok(!cardHtml.includes('target="_blank"'), '作品卡不得以新視窗開啟任何遊玩連結');
-  // 全頁輸出中也絕不應出現指向麻將遊戲的遊玩連結
+  assert.ok(!html.includes('台灣麻將'), '首頁不得出現台灣麻將');
   assert.ok(!html.includes('projects/mahjong/play/'), '首頁不得有指向麻將遊戲的連結');
   assert.ok(!/window\.open\(/.test(html), '首頁 render 不得使用 window.open');
   assert.ok(!/<iframe/i.test(html), '首頁 render 不得包含 iframe');
 });
 
-test('P10. 其他作品不受影響：仍含「立即體驗」遊玩按鈕', () => {
+test('P10. 其他作品不受影響：仍可開啟遊玩', () => {
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js']);
-  assert.ok(sandbox.gridEl.innerHTML.includes('立即體驗'), '其他作品應保留「立即體驗」按鈕');
-  assert.ok(sandbox.gridEl.innerHTML.includes('projects/cephalopod/play/'), '其他作品應保留遊玩連結');
+  const html = sandbox.gridEl.innerHTML;
+  assert.ok(html.includes('打開'), '其他作品應保留開啟連結');
+  assert.ok(html.includes('projects/cephalopod/play/'), '其他作品應保留遊玩連結');
 });
 
 // ---------- P8：AI 隱私 ----------
@@ -187,7 +187,8 @@ test('P8. 作品資料與 render 輸出不含 AI 手牌（牌面 key / concealed
 
   const sandbox = buildSandbox();
   loadInSandbox(sandbox, ['js/main.js', 'js/detail.js']);
-  const html = sandbox.gridEl.innerHTML + '\n' + sandbox.detailEl.innerHTML;
+  // 首頁已隱藏麻將，僅檢查麻將詳細頁 render 輸出
+  const html = sandbox.detailEl.innerHTML;
   assert.ok(!TILE_KEY_RE.test(html), 'render 輸出不得含牌面 key');
   assert.ok(!html.includes('concealedTiles'), 'render 輸出不得含 concealedTiles');
 });

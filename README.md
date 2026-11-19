@@ -17,8 +17,7 @@
 | 搜尋演算法視覺化 | 視覺化 / 教育 | 線性搜尋、二分搜尋等演算法逐步視覺化 |
 | 排序演算法視覺化 | 視覺化 / 教育 | 各種排序演算法動畫與複雜度比較 |
 | 挖金礦 Gold Miner | 遊戲 | 經典黃金礦工網頁版 |
-| 午餐小天使 | 遊戲 / 教育 | 午餐教育互動小品 |
-| 台灣麻將 | 遊戲 | 台灣十六張麻將（開發中） |
+| 午餐小天使 | 工具 | 高中校園午餐查詢的 LINE 聊天機器人後端 |
 | 二元樹視覺化 | 視覺化 / 教育 | 二元搜尋樹插入、搜尋、刪除與走訪動畫 |
 
 ### 外部專案（連到獨立 Repo / 網站）
@@ -33,10 +32,12 @@
 ```
 .
 ├── index.html              # 首頁（作品總覽、分類篩選）
-├── css/style.css           # 全站樣式（含淺色 / 深色主題）
+├── css/
+│   ├── index.css           # 首頁樣式（實驗索引版面、日夜主題）
+│   └── style.css           # 作品詳情頁樣式
 ├── js/
 │   ├── projects.js         # 作品資料集（首頁卡片來源）
-│   └── main.js             # 主題切換、載入動畫、卡片渲染與篩選
+│   └── main.js             # 首頁索引渲染、分類篩選與主題切換
 ├── projects/<slug>/        # 各作品詳情頁
 ├── assets/                 # 縮圖、favicon 等靜態資源
 │   └── thumbnails/
@@ -71,11 +72,12 @@ npx serve .
    | --- | --- |
    | `id` / `slug` | 唯一識別碼 |
    | `title` / `shortDescription` / `description` | 標題與簡介（首頁用短描述） |
-   | `categories` | 分類陣列（遊戲 / 教育 / 工具 / 視覺化） |
+   | `categories` | 分類陣列（遊戲 / 教育 / 工具 / 視覺化 / 資料分析 / Web） |
    | `thumbnail` | 縮圖路徑（`assets/thumbnails/…`） |
    | `detailPage` | 詳情頁路徑；外部專案可設 `null` |
    | `demoUrl` / `githubUrl` | 線上體驗與原始碼連結 |
-   | `external` | `true` 表示外部獨立專案（卡片會顯示「外部專案」標記並連到 GitHub） |
+   | `external` | `true` 表示外部獨立專案（卡片會連到其網站與 GitHub） |
+   | `hidden` | 設為 `true` 時不在首頁與本清單顯示（檔案仍保留、可由網址存取） |
    | `createdAt` / `updatedAt` | 日期（`YYYY-MM-DD`，首頁依 `createdAt` 排序） |
    | `accent` / `features` | 主題色與特色列表 |
 

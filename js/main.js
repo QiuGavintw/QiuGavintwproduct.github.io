@@ -1,204 +1,188 @@
 /* ============================================================
-   QiuGavintwproduct 個人作品集 - 主邏輯
-   主題切換 / Loading / 作品渲染與篩選 / Scroll reveal
+   Qiu Gavin 作品集 — 實驗索引 Experimental Index
+   讀取 js/projects.js 的 window.PROJECTS，渲染索引與篩選。
+   hidden: true 的專案不顯示（例如開發中的台灣麻將）。
    ============================================================ */
 (function () {
   "use strict";
 
   var root = document.documentElement;
-
-  /* ---------- Theme ---------- */
-  var THEME_KEY = "qg-theme";
-  var themeToggle = document.querySelector("[data-theme-toggle]");
-
-  function getSystemTheme() {
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
-    return "light";
-  }
-
-  function applyTheme(theme) {
-    root.setAttribute("data-theme", theme);
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      meta.setAttribute("content", theme === "dark" ? "#000000" : "#fbfbfd");
-    }
-    if (themeToggle) {
-      themeToggle.setAttribute("aria-label", theme === "dark" ? "切換為淺色模式" : "切換為深色模式");
-    }
-  }
-
-  function getSavedTheme() {
-    try {
-      return localStorage.getItem(THEME_KEY);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function initTheme() {
-    var saved = getSavedTheme();
-    var theme = saved === "dark" || saved === "light" ? saved : getSystemTheme();
-    applyTheme(theme);
-
-    if (themeToggle) {
-      themeToggle.addEventListener("click", function () {
-        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        applyTheme(next);
-        try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* ignore */ }
-      });
-    }
-
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-        if (!getSavedTheme()) applyTheme(e.matches ? "dark" : "light");
-      });
-    }
-  }
-
-  /* ---------- Loading ---------- */
-  function initLoader() {
-    var loader = document.querySelector("[data-loader]");
-    if (!loader) return;
-    var done = function () {
-      loader.classList.add("is-done");
-    };
-    var minWait = new Promise(function (r) { setTimeout(r, 500); });
-    var loaded = document.readyState === "complete"
-      ? Promise.resolve()
-      : new Promise(function (r) {
-          window.addEventListener("load", r, { once: true });
-        });
-    Promise.all([minWait, loaded]).then(done);
-    setTimeout(done, 3500); // 最長等待，避免卡住
-  }
-
-  /* ---------- Projects rendering ---------- */
-  function sortedProjects() {
-    return (window.PROJECTS || []).slice().sort(function (a, b) {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-  }
-
-  function renderProjects(filter) {
-    var grid = document.querySelector("[data-works-grid]");
-    var empty = document.querySelector("[data-works-empty]");
-    if (!grid) return;
-    var projects = sortedProjects().filter(function (p) {
-      if (!filter || filter === "all") return true;
-      return (p.categories || []).indexOf(filter) !== -1;
-    });
-
-    grid.innerHTML = projects.map(function (p) {
-      var inDevelopment = p.status === "in-development";
-      var isExternal = p.external === true;
-      var tags = (p.categories || []).map(function (c) {
-        return '<span>' + esc(c) + '</span>';
-      }).join("");
-      var cardClass = "work-card" + (inDevelopment ? " work-card--dev" : "");
-      var thumbBadge = inDevelopment
-        ? '<span class="work-card-badge">開發中</span>'
-        : (isExternal ? '<span class="work-card-badge work-card-badge--ext">外部專案</span>' : "");
-      var detailHref = isExternal ? (p.githubUrl || "#") : (p.detailPage || "#");
-      var detailLabel = isExternal ? "GitHub Repo" : "查看詳情";
-      var extTarget = isExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
-      var demo = "";
-      if (!inDevelopment) {
-        demo = p.demoUrl
-          ? '<a class="btn btn-primary btn-sm" href="' + escAttr(p.demoUrl) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
-          : '<a class="btn btn-ghost btn-sm" href="' + escAttr(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">檢視程式碼 <span class="arrow" aria-hidden="true">↗</span></a>';
-      } else {
-        demo = '<span class="btn btn-dev btn-sm" aria-disabled="true">開發中</span>';
-      }
-      var thumb = p.thumbnail
-        ? '<a class="work-card-thumb" href="' + escAttr(detailHref) + '"' + extTarget + ' tabindex="-1" aria-hidden="true">' +
-          '<img src="' + escAttr(p.thumbnail) + '" alt="' + esc(p.title) + ' 預覽畫面" loading="lazy" decoding="async">' +
-          thumbBadge +
-          '</a>'
-        : '<div class="work-card-thumb work-card-thumb--placeholder" aria-hidden="true">' +
-          '<span class="work-card-placeholder-icon">🔗</span>' +
-          thumbBadge +
-          '</div>';
-      return (
-        '<article class="' + cardClass + '" data-reveal>' +
-          thumb +
-          '<div class="work-card-body">' +
-            '<h3 class="work-card-title"><a href="' + escAttr(detailHref) + '"' + extTarget + '>' + esc(p.title) + '</a></h3>' +
-            '<p class="work-card-desc">' + esc(p.shortDescription) + '</p>' +
-            '<div class="work-card-tags">' + tags + '</div>' +
-            '<div class="work-card-actions">' +
-              '<a class="btn btn-ghost btn-sm" href="' + escAttr(detailHref) + '"' + extTarget + '>' + detailLabel + '</a>' +
-              demo +
-            '</div>' +
-          '</div>' +
-        '</article>'
-      );
-    }).join("");
-
-    if (empty) {
-      empty.classList.toggle("is-visible", projects.length === 0);
-    }
-    observeReveal();
-  }
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function esc(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function escAttr(str) { return esc(str); }
+  function fmtDate(iso) { return iso ? iso.slice(0, 7).replace("-", ".") : ""; }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
-  /* ---------- Filter ---------- */
-  function initFilter() {
-    var bar = document.querySelector("[data-filter-bar]");
-    if (!bar) return;
-    bar.addEventListener("click", function (e) {
-      var btn = e.target.closest("[data-filter]");
-      if (!btn) return;
-      var filter = btn.getAttribute("data-filter");
-      Array.prototype.forEach.call(bar.querySelectorAll("[data-filter]"), function (b) {
-        b.classList.toggle("is-active", b === btn);
-      });
-      renderProjects(filter);
-    });
+  function visibleProjects() {
+    var list = (window.PROJECTS || []).slice().filter(function (p) { return !p.hidden; });
+    list.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    list.forEach(function (p, i) { p._index = "E·" + pad2(i + 1); });
+    return list;
   }
 
-  /* ---------- Scroll reveal ---------- */
-  var revealObserver = null;
-  function observeReveal() {
-    if (!("IntersectionObserver" in window)) {
-      Array.prototype.forEach.call(document.querySelectorAll("[data-reveal]"), function (el) {
-        el.classList.add("is-visible");
-      });
+  function isDev(p) { return p.status === "in-development"; }
+
+  function primaryHref(p) {
+    if (isDev(p)) return null;
+    return p.demoUrl || p.detailPage || p.githubUrl || null;
+  }
+  function secondary(p) {
+    if (p.external) return p.githubUrl ? { href: p.githubUrl, label: "程式碼", ext: true } : null;
+    if (p.demoUrl && p.detailPage) return { href: p.detailPage, label: "詳情", ext: false };
+    if (p.githubUrl && p.githubUrl !== primaryHref(p)) return { href: p.githubUrl, label: "程式碼", ext: true };
+    return null;
+  }
+
+  function plateHTML(p, i) {
+    var dev = isDev(p);
+    var primary = primaryHref(p);
+    var sec = secondary(p);
+    var external = p.external === true;
+
+    var openHTML;
+    if (dev) {
+      openHTML = '<span class="link-disabled mono">開發中</span>';
+    } else if (primary) {
+      openHTML = '<a class="link-open" href="' + esc(primary) + '"' +
+        (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>打開 <span aria-hidden="true">↗</span></a>';
+    } else { openHTML = ""; }
+
+    var secHTML = sec
+      ? '<a class="link-sec" href="' + esc(sec.href) + '"' +
+        ((sec.ext || /^https?:/.test(sec.href)) ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+        esc(sec.label) + '</a>'
+      : "";
+
+    var tabHref = dev ? (p.detailPage || "#") : (primary || p.detailPage || "#");
+    var tabTarget = (!dev && external) ? ' target="_blank" rel="noopener noreferrer"' : '';
+    var badge = dev ? '<span class="badge-dev">開發中</span>' : '';
+
+    var cats = p.categories || [];
+    var tech = (p.technologies || []).slice(0, 2).join(" / ");
+    var headCat = cats[0] || "";
+    var accent = p.accent || "#8b897f";
+    var thumb = p.thumbnail
+      ? '<img loading="lazy" decoding="async" src="' + esc(p.thumbnail) + '" alt="' + esc(p.title) + ' 預覽畫面">'
+      : '<span class="plate-noimg mono">無預覽</span>';
+
+    return '' +
+      '<article class="plate" data-cats="' + esc(cats.join(" ")) + '" style="--c:' + esc(accent) + ';--d:' + (i * 55) + 'ms">' +
+        '<a class="plate-media" href="' + esc(tabHref) + '"' + tabTarget + ' tabindex="-1" aria-hidden="true">' +
+          thumb +
+          '<span class="plate-tab">' + esc(p._index) + '</span>' +
+          badge +
+        '</a>' +
+        '<div class="plate-body">' +
+          '<h3 class="plate-title"><a href="' + esc(tabHref) + '"' + tabTarget + '>' + esc(p.title) + '</a></h3>' +
+          '<p class="plate-desc">' + esc(p.shortDescription) + '</p>' +
+          '<div class="plate-meta">' +
+            '<span class="dot"></span>' +
+            '<span>' + esc(headCat) + '</span>' +
+            '<span class="sep">·</span><span>' + esc(tech) + '</span>' +
+            '<span class="meta-date"><span class="sep">·</span> ' + esc(fmtDate(p.createdAt)) + '</span>' +
+          '</div>' +
+          '<div class="plate-actions">' + openHTML + secHTML + '</div>' +
+        '</div>' +
+      '</article>';
+  }
+
+  var grid = document.querySelector("[data-plates]");
+  var filtersEl = document.querySelector("[data-filters]");
+  var emptyEl = document.querySelector("[data-empty]");
+  var countEl = document.querySelector("[data-index-count]");
+  if (!grid) return;
+
+  var PROJECTS = visibleProjects();
+
+  /* ---------- Hero / header counts ---------- */
+  var catSet = [];
+  PROJECTS.forEach(function (p) {
+    (p.categories || []).forEach(function (c) { if (catSet.indexOf(c) === -1) catSet.push(c); });
+  });
+  function setText(sel, txt) { var el = document.querySelector(sel); if (el) el.textContent = txt; }
+  setText("[data-total]", String(PROJECTS.length));
+  setText("[data-cat-count]", String(catSet.length));
+  if (countEl) countEl.textContent = "共 " + PROJECTS.length + " 件";
+
+  // 精選標本框（cephalopod）的索引號
+  var featured = PROJECTS.filter(function (p) { return p.id === "cephalopod"; })[0];
+  if (featured) {
+    var tabEl = document.querySelector("[data-specimen-tab]");
+    if (tabEl) tabEl.textContent = featured._index + " · 精選";
+  }
+
+  /* ---------- Grid ---------- */
+  grid.innerHTML = PROJECTS.map(plateHTML).join("");
+
+  /* ---------- Filters ---------- */
+  var preferred = ["遊戲", "教育", "工具", "視覺化", "資料分析", "Web"];
+  catSet.sort(function (a, b) {
+    var ia = preferred.indexOf(a), ib = preferred.indexOf(b);
+    if (ia === -1) ia = 99; if (ib === -1) ib = 99;
+    return ia - ib;
+  });
+
+  function countOf(cat) {
+    return PROJECTS.filter(function (p) { return cat === "全部" || (p.categories || []).indexOf(cat) !== -1; }).length;
+  }
+  var allCats = ["全部"].concat(catSet);
+  filtersEl.innerHTML = allCats.map(function (c, i) {
+    return '<li><button class="filter-btn' + (i === 0 ? " is-active" : "") + '" type="button" data-filter="' + esc(c) + '">' +
+      '<span class="name">' + esc(c) + '</span><span class="count">' + pad2(countOf(c)) + '</span></button></li>';
+  }).join("");
+
+  function applyFilter(cat) {
+    var shown = 0;
+    Array.prototype.forEach.call(grid.querySelectorAll(".plate"), function (el) {
+      var catsAttr = " " + (el.getAttribute("data-cats") || "") + " ";
+      var ok = cat === "全部" || catsAttr.indexOf(" " + cat + " ") !== -1;
+      el.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    });
+    if (countEl) countEl.textContent = cat === "全部" ? ("共 " + shown + " 件") : (cat + " · " + shown + " 件");
+    if (emptyEl) emptyEl.classList.toggle("show", shown === 0);
+    reveal();
+  }
+
+  filtersEl.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-filter]");
+    if (!btn) return;
+    Array.prototype.forEach.call(filtersEl.querySelectorAll(".filter-btn"), function (b) {
+      b.classList.toggle("is-active", b === btn);
+    });
+    applyFilter(btn.getAttribute("data-filter"));
+  });
+
+  /* ---------- Reveal（載入後一次性錯位進場，避免漏觸發而空白） ---------- */
+  function reveal() {
+    var items = Array.prototype.filter.call(grid.querySelectorAll(".plate"), function (el) {
+      return el.style.display !== "none";
+    });
+    if (reduceMotion) {
+      items.forEach(function (el) { el.classList.add("is-in"); });
       return;
     }
-    if (revealObserver) revealObserver.disconnect();
-    revealObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.12 });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-reveal]:not(.is-visible)"), function (el) {
-      revealObserver.observe(el);
+    requestAnimationFrame(function () {
+      items.forEach(function (el) { el.classList.add("is-in"); });
     });
   }
 
-  /* ---------- Init ---------- */
-  function init() {
-    initTheme();
-    initLoader();
-    initFilter();
-    renderProjects("all");
-    observeReveal();
+  /* ---------- Theme ---------- */
+  var tBtn = document.querySelector("[data-theme-btn]");
+  var tLabel = document.querySelector("[data-theme-label]");
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    if (tLabel) tLabel.textContent = t === "dark" ? "日間" : "夜讀";
+    try { localStorage.setItem("qg-theme", t); } catch (e) {}
   }
+  function currentTheme() { return root.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+  if (tLabel) tLabel.textContent = currentTheme() === "dark" ? "日間" : "夜讀";
+  if (tBtn) tBtn.addEventListener("click", function () { setTheme(currentTheme() === "dark" ? "light" : "dark"); });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  /* ---------- Init ---------- */
+  applyFilter("全部");
 })();

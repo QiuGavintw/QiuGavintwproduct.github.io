@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qiu Gavin — 互動實驗索引 (v0)</title>
+  <meta name="description" content="Qiu Gavin 的互動實驗索引：遊戲、教具、演算法視覺化與工具，全部純前端。">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========== tokens ========== */
+    :root {
+      --paper: #f3f2ed;
+      --paper-2: #eae8e0;
+      --plate: #fbfaf6;
+      --ink: #171716;
+      --ink-soft: #565550;
+      --ink-faint: #8b897f;
+      --rule: #d7d3c7;
+      --rule-strong: #b9b4a5;
+      --accent: #1f4bd8;
+      --accent-soft: rgba(31, 75, 216, 0.10);
+
+      --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+      --display: "Playfair Display", Georgia, "Times New Roman", serif;
+      --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+      --container: 1240px;
+      --gutter: clamp(20px, 4vw, 56px);
+      --radius: 2px;
+      --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    [data-theme="dark"] {
+      --paper: #17171a;
+      --paper-2: #1f1f24;
+      --plate: #1c1c21;
+      --ink: #edeae4;
+      --ink-soft: #b9b6ac;
+      --ink-faint: #7d7a71;
+      --rule: #35343a;
+      --rule-strong: #4b4a51;
+      --accent: #7c95ff;
+      --accent-soft: rgba(124, 149, 255, 0.14);
+    }
+
+    /* ========== reset ========== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 1.0625rem;
+      line-height: 1.65;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      text-wrap: pretty;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p, dl, dd, dt, figure { margin: 0; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .wrap { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .mono { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.02em; }
+    .rule { height: 1px; background: var(--rule); border: 0; }
+
+    /* ========== header ========== */
+    .site-head {
+      position: sticky; top: 0; z-index: 20;
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .head-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; min-height: 60px;
+    }
+    .brand { display: flex; align-items: baseline; gap: 12px; }
+    .brand-mark {
+      font-family: var(--display); font-weight: 900; font-size: 1.35rem;
+      letter-spacing: -0.02em; line-height: 1;
+    }
+    .brand-sub { color: var(--ink-faint); }
+    .head-meta { display: flex; align-items: center; gap: 18px; }
+    .head-meta .mono { color: var(--ink-soft); }
+    .theme-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius);
+      color: var(--ink-soft);
+    }
+    .theme-btn:hover { color: var(--ink); border-color: var(--ink); }
+    @media (max-width: 720px) { .head-meta .mono.hide-sm { display: none; } }
+
+    /* ========== hero ========== */
+    .hero { padding-block: clamp(48px, 9vw, 112px) clamp(40px, 6vw, 72px); }
+    .hero-grid {
+      display: grid; grid-template-columns: 7fr 5fr;
+      gap: clamp(32px, 6vw, 88px); align-items: end;
+    }
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 10px;
+      color: var(--ink-faint); margin-bottom: 22px;
+    }
+    .hero-kicker::before {
+      content: ""; width: 28px; height: 1px; background: var(--rule-strong);
+    }
+    .hero-title {
+      font-family: var(--display); font-weight: 700;
+      font-size: clamp(2.55rem, 6vw, 5.1rem);
+      line-height: 0.98; letter-spacing: -0.022em;
+      max-width: 12em;
+    }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-lede {
+      margin-top: 26px; max-width: 34em; color: var(--ink-soft);
+      font-size: clamp(1.05rem, 1.4vw, 1.2rem); line-height: 1.6;
+    }
+    .hero-stats {
+      margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px 22px;
+      color: var(--ink-faint);
+    }
+    .hero-stats b { color: var(--ink); font-weight: 500; }
+
+    /* specimen (featured) */
+    .specimen { border: 1px solid var(--rule); background: var(--plate); }
+    .specimen-plate { position: relative; display: block; overflow: hidden; aspect-ratio: 16 / 10; background: var(--paper-2); }
+    .specimen-plate img { width: 100%; height: 100%; object-fit: cover; }
+    .specimen-tab {
+      position: absolute; top: 0; left: 0;
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em;
+      color: var(--plate); background: var(--ink); padding: 6px 10px;
+    }
+    .specimen-label { padding: 20px 22px 22px; border-top: 1px solid var(--rule); }
+    .specimen-label .lbl {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.7rem; color: var(--ink-faint);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .specimen-label h2 {
+      font-family: var(--display); font-weight: 700; font-size: 1.7rem;
+      letter-spacing: -0.01em; margin-top: 8px;
+    }
+    .specimen-label p { margin-top: 8px; color: var(--ink-soft); font-size: 0.98rem; }
+    .specimen-meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--ink-faint); }
+    .specimen-link {
+      margin-top: 18px; display: inline-flex; align-items: center; gap: 6px;
+      color: var(--accent); border-bottom: 1px solid currentColor; padding-bottom: 2px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--ink-faint)); display: inline-block; }
+
+    /* ========== index ========== */
+    .index-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 24px; padding-block: 14px; border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--rule);
+    }
+    .index-head h2 {
+      font-family: var(--display); font-weight: 700; font-size: clamp(1.25rem, 2vw, 1.6rem);
+      letter-spacing: -0.01em;
+    }
+    .index-head .mono { color: var(--ink-faint); }
+
+    .index-layout {
+      display: grid; grid-template-columns: 240px 1fr;
+      gap: clamp(24px, 4vw, 56px); padding-block: clamp(28px, 4vw, 44px) 96px;
+    }
+
+    /* rail */
+    .rail { position: sticky; top: 84px; align-self: start; }
+    .rail-label { color: var(--ink-faint); margin-bottom: 12px; }
+    .filter-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+    .filter-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 9px 0; text-align: left;
+      font-family: var(--serif); font-size: 1rem; color: var(--ink-soft);
+      border-bottom: 1px solid var(--rule);
+    }
+    .filter-btn .count { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-faint); }
+    .filter-btn:hover { color: var(--ink); }
+    .filter-btn.is-active { color: var(--ink); }
+    .filter-btn.is-active .name { position: relative; }
+    .filter-btn.is-active .name::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -2px;
+      height: 2px; background: var(--accent);
+    }
+    .filter-btn.is-active .count { color: var(--accent); }
+    .rail-note { margin-top: 22px; color: var(--ink-faint); line-height: 1.5; }
+
+    /* grid */
+    .plates {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: clamp(20px, 2.4vw, 34px) clamp(20px, 2.4vw, 30px);
+    }
+    .plate {
+      display: flex; flex-direction: column;
+      border-top: 1px solid var(--ink);
+      padding-top: 0;
+      opacity: 0; transform: translateY(12px);
+    }
+    .plate.is-in { opacity: 1; transform: none; transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transition-delay: var(--d, 0ms); }
+    .plate-media {
+      position: relative; display: block; overflow: hidden;
+      aspect-ratio: 4 / 3; background: var(--paper-2); margin-top: 14px;
+    }
+    .plate-media img {
+      width: 100%; height: 100%; object-fit: cover;
+      filter: saturate(0.9); transition: transform 0.5s var(--ease), filter 0.5s var(--ease);
+    }
+    .plate:hover .plate-media img { transform: scale(1.035); filter: saturate(1); }
+    .plate-tab {
+      position: absolute; top: 0; left: 0; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.04em; color: var(--plate); background: var(--ink); padding: 5px 9px;
+    }
+    .badge-dev {
+      position: absolute; bottom: 10px; left: 10px;
+      font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em;
+      background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
+      padding: 4px 8px;
+    }
+    .plate-body { padding-top: 14px; display: flex; flex-direction: column; flex: 1; }
+    .plate-title {
+      font-family: var(--display); font-weight: 600; font-size: 1.28rem;
+      line-height: 1.15; letter-spacing: -0.01em;
+    }
+    .plate-title a:hover { color: var(--accent); }
+    .plate-desc { margin-top: 8px; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.55; }
+    .plate-meta {
+      margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+      color: var(--ink-faint); font-family: var(--mono); font-size: 0.7rem;
+    }
+    .plate-meta .sep { color: var(--rule-strong); }
+    .plate-actions {
+      margin-top: auto; padding-top: 16px; display: flex; align-items: center; gap: 18px;
+    }
+    .link-open { color: var(--ink); border-bottom: 1px solid var(--ink); padding-bottom: 1px; font-size: 0.92rem; }
+    .link-open:hover { color: var(--accent); border-color: var(--accent); }
+    .link-sec { color: var(--ink-faint); font-size: 0.86rem; }
+    .link-sec:hover { color: var(--ink); }
+    .link-disabled { color: var(--ink-faint); font-size: 0.9rem; cursor: default; }
+
+    .empty-note { display: none; color: var(--ink-faint); font-style: italic; padding: 40px 0; }
+    .empty-note.show { display: block; }
+
+    /* ========== footer ========== */
+    .site-foot { border-top: 1px solid var(--rule); padding-block: 32px 56px; }
+    .foot-inner { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: baseline; justify-content: space-between; color: var(--ink-faint); }
+    .foot-inner a { border-bottom: 1px solid currentColor; }
+
+    /* ========== responsive ========== */
+    @media (max-width: 1024px) {
+      .hero-grid { grid-template-columns: 1fr; align-items: start; }
+      .specimen { max-width: 560px; }
+      .index-layout { grid-template-columns: 1fr; }
+      .rail { position: static; }
+      .filter-list { flex-direction: row; flex-wrap: wrap; gap: 0 20px; }
+      .filter-btn { width: auto; border-bottom: 0; padding: 6px 0; gap: 8px; }
+      .rail-note { display: none; }
+      .plates { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .plates { grid-template-columns: 1fr; }
+      .brand-sub { display: none; }
+      .hero-title { max-width: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .plate { opacity: 1; transform: none; transition: none; }
+      .plate-media img { transition: none; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-head">
+    <div class="wrap head-inner">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark">Qiu&nbsp;Gavin</span>
+        <span class="brand-sub mono">互動實驗索引</span>
+      </a>
+      <div class="head-meta">
+        <span class="mono hide-sm">EST. 2026 · 澎湖</span>
+        <button class="theme-btn mono" type="button" data-theme-btn aria-label="切換日夜模式">
+          <span data-theme-label>夜讀</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="hero-kicker mono">一個前端實驗者的作品索引</span>
+          <h1 class="hero-title">把好奇，<br>做成<em>可以玩</em>的東西。</h1>
+          <p class="hero-lede">從澎湖的頭足類、演算法動畫，到打字訓練與台灣麻將——十件互動實驗，全部以純前端打造，打開瀏覽器就能玩。</p>
+          <p class="hero-stats mono">
+            <span><b>10</b> 件作品</span>
+            <span><b>6</b> 種分類</span>
+            <span><b>100%</b> 純前端</span>
+          </p>
+        </div>
+
+        <figure class="specimen">
+          <a class="specimen-plate" href="projects/cephalopod/play/" aria-label="打開澎湖頭足探險">
+            <img src="assets/thumbnails/cephalopod.png" alt="澎湖頭足探險遊戲畫面">
+            <span class="specimen-tab">E·07 精選</span>
+          </a>
+          <figcaption class="specimen-label">
+            <span class="lbl"><span class="dot" style="--c:#0e9ad8"></span> Featured Specimen</span>
+            <h2>澎湖頭足探險</h2>
+            <p>依季節、時間與棲地捕撈 16 種真實頭足類，內建海洋圖鑑與保育知識的互動教育遊戲。</p>
+            <div class="specimen-meta mono">
+              <span>遊戲 / 教育</span>
+              <span>Canvas · Web Audio</span>
+              <span>2026.08</span>
+            </div>
+            <a class="specimen-link" href="projects/cephalopod/">查看詳情 <span aria-hidden="true">↗</span></a>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- INDEX -->
+    <section class="wrap" aria-labelledby="index-title">
+      <div class="index-head">
+        <h2 id="index-title">索引 · Index</h2>
+        <span class="mono" data-index-count>共 10 件</span>
+      </div>
+
+      <div class="index-layout">
+        <aside class="rail" aria-label="分類篩選">
+          <p class="rail-label mono">依分類瀏覽</p>
+          <ul class="filter-list" data-filters></ul>
+          <p class="rail-note mono">每件作品都標上索引號與日期，方便引用與比較。</p>
+        </aside>
+
+        <div>
+          <div class="plates" data-plates></div>
+          <p class="empty-note" data-empty>這個分類目前沒有作品。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-inner mono">
+      <span>© 2026 Qiu Gavin · 以純前端打造</span>
+      <a href="https://github.com/QiuGavintw/QiuGavintwproduct.github.io" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PROJECTS = [
+      { n: "E·01", id: "penghu-magistrate", title: "澎湖縣長候選人政見分析",
+        short: "2026 澎湖縣長選舉 6 位候選人政見蒐集、TF-IDF 相似度分析與 OKF 知識庫，含每日自動刷新。",
+        cats: ["資料分析", "教育"], tech: ["Python", "TF-IDF", "OKF"],
+        thumb: "assets/thumbnails/penghu-magistrate.svg", accent: "#B8956B",
+        date: "2026-11-08", external: true,
+        demo: "https://qiugavintw.github.io/penghu-magistrate-candidates/",
+        repo: "https://github.com/QiuGavintw/penghu-magistrate-candidates" },
+
+      { n: "E·02", id: "storing-seat", title: "教室座位編排工具",
+        short: "純前端座位抽號排座工具，支援 CSV/Excel 匯入、拖曳微調與多格式匯出，資料只留在本機。",
+        cats: ["工具", "教育"], tech: ["JavaScript", "SheetJS"],
+        thumb: "assets/thumbnails/storing-seat.svg", accent: "#2f6f5e",
+        date: "2026-11-01", external: true,
+        demo: "https://qiugavintw.github.io/storing-seat/",
+        repo: "https://github.com/QiuGavintw/storing-seat" },
+
+      { n: "E·03", id: "binary-tree", title: "二元樹視覺化",
+        short: "互動式二元搜尋樹教學工具，以動畫展示插入、搜尋、刪除與四種走訪。",
+        cats: ["視覺化", "教育"], tech: ["Canvas", "JavaScript"],
+        thumb: "assets/thumbnails/binary-tree.svg", accent: "#2563eb",
+        date: "2026-09-06", demo: "projects/binary-tree/play/", detail: "projects/binary-tree/" },
+
+      { n: "E·04", id: "mahjong", title: "台灣麻將",
+        short: "純前端四人台灣 16 張麻將，內建 AI 玩家、完整規則與計分、Canvas 牌桌與動畫音效。",
+        cats: ["遊戲", "教育"], tech: ["Canvas", "ES Modules"],
+        thumb: "assets/thumbnails/mahjong.svg", accent: "#2f6f5e",
+        date: "2026-08-31", dev: true, demo: "projects/mahjong/play/", detail: "projects/mahjong/" },
+
+      { n: "E·05", id: "lunch-angel", title: "午餐小天使",
+        short: "高中生查詢校園午餐的 LINE 聊天機器人後端，解析午餐 PDF 菜單並即時回覆。",
+        cats: ["工具"], tech: ["Node.js", "LINE API"],
+        thumb: "assets/thumbnails/lunch-angel.png", accent: "#ff6b81",
+        date: "2026-08-21", detail: "projects/lunch-angel/",
+        repo: "https://github.com/QiuGavintw/lunch-angel" },
+
+      { n: "E·06", id: "typing-practice", title: "打字訓練中心",
+        short: "為國高中生設計的英文打字訓練 App，含課程、手指提示、遊戲化與錯誤分析。",
+        cats: ["工具", "教育"], tech: ["JavaScript", "Web Audio"],
+        thumb: "assets/thumbnails/typing.png", accent: "#7c5cff",
+        date: "2026-08-19", demo: "projects/typing-practice/play/", detail: "projects/typing-practice/" },
+
+      { n: "E·07", id: "cephalopod", title: "澎湖頭足探險",
+        short: "以澎湖真實頭足類為主題的互動教育遊戲，融合捕撈玩法、海洋圖鑑與保育知識。",
+        cats: ["遊戲", "教育"], tech: ["Canvas", "Web Audio"],
+        thumb: "assets/thumbnails/cephalopod.png", accent: "#0e9ad8",
+        date: "2026-08-14", demo: "projects/cephalopod/play/", detail: "projects/cephalopod/" },
+
+      { n: "E·08", id: "search-visualizer", title: "搜尋演算法視覺化",
+        short: "用動畫看懂順序搜尋與二分搜尋，逐步展示比較過程與複雜度。",
+        cats: ["視覺化", "教育"], tech: ["HTML5", "JavaScript"],
+        thumb: "assets/thumbnails/search.png", accent: "#34a853",
+        date: "2026-08-14", demo: "projects/search-visualizer/play/", detail: "projects/search-visualizer/" },
+
+      { n: "E·09", id: "sorting-visualizer", title: "排序演算法視覺化",
+        short: "用動畫看懂氣泡、選擇、插入、合併與貪心五種排序，逐步展示交換與比較。",
+        cats: ["視覺化", "教育"], tech: ["HTML5", "JavaScript"],
+        thumb: "assets/thumbnails/sorting.png", accent: "#f4a53d",
+        date: "2026-08-13", demo: "projects/sorting-visualizer/play/", detail: "projects/sorting-visualizer/" },
+
+      { n: "E·10", id: "gold-miner", title: "挖金礦 Gold Miner",
+        short: "經典鉤爪挖掘小遊戲，挖取黃金與寶石，避開岩石與炸藥，10 個關卡。",
+        cats: ["遊戲"], tech: ["Canvas", "Web Audio"],
+        thumb: "assets/thumbnails/gold-miner.png", accent: "#f4c542",
+        date: "2026-07-26", demo: "projects/gold-miner/play/", detail: "projects/gold-miner/" }
+    ];
+
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function fmtDate(iso) { return iso.slice(0, 7).replace("-", "."); }
+
+    function primaryHref(p) {
+      if (p.dev) return null;
+      return p.demo || p.detail || p.repo || "#";
+    }
+    function secondary(p) {
+      if (p.external) return p.repo ? { href: p.repo, label: "程式碼" } : null;
+      if (p.detail) return { href: p.detail, label: "詳情" };
+      if (p.repo) return { href: p.repo, label: "程式碼" };
+      return null;
+    }
+
+    function plateHTML(p, i) {
+      var primary = primaryHref(p);
+      var sec = secondary(p);
+
+      var openHTML;
+      if (p.dev) {
+        openHTML = '<span class="link-disabled mono">開發中</span>';
+      } else if (primary) {
+        openHTML = '<a class="link-open" href="' + primary + '"' +
+          (p.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>打開 <span aria-hidden="true">↗</span></a>';
+      } else { openHTML = ''; }
+
+      var secHTML = sec
+        ? '<a class="link-sec" href="' + sec.href + '"' +
+          ((p.external || /^https?:/.test(sec.href)) ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+          sec.label + '</a>'
+        : '';
+
+      var tabHref = p.dev ? (p.detail || "#") : (primary || p.detail || "#");
+      var tabTarget = (!p.dev && p.external) ? ' target="_blank" rel="noopener noreferrer"' : '';
+
+      var badge = p.dev ? '<span class="badge-dev">開發中</span>' : '';
+
+      var headCat = p.cats[0];
+      var techStr = p.tech.slice(0, 2).join(" / ");
+
+      return '' +
+        '<article class="plate" data-cats="' + p.cats.join(" ") + '" style="--d:' + (i * 55) + 'ms">' +
+          '<a class="plate-media" href="' + tabHref + '"' + tabTarget + ' tabindex="-1" aria-hidden="true">' +
+            '<img loading="lazy" decoding="async" src="' + p.thumb + '" alt="' + p.title + ' 預覽畫面">' +
+            '<span class="plate-tab">' + p.n + '</span>' +
+            badge +
+          '</a>' +
+          '<div class="plate-body">' +
+            '<h3 class="plate-title"><a href="' + tabHref + '"' + tabTarget + '>' + p.title + '</a></h3>' +
+            '<p class="plate-desc">' + p.short + '</p>' +
+            '<div class="plate-meta">' +
+              '<span class="dot" style="--c:' + p.accent + '"></span>' +
+              '<span>' + headCat + '</span>' +
+              '<span class="sep">·</span><span>' + techStr + '</span>' +
+              '<span class="sep">·</span><span>' + fmtDate(p.date) + '</span>' +
+            '</div>' +
+            '<div class="plate-actions">' + openHTML + secHTML + '</div>' +
+          '</div>' +
+        '</article>';
+    }
+
+    var grid = document.querySelector("[data-plates]");
+    var filtersEl = document.querySelector("[data-filters]");
+    var emptyEl = document.querySelector("[data-empty]");
+    var countEl = document.querySelector("[data-index-count]");
+
+    grid.innerHTML = PROJECTS.map(plateHTML).join("");
+
+    // filters
+    var cats = [];
+    PROJECTS.forEach(function (p) {
+      p.cats.forEach(function (c) { if (cats.indexOf(c) === -1) cats.push(c); });
+    });
+    var order = ["遊戲", "教育", "工具", "視覺化", "資料分析"];
+    cats.sort(function (a, b) {
+      var ia = order.indexOf(a), ib = order.indexOf(b);
+      if (ia === -1) ia = 99; if (ib === -1) ib = 99;
+      return ia - ib;
+    });
+
+    function countOf(cat) {
+      return PROJECTS.filter(function (p) { return cat === "全部" || p.cats.indexOf(cat) !== -1; }).length;
+    }
+
+    var allCats = ["全部"].concat(cats);
+    filtersEl.innerHTML = allCats.map(function (c, i) {
+      return '<li><button class="filter-btn' + (i === 0 ? " is-active" : "") + '" type="button" data-filter="' + c + '">' +
+        '<span class="name">' + c + '</span><span class="count">' + String(countOf(c)).padStart(2, "0") + '</span>' +
+        '</button></li>';
+    }).join("");
+
+    function applyFilter(cat) {
+      var shown = 0;
+      Array.prototype.forEach.call(grid.querySelectorAll(".plate"), function (el) {
+        var catsAttr = el.getAttribute("data-cats") || "";
+        var ok = cat === "全部" || (" " + catsAttr + " ").indexOf(" " + cat + " ") !== -1;
+        el.style.display = ok ? "" : "none";
+        if (ok) shown++;
+      });
+      if (countEl) countEl.textContent = cat === "全部" ? ("共 " + shown + " 件") : (cat + " · " + shown + " 件");
+      emptyEl.classList.toggle("show", shown === 0);
+      reveal();
+    }
+
+    filtersEl.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-filter]");
+      if (!btn) return;
+      Array.prototype.forEach.call(filtersEl.querySelectorAll(".filter-btn"), function (b) {
+        b.classList.toggle("is-active", b === btn);
+      });
+      applyFilter(btn.getAttribute("data-filter"));
+    });
+
+    // reveal
+    function reveal() {
+      var items = Array.prototype.filter.call(grid.querySelectorAll(".plate"), function (el) {
+        return el.style.display !== "none";
+      });
+      if (reduceMotion || !("IntersectionObserver" in window)) {
+        items.forEach(function (el) { el.classList.add("is-in"); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add("is-in"); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { if (!el.classList.contains("is-in")) io.observe(el); });
+    }
+
+    // theme
+    var root = document.documentElement;
+    var tBtn = document.querySelector("[data-theme-btn]");
+    var tLabel = document.querySelector("[data-theme-label]");
+    function setTheme(t) {
+      root.setAttribute("data-theme", t);
+      if (tLabel) tLabel.textContent = t === "dark" ? "日間" : "夜讀";
+      try { localStorage.setItem("qg-theme", t); } catch (e) {}
+    }
+    (function initTheme() {
+      var saved = null;
+      try { saved = localStorage.getItem("qg-theme"); } catch (e) {}
+      var sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(saved === "dark" || saved === "light" ? saved : (sysDark ? "dark" : "light"));
+    })();
+    if (tBtn) tBtn.addEventListener("click", function () {
+      setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+    });
+
+    applyFilter("全部");
+  })();
+  </script>
+</body>
+</html>

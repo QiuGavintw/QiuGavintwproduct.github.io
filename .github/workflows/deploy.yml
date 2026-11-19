@@ -58,11 +58,11 @@ jobs:
             const projects = require('./js/projects.js');
             let fail = 0;
             for (const p of projects) {
-              if (!fs.existsSync(p.detailPage + 'index.html')) {
+              if (p.detailPage && !fs.existsSync(p.detailPage + 'index.html')) {
                 console.error('MISSING detail page: ' + p.detailPage);
                 fail = 1;
               }
-              if (p.demoUrl && !fs.existsSync(p.demoUrl + 'index.html')) {
+              if (p.demoUrl && !/^https?:/.test(p.demoUrl) && !fs.existsSync(p.demoUrl + 'index.html')) {
                 console.error('MISSING demo: ' + p.demoUrl);
                 fail = 1;
               }
@@ -71,7 +71,7 @@ jobs:
                 fail = 1;
               }
             }
-            ['index.html','404.html','sitemap.xml','robots.txt','css/style.css','js/main.js','js/detail.js','js/projects.js'].forEach(f => {
+            ['index.html','404.html','sitemap.xml','robots.txt','css/style.css','css/index.css','js/main.js','js/detail.js','js/projects.js'].forEach(f => {
               if (!fs.existsSync(f)) { console.error('MISSING: ' + f); fail = 1; }
             });
             if (fail) process.exit(1);
