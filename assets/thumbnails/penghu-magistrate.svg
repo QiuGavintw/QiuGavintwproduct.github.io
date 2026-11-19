@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="澎湖縣長候選人政見分析預覽示意圖（非實機截圖）">
+  <title>澎湖縣長候選人政見分析預覽示意圖</title>
+  <desc>以米色背景呈現 2026 澎湖縣長選舉 6 位候選人政見蒐集、TF-IDF 相似度分析與 OKF 知識庫的示意圖。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f1e6"/>
+      <stop offset="1" stop-color="#efe4d2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1200" height="72" fill="#e8dcc8"/>
+  <text x="600" y="44" fill="#4a3b28" font-family="sans-serif" font-size="26" text-anchor="middle" font-weight="bold">澎湖縣長候選人政見分析</text>
+  <text x="600" y="118" fill="#8a7657" font-family="sans-serif" font-size="18" text-anchor="middle">2026 澎湖縣長選舉 ・ 6 位候選人 ・ TF-IDF 相似度分析 ・ OKF v0.2</text>
+
+  <!-- 候選人卡片 -->
+  <g font-family="sans-serif">
+    <g>
+      <rect x="70" y="170" width="330" height="150" rx="14" fill="#fdfaf4" stroke="#d8c9b0" stroke-width="2"/>
+      <circle cx="115" cy="212" r="22" fill="#b8956b"/>
+      <text x="115" y="220" fill="#fff" font-size="22" text-anchor="middle" font-weight="bold">1</text>
+      <text x="152" y="220" fill="#4a3b28" font-size="24" font-weight="bold">許智富</text>
+      <text x="90" y="262" fill="#8a7657" font-size="17">食衣住行育樂 6 大面向</text>
+      <rect x="90" y="282" width="120" height="24" rx="12" fill="#e8dcc8"/>
+      <text x="150" y="299" fill="#6b5a3e" font-size="14" text-anchor="middle">政策</text>
+    </g>
+    <g>
+      <rect x="435" y="170" width="330" height="150" rx="14" fill="#fdfaf4" stroke="#d8c9b0" stroke-width="2"/>
+      <circle cx="480" cy="212" r="22" fill="#b8956b"/>
+      <text x="480" y="220" fill="#fff" font-size="22" text-anchor="middle" font-weight="bold">2</text>
+      <text x="517" y="220" fill="#4a3b28" font-size="24" font-weight="bold">周倪安</text>
+      <text x="455" y="262" fill="#8a7657" font-size="17">8 項政見</text>
+      <rect x="455" y="282" width="120" height="24" rx="12" fill="#e8dcc8"/>
+      <text x="515" y="299" fill="#6b5a3e" font-size="14" text-anchor="middle">政策</text>
+    </g>
+    <g>
+      <rect x="800" y="170" width="330" height="150" rx="14" fill="#fdfaf4" stroke="#d8c9b0" stroke-width="2"/>
+      <circle cx="845" cy="212" r="22" fill="#b8956b"/>
+      <text x="845" y="220" fill="#fff" font-size="22" text-anchor="middle" font-weight="bold">3</text>
+      <text x="882" y="220" fill="#4a3b28" font-size="24" font-weight="bold">葉竹林</text>
+      <text x="820" y="262" fill="#8a7657" font-size="17">9 項政見</text>
+      <rect x="820" y="282" width="120" height="24" rx="12" fill="#e8dcc8"/>
+      <text x="880" y="299" fill="#6b5a3e" font-size="14" text-anchor="middle">政策</text>
+    </g>
+  </g>
+
+  <!-- 相似度矩陣示意 -->
+  <g transform="translate(70,370)">
+    <rect x="0" y="0" width="500" height="240" rx="16" fill="#fdfaf4" stroke="#d8c9b0" stroke-width="2"/>
+    <text x="30" y="42" fill="#4a3b28" font-family="sans-serif" font-size="22" font-weight="bold">政見相似度矩陣</text>
+    <g font-family="monospace" font-size="15" text-anchor="middle">
+      <g fill="#6b5a3e">
+        <rect x="120" y="70" width="42" height="34" fill="#e0d2ba"/><text x="141" y="93">1</text>
+        <rect x="168" y="70" width="42" height="34" fill="#e0d2ba"/><text x="189" y="93">2</text>
+        <rect x="216" y="70" width="42" height="34" fill="#e0d2ba"/><text x="237" y="93">3</text>
+        <rect x="264" y="70" width="42" height="34" fill="#e0d2ba"/><text x="285" y="93">4</text>
+        <rect x="312" y="70" width="42" height="34" fill="#e0d2ba"/><text x="333" y="93">5</text>
+        <rect x="360" y="70" width="42" height="34" fill="#e0d2ba"/><text x="381" y="93">6</text>
+      </g>
+      <g>
+        <rect x="120" y="112" width="42" height="34" fill="#b8956b"/><text x="141" y="135" fill="#fff">1.0</text>
+        <rect x="168" y="112" width="42" height="34" fill="#d9c4a3"/><text x="189" y="135" fill="#5a4a30">.42</text>
+        <rect x="216" y="112" width="42" height="34" fill="#e6d6bf"/><text x="237" y="135" fill="#5a4a30">.31</text>
+        <rect x="264" y="112" width="42" height="34" fill="#efe4d2"/><text x="285" y="135" fill="#5a4a30">.18</text>
+        <rect x="312" y="112" width="42" height="34" fill="#e6d6bf"/><text x="333" y="135" fill="#5a4a30">.27</text>
+        <rect x="360" y="112" width="42" height="34" fill="#efe4d2"/><text x="381" y="135" fill="#5a4a30">.15</text>
+      </g>
+      <g>
+        <rect x="120" y="154" width="42" height="34" fill="#d9c4a3"/><text x="141" y="177" fill="#5a4a30">.42</text>
+        <rect x="168" y="154" width="42" height="34" fill="#b8956b"/><text x="189" y="177" fill="#fff">1.0</text>
+        <rect x="216" y="154" width="42" height="34" fill="#d9c4a3"/><text x="237" y="177" fill="#5a4a30">.38</text>
+        <rect x="264" y="154" width="42" height="34" fill="#e6d6bf"/><text x="285" y="177" fill="#5a4a30">.24</text>
+        <rect x="312" y="154" width="42" height="34" fill="#efe4d2"/><text x="333" y="177" fill="#5a4a30">.19</text>
+        <rect x="360" y="154" width="42" height="34" fill="#e6d6bf"/><text x="381" y="177" fill="#5a4a30">.29</text>
+      </g>
+      <g>
+        <rect x="120" y="196" width="42" height="34" fill="#e6d6bf"/><text x="141" y="219" fill="#5a4a30">.31</text>
+        <rect x="168" y="196" width="42" height="34" fill="#d9c4a3"/><text x="189" y="219" fill="#5a4a30">.38</text>
+        <rect x="216" y="196" width="42" height="34" fill="#b8956b"/><text x="237" y="219" fill="#fff">1.0</text>
+        <rect x="264" y="196" width="42" height="34" fill="#d9c4a3"/><text x="285" y="219" fill="#5a4a30">.44</text>
+        <rect x="312" y="196" width="42" height="34" fill="#e6d6bf"/><text x="333" y="219" fill="#5a4a30">.26</text>
+        <rect x="360" y="196" width="42" height="34" fill="#efe4d2"/><text x="381" y="219" fill="#5a4a30">.21</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(610,370)">
+    <rect x="0" y="0" width="520" height="240" rx="16" fill="#fdfaf4" stroke="#d8c9b0" stroke-width="2"/>
+    <text x="30" y="42" fill="#4a3b28" font-family="sans-serif" font-size="22" font-weight="bold">資料來源與知識庫</text>
+    <g font-family="sans-serif" font-size="17" fill="#5a4a30">
+      <text x="30" y="86">📄 選舉公報（最優先）</text>
+      <text x="30" y="122">📘 候選人官方 Facebook</text>
+      <text x="30" y="158">📰 主流媒體報導</text>
+      <text x="30" y="194">🗂  OKF v0.2 知識庫</text>
+      <text x="30" y="226">🔄 GitHub Actions 每日刷新</text>
+    </g>
+  </g>
+</svg>
