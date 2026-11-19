@@ -71,7 +71,7 @@ jobs:
                 fail = 1;
               }
             }
-            ['index.html','404.html','sitemap.xml','robots.txt','css/style.css','css/index.css','js/main.js','js/detail.js','js/projects.js'].forEach(f => {
+            ['index.html','about.html','404.html','sitemap.xml','robots.txt','css/style.css','css/index.css','js/main.js','js/detail.js','js/projects.js'].forEach(f => {
               if (!fs.existsSync(f)) { console.error('MISSING: ' + f); fail = 1; }
             });
             if (fail) process.exit(1);

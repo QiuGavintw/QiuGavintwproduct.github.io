@@ -3,6 +3,7 @@
 個人作品集網站原始碼。集結互動遊戲、海洋教育、演算法視覺化、打字訓練與實用工具，全部以純前端技術打造，可直接在瀏覽器中體驗。
 
 - **網站網址**：<https://qiugavintw.github.io/QiuGavintwproduct.github.io/>
+- **舊版介紹**：<https://qiugavintw.github.io/QiuGavintwproduct.github.io/about.html>（保留改版前首頁的 Hero／作品集介紹版面）
 - **作者**：Qiu Gavin（[GitHub @QiuGavintw](https://github.com/QiuGavintw)）
 - **技術**：HTML / CSS / 原生 JavaScript（零建置、零框架），部署於 GitHub Pages
 
@@ -32,6 +33,7 @@
 ```
 .
 ├── index.html              # 首頁（作品總覽、分類篩選）
+├── about.html              # 舊版首頁介紹頁（沿用 css/style.css）
 ├── css/
 │   ├── index.css           # 首頁樣式（實驗索引版面、日夜主題）
 │   └── style.css           # 作品詳情頁樣式

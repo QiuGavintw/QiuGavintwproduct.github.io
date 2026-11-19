@@ -78,6 +78,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .brand-sub { color: var(--ink-faint); }
 .head-meta { display: flex; align-items: center; gap: 18px; }
 .head-meta .mono { color: var(--ink-soft); }
+.head-link { color: var(--ink-faint); border-bottom: 1px solid transparent; }
+.head-link:hover { color: var(--ink); border-color: var(--ink); }
 .theme-btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius);
