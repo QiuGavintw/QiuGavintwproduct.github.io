@@ -317,7 +317,7 @@
         "動畫可中斷、可重播，操作結果立即生效、永不遺失",
         "無第三方框架、零依賴，純前端即可在 GitHub Pages 執行"
       ]
-    }
+    },
     {
       id: "penghu-magistrate",
       slug: "penghu-magistrate-candidates",

@@ -374,6 +374,25 @@ p { margin: 0 0 1em; }
   letter-spacing: 0.05em;
   pointer-events: none;
 }
+
+.work-card-badge--ext {
+  background: rgba(102, 51, 153, 0.7);
+}
+
+.work-card-thumb--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.work-card-placeholder-icon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
 .work-card-body {
   padding: 20px 22px 22px;
   display: flex;
