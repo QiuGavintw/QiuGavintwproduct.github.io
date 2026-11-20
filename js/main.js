@@ -28,11 +28,11 @@
 
   function primaryHref(p) {
     if (isDev(p)) return null;
-    return p.demoUrl || p.detailPage || p.githubUrl || null;
+    return p.detailPage || p.demoUrl || p.githubUrl || null;
   }
   function secondary(p) {
     if (p.external) return p.githubUrl ? { href: p.githubUrl, label: "程式碼", ext: true } : null;
-    if (p.demoUrl && p.detailPage) return { href: p.detailPage, label: "詳情", ext: false };
+    if (p.detailPage && p.demoUrl) return { href: p.demoUrl, label: "體驗", ext: /^https?:/.test(p.demoUrl) };
     if (p.githubUrl && p.githubUrl !== primaryHref(p)) return { href: p.githubUrl, label: "程式碼", ext: true };
     return null;
   }
@@ -41,14 +41,13 @@
     var dev = isDev(p);
     var primary = primaryHref(p);
     var sec = secondary(p);
-    var external = p.external === true;
 
     var openHTML;
     if (dev) {
       openHTML = '<span class="link-disabled mono">開發中</span>';
     } else if (primary) {
       openHTML = '<a class="link-open" href="' + esc(primary) + '"' +
-        (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>打開 <span aria-hidden="true">↗</span></a>';
+        (/^https?:/.test(primary) ? ' target="_blank" rel="noopener noreferrer"' : '') + '>打開 <span aria-hidden="true">↗</span></a>';
     } else { openHTML = ""; }
 
     var secHTML = sec
@@ -58,7 +57,7 @@
       : "";
 
     var tabHref = dev ? (p.detailPage || "#") : (primary || p.detailPage || "#");
-    var tabTarget = (!dev && external) ? ' target="_blank" rel="noopener noreferrer"' : '';
+    var tabTarget = /^https?:/.test(tabHref) ? ' target="_blank" rel="noopener noreferrer"' : '';
     var badge = dev ? '<span class="badge-dev">開發中</span>' : '';
 
     var cats = p.categories || [];

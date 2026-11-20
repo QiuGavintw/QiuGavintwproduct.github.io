@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教室座位編排工具｜Qiu Gavin 作品集</title>
+  <meta name="description" content="純前端教室座位抽號排座工具，支援 CSV/Excel 匯入、拖曳微調、多格式匯出，資料僅存本機。">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Qiu Gavin — 互動實驗索引">
+  <meta property="og:title" content="教室座位編排工具">
+  <meta property="og:description" content="純前端座位抽號排座工具，支援 CSV/Excel 匯入與多格式匯出。">
+  <meta property="og:url" content="https://qiugavintw.github.io/QiuGavintwproduct.github.io/projects/storing-seat/">
+  <meta property="og:image" content="https://qiugavintw.github.io/QiuGavintwproduct.github.io/assets/thumbnails/storing-seat.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="教室座位編排工具">
+  <meta name="twitter:description" content="純前端座位抽號排座工具，支援 CSV/Excel 匯入與多格式匯出。">
+  <link rel="canonical" href="https://qiugavintw.github.io/QiuGavintwproduct.github.io/projects/storing-seat/">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+  <link rel="apple-touch-icon" href="../../assets/favicon.svg">
+  <meta name="theme-color" content="#f3f2ed">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/index.css">
+  <script>
+    (function () {
+      var t;
+      try { t = localStorage.getItem("qg-theme"); } catch (e) {}
+      if (t !== "dark" && t !== "light") {
+        t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+</head>
+<body>
+  <header class="site-head">
+    <div class="wrap head-inner">
+      <a class="brand" href="../../index.html">
+        <span class="brand-mark">Qiu&nbsp;Gavin</span>
+        <span class="brand-sub mono">互動實驗索引</span>
+      </a>
+      <div class="head-meta">
+        <span class="mono hide-sm">EST. 2026 · 澎湖</span>
+        <a class="head-link mono" href="../../index.html">作品索引</a>
+        <button class="theme-btn mono" type="button" data-theme-btn aria-label="切換日夜模式">
+          <span data-theme-label>夜讀</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div data-detail="storing-seat"></div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-inner mono">
+      <span>© 2026 Qiu Gavin · 以純前端打造</span>
+      <a href="../../index.html">作品索引 ↗</a>
+      <a href="https://github.com/QiuGavintw/QiuGavintwproduct.github.io" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </div>
+  </footer>
+
+  <script src="../../js/projects.js"></script>
+  <script src="../../js/detail.js"></script>
+</body>
+</html>

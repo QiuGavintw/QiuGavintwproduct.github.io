@@ -1,94 +1,41 @@
 /* ============================================================
-   作品詳細頁渲染邏輯
-   每個作品詳細頁的 index.html 只需：
+   Qiu Gavin 作品集 — 作品介紹頁
+   與首頁共用 css/index.css 的實驗索引設計系統。
+   每個 projects/<slug>/index.html 只需：
    1. 載入 js/projects.js
-   2. 宣告 <main data-detail="slug"> </main>
+   2. 宣告 <div data-detail="slug"></div>
    3. 載入 js/detail.js
-
-   本檔負責：
-   - 主題切換（與首頁行為一致）
-   - Loading 解除（成功 / 失敗都會解除，永不卡住）
-   - 詳細內容渲染
-   - 錯誤訊息與重新載入按鈕
    ============================================================ */
 (function () {
   "use strict";
 
   var root = document.documentElement;
 
-  /* ---------- 安全工具 ---------- */
   function esc(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-
-  /* ---------- Loading 管理 ---------- */
-  var LOADER_TIMEOUT = 8000; // 安全上限：8 秒內必定解除
-  var loaderHidden = false;
-
-  function hideLoader() {
-    if (loaderHidden) return;
-    loaderHidden = true;
-    var loader = document.querySelector("[data-loader]");
-    if (loader) loader.classList.add("is-done");
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtDate(iso) { return iso ? iso.slice(0, 7).replace("-", ".") : ""; }
+  function isExt(url) { return /^(https?:)?\/\//.test(url || ""); }
+  function rel(path) {
+    if (!path) return "";
+    return isExt(path) ? path : "../../" + path.replace(/^\//, "");
+  }
+  function toRgb(hex) {
+    var h = String(hex || "").replace("#", "");
+    if (!/^[0-9a-f]{6}$/i.test(h)) return "var(--ink-faint)";
+    return "rgb(" + parseInt(h.slice(0, 2), 16) + "," + parseInt(h.slice(2, 4), 16) + "," + parseInt(h.slice(4, 6), 16) + ")";
   }
 
-  function armLoaderTimeout() {
-    setTimeout(hideLoader, LOADER_TIMEOUT);
+  function visibleProjects() {
+    var list = (window.PROJECTS || []).slice().filter(function (p) { return !p.hidden; });
+    list.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    list.forEach(function (p, i) { p._index = "E·" + pad2(i + 1); });
+    return list;
   }
 
-  /* ---------- 主題切換（與 main.js 行為一致） ---------- */
-  var THEME_KEY = "qg-theme";
-  var themeToggle = document.querySelector("[data-theme-toggle]");
-
-  function getSystemTheme() {
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
-    return "light";
-  }
-
-  function getSavedTheme() {
-    try {
-      return localStorage.getItem(THEME_KEY);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function applyTheme(theme) {
-    root.setAttribute("data-theme", theme);
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      meta.setAttribute("content", theme === "dark" ? "#000000" : "#fbfbfd");
-    }
-    if (themeToggle) {
-      themeToggle.setAttribute("aria-label", theme === "dark" ? "切換為淺色模式" : "切換為深色模式");
-    }
-  }
-
-  function initTheme() {
-    var saved = getSavedTheme();
-    var theme = saved === "dark" || saved === "light" ? saved : getSystemTheme();
-    applyTheme(theme);
-
-    if (themeToggle) {
-      themeToggle.addEventListener("click", function () {
-        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        applyTheme(next);
-        try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* ignore */ }
-      });
-    }
-
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-        if (!getSavedTheme()) applyTheme(e.matches ? "dark" : "light");
-      });
-    }
-  }
-
-  /* ---------- 資料查詢 ---------- */
   function findProject(slug) {
     var list = window.PROJECTS || [];
     for (var i = 0; i < list.length; i++) {
@@ -97,200 +44,231 @@
     return null;
   }
 
-  /* ---------- 渲染 ---------- */
-  function renderFeatures(p) {
-    if (!p.features || !p.features.length) return "";
-    return '<div class="feature-grid">' +
-      p.features.map(function (f) {
-        return '<div class="feature-card"><p>' + esc(f) + '</p></div>';
-      }).join("") +
-      '</div>';
+  function projectIndex(p, visible) {
+    for (var i = 0; i < visible.length; i++) {
+      if (visible[i].slug === p.slug || visible[i].id === p.id) return visible[i]._index;
+    }
+    return "E·--";
   }
 
-  function renderHowTo(p) {
-    if (!p.howToPlay || !p.howToPlay.length) return "";
-    return '<div class="detail-cols"><div>' +
-      '<h3>操作說明</h3>' +
-      '<ol class="steps-list">' +
-      p.howToPlay.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") +
-      '</ol>' +
-      '</div><div>' +
-      '<h3>作品亮點</h3>' +
-      '<ul class="highlight-list">' +
-      p.highlights.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join("") +
-      '</ul>' +
-      '</div></div>';
+  function primaryHref(p) {
+    if (p.status === "in-development") return null;
+    return p.demoUrl || p.githubUrl || null;
   }
 
-  function renderNote(p) {
+  function renderActions(p) {
+    var primary = primaryHref(p);
+    var html = "";
+
     if (p.status === "in-development") {
-      return '<p class="detail-note">此作品目前開發中，暫未開放體驗。您可以從上方按鈕前往 GitHub 查看開發進度與原始碼。</p>';
+      html += '<span class="link-disabled mono">開發中</span>';
+    } else if (primary) {
+      var label = p.demoUrl ? "立即體驗" : "查看原始碼";
+      html += '<a class="link-open" href="' + esc(rel(primary)) + '"' +
+        (isExt(rel(primary)) ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+        label + ' <span aria-hidden="true">↗</span></a>';
     }
-    if (!p.demoUrl && p.githubUrl) {
-      return '<p class="detail-note">此作品為後端服務專案，需 Node.js 環境執行，無法在 GitHub Pages 中直接體驗。您可以透過上方按鈕前往 GitHub 檢視完整原始碼。</p>';
+
+    if (p.githubUrl && rel(p.githubUrl) !== rel(primary)) {
+      html += '<a class="link-sec" href="' + esc(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">程式碼 ↗</a>';
     }
-    return "";
+    html += '<a class="link-sec" href="../../index.html">返回索引</a>';
+    return html;
   }
 
-  function render(p) {
+  function sectionsOf(p) {
+    var s = [{ id: "intro", label: "作品簡介" }];
+    if (p.features && p.features.length) s.push({ id: "features", label: "功能介紹" });
+    if ((p.howToPlay && p.howToPlay.length) || (p.highlights && p.highlights.length)) {
+      s.push({ id: "guide", label: "操作與亮點" });
+    }
+    s.push({ id: "tech", label: "使用技術" });
+    return s;
+  }
+
+  function sectionContent(id, p) {
+    if (id === "intro") {
+      return '<p class="plate-desc">' + esc(p.description) + '</p>';
+    }
+    if (id === "features") {
+      return '<div class="feature-grid">' + (p.features || []).map(function (f, i) {
+        return '<div class="feature-card"><span class="mono">F·' + pad2(i + 1) + '</span><p>' + esc(f) + '</p></div>';
+      }).join("") + '</div>';
+    }
+    if (id === "guide") {
+      var steps = (p.howToPlay && p.howToPlay.length)
+        ? '<ol class="steps-list">' + p.howToPlay.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ol>'
+        : '<p class="rail-note">此作品為後端服務專案，沒有需要操作的畫面。</p>';
+      var highlights = (p.highlights && p.highlights.length)
+        ? '<ul class="highlight-list">' + p.highlights.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join("") + '</ul>'
+        : '<p class="rail-note">尚無補充亮點。</p>';
+      return '<div class="detail-cols">' +
+        '<div><h4 class="sub-title mono">操作說明</h4>' + steps + '</div>' +
+        '<div><h4 class="sub-title mono">作品亮點</h4>' + highlights + '</div>' +
+        '</div>';
+    }
+    var note = "";
+    if (p.status === "in-development") {
+      note = '<p class="detail-note">此作品目前開發中，暫未開放體驗。可前往 GitHub 查看開發進度與原始碼。</p>';
+    } else if (!p.demoUrl) {
+      note = '<p class="detail-note">此作品為後端服務專案，需 Node.js 環境執行，無法在 GitHub Pages 中直接體驗；原始碼位於獨立 Repository。</p>';
+    } else if (p.external) {
+      note = '<p class="detail-note">此作品為獨立專案，展示頁面與原始碼皆位於外部 Repository。</p>';
+    } else {
+      note = '<p class="detail-note">作品採用純前端技術，可直接在 GitHub Pages 靜態環境中運作。</p>';
+    }
+    return '<div class="tech-list">' + (p.technologies || []).map(function (t) {
+      return '<span class="tech-item">' + esc(t) + '</span>';
+    }).join("") + '</div>' + note;
+  }
+
+  function renderHero(p, idx) {
+    var cats = p.categories || [];
+    var tech = (p.technologies || []).slice(0, 2).join(" / ");
+    var demoHref = p.demoUrl ? rel(p.demoUrl) : "";
+    var plateHref = p.status === "in-development" ? rel(p.githubUrl) : (demoHref || rel(p.githubUrl));
+    var specimenLink = p.status === "in-development"
+      ? '<span class="link-disabled mono">開發中</span>'
+      : (demoHref
+        ? '<a class="specimen-link" href="' + esc(demoHref) + '"' +
+          (isExt(demoHref) ? ' target="_blank" rel="noopener noreferrer"' : '') + '>打開作品 <span aria-hidden="true">↗</span></a>'
+        : '<a class="specimen-link" href="' + esc(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">查看原始碼 <span aria-hidden="true">↗</span></a>');
+
+    return '<section class="hero">' +
+      '<div class="wrap hero-grid">' +
+        '<div>' +
+          '<span class="hero-kicker mono">作品檔案 · ' + esc(idx) + ' · ' + esc(cats.join(" / ")) + '</span>' +
+          '<h1 class="hero-title">' + esc(p.title) + '</h1>' +
+          '<p class="hero-lede">' + esc(p.shortDescription || p.description) + '</p>' +
+          '<p class="hero-stats mono">' +
+            '<span><b>' + pad2((p.features || []).length) + '</b> 項功能</span>' +
+            '<span><b>' + pad2((p.technologies || []).length) + '</b> 項技術</span>' +
+            '<span><b>' + esc(fmtDate(p.createdAt)) + '</b> 建立</span>' +
+          '</p>' +
+          '<div class="detail-actions">' + renderActions(p) + '</div>' +
+        '</div>' +
+        '<figure class="specimen">' +
+          '<a class="specimen-plate" href="' + esc(plateHref) + '"' +
+            (isExt(plateHref) ? ' target="_blank" rel="noopener noreferrer"' : '') +
+            ' aria-label="打開' + esc(p.title) + '">' +
+            (p.thumbnail
+              ? '<img src="' + esc(rel(p.thumbnail)) + '" alt="' + esc(p.title) + ' 預覽畫面">'
+              : '<span class="plate-noimg mono">無預覽</span>') +
+            '<span class="specimen-tab">' + esc(idx) + ' · Specimen</span>' +
+          '</a>' +
+          '<figcaption class="specimen-label">' +
+            '<span class="lbl"><span class="dot" style="--c:' + esc(toRgb(p.accent)) + '"></span> Project Specimen</span>' +
+            '<h2>作品預覽</h2>' +
+            '<p>' + esc(p.shortDescription || p.description) + '</p>' +
+            '<div class="specimen-meta mono">' +
+              '<span>' + esc(cats.join(" / ")) + '</span>' +
+              '<span>' + esc(tech) + '</span>' +
+              '<span>' + esc(fmtDate(p.updatedAt || p.createdAt)) + '</span>' +
+            '</div>' +
+            specimenLink +
+          '</figcaption>' +
+        '</figure>' +
+      '</div>' +
+    '</section>';
+  }
+
+  function renderRecord(p, sections) {
+    var rail = '<aside class="rail" aria-label="章節索引">' +
+      '<p class="rail-label mono">章節</p>' +
+      '<ul class="filter-list">' + sections.map(function (s, i) {
+        return '<li><a class="filter-btn' + (i === 0 ? " is-active" : "") + '" href="#' + s.id + '">' +
+          '<span class="name">' + esc(s.label) + '</span><span class="count">' + pad2(i + 1) + '</span></a></li>';
+      }).join("") + '</ul>' +
+      '<p class="rail-note mono">點選章節快速跳轉。</p>' +
+      '</aside>';
+
+    var records = sections.map(function (s, i) {
+      return '<article class="plate plate--text is-in" id="' + s.id + '">' +
+        '<span class="plate-tab">' + pad2(i + 1) + ' / ' + esc(s.label) + '</span>' +
+        '<div class="plate-body">' +
+          '<h3 class="plate-title">' + esc(s.label) + '</h3>' +
+          sectionContent(s.id, p) +
+        '</div>' +
+      '</article>';
+    }).join("");
+
+    return '<section class="wrap" aria-labelledby="record-title">' +
+      '<div class="index-head">' +
+        '<h2 id="record-title">作品內容 · Record</h2>' +
+        '<span class="mono">更新 ' + esc(fmtDate(p.updatedAt || p.createdAt)) + '</span>' +
+      '</div>' +
+      '<div class="index-layout">' + rail + '<div class="detail-content">' + records + '</div></div>' +
+    '</section>';
+  }
+
+  function render(p, idx) {
     var mount = document.querySelector("[data-detail]");
     if (!mount) return;
-    var cats = (p.categories || []).map(esc).join(" ・ ");
+    mount.innerHTML = renderHero(p, idx) + renderRecord(p, sectionsOf(p));
 
-    mount.innerHTML =
-      '<section class="detail-hero" data-reveal>' +
-        '<div class="container">' +
-          '<div class="detail-hero-cat">' + cats + '</div>' +
-          '<h1>' + esc(p.title) + '</h1>' +
-          '<p>' + esc(p.description) + '</p>' +
-          '<div class="detail-hero-actions">' +
-            (p.status === "in-development"
-              ? '<span class="btn btn-dev" aria-disabled="true">開發中</span>'
-              : (p.demoUrl
-                ? '<a class="btn btn-primary" href="' + esc(relUrl(p.demoUrl)) + '" target="_blank" rel="noopener noreferrer">立即體驗 <span class="arrow" aria-hidden="true">↗</span></a>'
-                : '')) +
-            '<a class="btn btn-ghost" href="' + esc(p.githubUrl) + '" target="_blank" rel="noopener noreferrer">GitHub <span class="arrow" aria-hidden="true">↗</span></a>' +
-            '<a class="btn btn-ghost" href="' + relUrl("index.html") + '">返回作品集</a>' +
-          '</div>' +
-          '<div class="detail-tech">' +
-            (p.technologies || []).map(function (t) { return '<span>' + esc(t) + '</span>'; }).join("") +
-          '</div>' +
-        '</div>' +
-      '</section>' +
-
-      '<section class="detail-section" data-reveal>' +
-        '<div class="container">' +
-          '<h2>作品簡介</h2>' +
-          '<p class="lead">' + esc(p.description) + '</p>' +
-          '<div class="detail-shot">' +
-            '<img src="' + esc(relAsset(p.thumbnail)) + '" alt="' + esc(p.title) + ' 預覽畫面" loading="lazy">' +
-          '</div>' +
-        '</div>' +
-      '</section>' +
-
-      (p.features && p.features.length
-        ? '<section class="detail-section" data-reveal><div class="container">' +
-          '<h2>功能介紹</h2>' +
-          renderFeatures(p) +
-          '</div></section>'
-        : "") +
-
-      (p.howToPlay && p.howToPlay.length
-        ? '<section class="detail-section" data-reveal><div class="container">' +
-          renderHowTo(p) +
-          '</div></section>'
-        : "") +
-
-      '<section class="detail-section" data-reveal><div class="container">' +
-        '<h2>使用技術</h2>' +
-        '<p class="lead">' +
-          (p.technologies || []).map(esc).join(" ・ ") +
-        '</p>' +
-        (p.status === "in-development"
-          ? ""
-          : '<div class="detail-note">作品採用純前端技術，可直接在 GitHub Pages 靜態環境中運作。</div>') +
-        renderNote(p) +
-      '</div></section>';
-
-    observeReveal();
+    var list = mount.querySelector(".filter-list");
+    if (list) {
+      list.addEventListener("click", function (e) {
+        var a = e.target.closest(".filter-btn");
+        if (!a) return;
+        Array.prototype.forEach.call(list.querySelectorAll(".filter-btn"), function (el) {
+          el.classList.toggle("is-active", el === a);
+        });
+      });
+    }
   }
 
-  /* ---------- 路徑處理（GitHub Pages Project Pages 相容） ---------- */
-  function relAsset(path) {
-    if (!path) return "";
-    if (/^(https?:)?\/\//.test(path)) return path;
-    return "../../" + path.replace(/^\//, "");
-  }
-
-  function relUrl(path) {
-    if (!path) return "";
-    if (/^(https?:)?\/\//.test(path)) return path;
-    return "../../" + path.replace(/^\//, "");
-  }
-
-  /* ---------- 錯誤畫面 ---------- */
   function renderError(message) {
     var mount = document.querySelector("[data-detail]");
     if (!mount) return;
-    mount.innerHTML =
-      '<div class="container detail-error" style="padding:120px 24px;text-align:center;">' +
-        '<h1>無法載入作品資料</h1>' +
-        '<p style="color:var(--text-secondary);margin-bottom:28px;">' + esc(message || "請重新整理頁面。") + '</p>' +
-        '<div class="detail-hero-actions">' +
-          '<button type="button" class="btn btn-primary" data-retry>重新載入</button>' +
-          '<a class="btn btn-ghost" href="' + relUrl("index.html") + '">回到作品集</a>' +
-        '</div>' +
-      '</div>';
-    var retry = document.querySelector("[data-retry]");
-    if (retry) {
-      retry.addEventListener("click", function () { window.location.reload(); });
-    }
+    mount.innerHTML = '<section class="wrap"><div class="index-head"><h2>無法載入作品資料</h2></div>' +
+      '<p class="detail-note">' + esc(message || "請重新整理頁面。") + '</p>' +
+      '<div class="detail-actions"><a class="link-open" href="../../index.html">返回索引 ↗</a></div></section>';
   }
 
-  /* ---------- Scroll reveal ---------- */
-  var revealObserver = null;
-  function observeReveal() {
-    if (!("IntersectionObserver" in window)) {
-      Array.prototype.forEach.call(document.querySelectorAll("[data-reveal]"), function (el) {
-        el.classList.add("is-visible");
-      });
-      return;
-    }
-    if (revealObserver) revealObserver.disconnect();
-    revealObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-reveal]:not(.is-visible)"), function (el) {
-      revealObserver.observe(el);
+  /* ---------- theme（與首頁一致） ---------- */
+  var tBtn = document.querySelector("[data-theme-btn]");
+  var tLabel = document.querySelector("[data-theme-label]");
+  var metaTheme = document.querySelector('meta[name="theme-color"]');
+
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    if (tLabel) tLabel.textContent = t === "dark" ? "日間" : "夜讀";
+    if (metaTheme) metaTheme.setAttribute("content", t === "dark" ? "#17171a" : "#f3f2ed");
+    try { localStorage.setItem("qg-theme", t); } catch (e) { /* ignore */ }
+  }
+  function currentTheme() { return root.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+
+  if (tLabel) tLabel.textContent = currentTheme() === "dark" ? "日間" : "夜讀";
+  if (tBtn) tBtn.addEventListener("click", function () { setTheme(currentTheme() === "dark" ? "light" : "dark"); });
+
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+      var saved = null;
+      try { saved = localStorage.getItem("qg-theme"); } catch (err) { /* ignore */ }
+      if (saved !== "dark" && saved !== "light") setTheme(e.matches ? "dark" : "light");
     });
   }
 
-  /* ---------- 初始化（含錯誤處理，Loading 必定解除） ---------- */
   function init() {
-    // 先啟動安全 timeout，確保任何情況 Loading 都會消失
-    armLoaderTimeout();
-
     var mount = document.querySelector("[data-detail]");
-    if (!mount) {
-      hideLoader();
-      return;
-    }
-
+    if (!mount) return;
     var slug = mount.getAttribute("data-detail");
-
     try {
       var p = findProject(slug);
       if (!p) {
         renderError("找不到此作品（" + esc(slug) + "），作品可能已移除或網址有誤。");
       } else {
-        render(p);
+        render(p, projectIndex(p, visibleProjects()));
       }
     } catch (error) {
-      // 不讓任何 exception 造成 Loading 永久停留
-      try {
-        renderError("載入作品時發生錯誤：" + (error && error.message ? error.message : "未知錯誤"));
-      } catch (e) {
-        var m = document.querySelector("[data-detail]");
-        if (m) m.innerHTML = '<div class="container" style="padding:120px 24px;text-align:center;"><h1>無法載入作品資料</h1></div>';
-      }
-    } finally {
-      hideLoader();
+      renderError("載入作品時發生錯誤：" + (error && error.message ? error.message : "未知錯誤"));
     }
   }
 
-  function bootstrap() {
-    initTheme();
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init);
-    } else {
-      init();
-    }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
-
-  bootstrap();
 })();

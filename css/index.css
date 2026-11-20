@@ -1,6 +1,6 @@
 /* ============================================================
    Qiu Gavin 作品集 — 實驗索引 Experimental Index
-   首頁專用樣式（詳情頁仍使用 css/style.css）
+   首頁與作品介紹頁共用之實驗索引設計系統
    ============================================================ */
 
 /* ---------- tokens ---------- */
@@ -199,6 +199,34 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .plates { grid-template-columns: 1fr; }
   .brand-sub { display: none; }
   .hero-title { max-width: none; }
+}
+
+/* ---------- detail record（作品介紹頁） ---------- */
+.detail-actions { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.detail-content { display: grid; gap: clamp(28px, 4vw, 44px); }
+.plate--text { position: relative; opacity: 1; transform: none; scroll-margin-top: 84px; }
+.plate--text .plate-tab { position: static; display: inline-block; align-self: flex-start; margin-top: 10px; }
+.plate--text .plate-title { font-size: clamp(1.35rem, 2vw, 1.7rem); }
+.feature-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+  margin-top: 18px; border: 1px solid var(--rule); background: var(--rule);
+}
+.feature-card { display: flex; gap: 12px; padding: 14px 16px; background: var(--plate); }
+.feature-card .mono { flex: 0 0 auto; padding-top: 3px; color: var(--ink-faint); }
+.feature-card p { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.55; }
+.detail-cols { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 48px); margin-top: 18px; }
+.sub-title { color: var(--ink-faint); margin-bottom: 10px; }
+.steps-list, .highlight-list { margin: 0; padding-left: 1.25rem; color: var(--ink-soft); }
+.steps-list li, .highlight-list li { padding: 7px 0; border-bottom: 1px solid var(--rule); line-height: 1.55; }
+.highlight-list { list-style: "—  "; }
+.tech-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.tech-item {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft);
+  background: var(--plate); border: 1px solid var(--rule); padding: 6px 10px;
+}
+.detail-note { margin-top: 16px; color: var(--ink-faint); font-size: 0.92rem; border-left: 2px solid var(--accent); padding-left: 12px; }
+@media (max-width: 720px) {
+  .feature-grid, .detail-cols { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
