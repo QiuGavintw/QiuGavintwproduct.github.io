@@ -396,6 +396,47 @@
         "RWD 響應式，桌機與手機皆可操作",
         "深色模式與繁體中文介面"
       ]
+    },
+    {
+      id: "choir-scoring",
+      slug: "choir-scoring",
+      title: "高一合唱・評分計時台",
+      shortDescription: "給合唱比賽現場工作人員使用的計時＋評分工具，同一畫面完成計時、隊伍管理、評分、排名與匯出。",
+      description:
+        "「高一合唱・評分計時台」是一款為音樂比賽現場工作人員設計的純前端工具。同一畫面即可完成計時、隊伍管理、指定曲與自選曲評分輸入、超時扣分、排名與結果匯出；不需要伺服器與安裝套件，直接以瀏覽器開啟即可使用，所有資料僅存於本機 localStorage。",
+      categories: ["工具", "教育"],
+      technologies: ["HTML5", "CSS3", "JavaScript", "localStorage"],
+      thumbnail: "assets/thumbnails/choir-scoring.svg",
+      screenshots: [],
+      detailPage: "projects/choir-scoring/",
+      demoUrl: "projects/choir-scoring/play/",
+      githubUrl: "https://github.com/QiuGavintw/QiuGavintwproduct.github.io/tree/master/projects/choir-scoring",
+      createdAt: "2026-11-25",
+      updatedAt: "2026-11-25",
+      featured: false,
+      accent: "#c2415c",
+      features: [
+        "正數與倒數同步計時，支援暫停續算、重置、1 秒～99 分鐘設定與提醒",
+        "指定曲／自選曲兩張評分卡片，每細項由 3 位評審給分後加權平均",
+        "可設定每 x 秒扣 y 分，未滿 x 秒以 x 秒計，超時即時反映於總分",
+        "班級隊伍管理：新增、改名、刪除與調整出場順序，分數草稿依隊伍分開保存",
+        "歷史紀錄保存當下隊伍名稱，採競爭排名並可標記最佳指揮獎",
+        "登記分數模式簡化畫面，深色／明亮主題可切換並記住設定",
+        "匯出 UTF-8 BOM CSV、Excel 相容 .xls 與列印用 HTML",
+        "純前端、零後端，所有資料僅存於瀏覽器 localStorage"
+      ],
+      howToPlay: [
+        "開啟計時系統.html，先設定比賽時間、提醒與扣分規則",
+        "在右側確認班級出場順序，必要時新增或調整隊伍",
+        "按「開始」計時，於指定曲與自選曲卡片輸入三位評審分數",
+        "按「儲存紀錄」寫入歷史與排名，最後用「匯出」輸出結果"
+      ],
+      highlights: [
+        "無需伺服器與第三方套件，雙擊 HTML 即可離線使用",
+        "評分公式與試算表一致，含同分並列的競爭排名",
+        "模組化拆分 storage、timer、teams、scoring、history、ui、export",
+        "分數草稿、歷史紀錄與介面設定全部本機保存，不清空不會遺失"
+      ]
     }
   ];
 

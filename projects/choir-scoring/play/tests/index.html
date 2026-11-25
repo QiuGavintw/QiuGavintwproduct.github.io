@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音樂比賽計時系統 — 自動測試</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; padding: 24px; color: #111; }
+    h1 { font-size: 26px; }
+    #summary { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    table { border-collapse: collapse; width: 100%; max-width: 900px; }
+    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-size: 15px; }
+    th { background: #f5f6f8; }
+    .pass { color: #0a7d33; font-weight: 700; }
+    .fail { color: #d93025; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>音樂比賽計時系統 — 自動測試</h1>
+  <div id="summary">執行中…</div>
+  <table id="results"></table>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/timer.js"></script>
+  <script src="../js/teams.js"></script>
+  <script src="../js/scoring.js"></script>
+  <script src="../js/history.js"></script>
+  <script src="../js/export.js"></script>
+  <script src="tests.js"></script>
+  <script>
+    (function () {
+      var res = window.runTests();
+      document.getElementById('summary').textContent =
+        'Tests: ' + res.passed + ' PASS / ' + res.failed + ' FAIL';
+      var rows = res.results.map(function (r) {
+        return '<tr><td class="' + (r.pass ? 'pass' : 'fail') + '">' +
+          (r.pass ? 'PASS' : 'FAIL') + '</td><td>' + r.name + '</td><td>' +
+          (r.error || '') + '</td></tr>';
+      });
+      document.getElementById('results').innerHTML =
+        '<tr><th>結果</th><th>測試項目</th><th>錯誤</th></tr>' + rows.join('');
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高一合唱・評分計時台｜設計稿 v0</title>
+<style>
+  :root{
+    --ink:#12171B;
+    --panel:#1B232A;
+    --line:#33414C;
+    --paper:#F2F0E9;
+    --amber:#E8A33D;
+    --red:#E05252;
+
+    --s1:8px; --s2:16px; --s3:24px; --s4:32px;
+    --radius:2px;
+    --shadow-pop:0 8px 24px rgba(0,0,0,.45);
+    --stage-bg:linear-gradient(180deg,#162028,var(--panel));
+    --amber-hover:#f0b454;
+    --font-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+    --font-body:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+  }
+  [data-theme="light"]{
+    --ink:#F2F0E9; --panel:#FFFFFF; --line:#D4D0C4; --paper:#12171B;
+    --amber:#8A5A12; --amber-hover:#A86A18; --red:#C0392B;
+    --muted:rgba(18,23,27,.62);
+    --stage-bg:linear-gradient(180deg,#FFFFFF,#F2F0E9);
+    --shadow-pop:0 8px 24px rgba(0,0,0,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.5;
+  }
+  button,input{font:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  .v0-note{
+    background:var(--amber);color:var(--ink);
+    font-size:13px;letter-spacing:.04em;
+    padding:6px var(--s3);
+  }
+
+  .topbar{
+    display:flex;align-items:center;gap:var(--s3);
+    padding:var(--s2) var(--s3);
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  .brand{
+    font-family:var(--font-display);
+    font-size:20px;letter-spacing:.08em;
+    margin-right:auto;
+  }
+  .brand small{
+    display:block;font-family:var(--font-body);
+    font-size:12px;color:var(--amber);letter-spacing:.12em;
+  }
+  .status{
+    border:1px solid var(--line);padding:4px 12px;
+    font-size:14px;color:var(--amber);
+  }
+  .status.overtime{color:var(--red);border-color:var(--red)}
+  .btn{
+    background:transparent;color:var(--paper);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:8px 14px;
+  }
+  .btn:hover{border-color:var(--amber)}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  .workspace{
+    display:grid;
+    grid-template-columns:minmax(0,1.6fr) minmax(280px,.8fr);
+    gap:var(--s3);
+    padding:var(--s3);
+    max-width:1400px;margin:0 auto;
+  }
+
+  .stage{
+    border:1px solid var(--line);
+    background:var(--stage-bg);
+    padding:var(--s3);
+  }
+  .eyebrow{
+    font-size:12px;letter-spacing:.16em;color:var(--amber);
+    margin:0 0 var(--s1);
+  }
+  .team-now{
+    font-family:var(--font-display);
+    font-size:clamp(24px,3vw,36px);
+    margin:0 0 var(--s3);
+  }
+  .timer{
+    display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding:var(--s3) 0;
+  }
+  .timer-label{font-size:13px;color:var(--paper);opacity:.7;letter-spacing:.1em}
+  .timer-value{
+    font-family:var(--font-display);
+    font-variant-numeric:tabular-nums;
+    font-size:clamp(48px,8vw,88px);
+    line-height:1.05;
+    margin-top:var(--s1);
+  }
+  .timer.is-warning .timer-value{color:var(--amber)}
+  .timer.is-over .timer-value{color:var(--red)}
+  .control-row{display:flex;gap:var(--s2);margin-top:var(--s3);flex-wrap:wrap}
+  .reminder{
+    margin-top:var(--s2);min-height:24px;
+    color:var(--amber);font-size:14px;
+  }
+
+  .queue{
+    border:1px solid var(--line);background:var(--panel);
+    padding:var(--s2);
+    max-height:520px;overflow:auto;
+  }
+  .queue h2{font-size:16px;margin:0 0 var(--s2);font-weight:500}
+  .queue-item{
+    display:flex;align-items:center;gap:var(--s1);
+    padding:10px var(--s1);
+    border-bottom:1px solid var(--line);
+  }
+  .queue-item.active{background:rgba(232,163,61,.12)}
+  .queue-num{color:var(--amber);width:28px;font-variant-numeric:tabular-nums}
+  .queue-name{flex:1}
+  .queue-tag{font-size:12px;color:var(--amber)}
+  .icon-btn{
+    background:none;border:0;color:var(--paper);opacity:.65;
+    padding:4px 6px;min-width:32px;min-height:32px;
+  }
+  .icon-btn:hover{opacity:1;color:var(--amber)}
+  .add-team{width:100%;margin-top:var(--s2)}
+
+  .tabs{
+    grid-column:1/-1;
+    display:flex;gap:0;border-bottom:1px solid var(--line);
+  }
+  .tab{
+    background:none;border:0;color:var(--paper);opacity:.6;
+    padding:12px var(--s3);border-bottom:2px solid transparent;
+  }
+  .tab[aria-selected="true"]{opacity:1;color:var(--amber);border-color:var(--amber)}
+  .panel{grid-column:1/-1;border:1px solid var(--line);background:var(--panel);padding:var(--s3)}
+  .panel[hidden]{display:none}
+  .panel-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s2);flex-wrap:wrap}
+  .score-team-picker{display:flex;align-items:center;gap:var(--s1);font-size:14px;opacity:.7;white-space:nowrap}
+  .score-team-picker select{
+    min-height:40px;padding:6px 10px;border:1px solid var(--line);
+    background:var(--ink);color:var(--paper);border-radius:2px;
+  }
+  .score-actions{display:flex;gap:var(--s2);margin-top:var(--s2);flex-wrap:wrap}
+  [data-view="score"] .stage,
+  [data-view="score"] .queue,
+  [data-view="score"] .tabs,
+  [data-view="score"] .status,
+  [data-view="score"] #history{display:none!important}
+  [data-view="score"] .workspace{grid-template-columns:minmax(0,1fr);max-width:1100px}
+  [data-view="score"] #score{border:0;background:transparent;padding:0}
+
+  .score-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:var(--s2);
+  }
+  @media(max-width:600px){
+    .workspace{grid-template-columns:1fr;padding:var(--s2)}
+    .timer{grid-template-columns:1fr;gap:var(--s2)}
+    .score-grid{grid-template-columns:1fr}
+    .topbar{flex-wrap:wrap}
+  }
+  .score-card{
+    border:1px solid var(--line);padding:var(--s2);
+    background:var(--ink);
+  }
+  .score-card h3{font-size:14px;font-weight:500;margin:0 0 var(--s2)}
+  .score-item + .score-item{margin-top:var(--s2);padding-top:var(--s2);border-top:1px solid var(--line)}
+  .score-item h4{font-size:13px;font-weight:500;color:var(--amber);margin:0 0 var(--s1)}
+  .judge-row{display:flex;align-items:center;gap:var(--s1);margin-bottom:var(--s1)}
+  .judge-row label{font-size:14px;opacity:.7;width:64px}
+  .judge-row input{
+    flex:1;width:100%;min-width:0;background:var(--panel);
+    border:1px solid var(--line);color:var(--paper);
+    padding:12px 14px;height:52px;font-size:20px;font-variant-numeric:tabular-nums;
+  }
+  .award-option{
+    display:flex;align-items:center;gap:var(--s1);
+    margin-top:var(--s2);padding-top:var(--s2);border-top:1px solid var(--line);
+  }
+  .award-option label{font-size:14px;color:var(--paper);cursor:pointer}
+  .award-checkbox{width:20px;height:20px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
+  .score-sum{
+    margin-top:var(--s3);display:flex;gap:var(--s4);flex-wrap:wrap;
+    border-top:1px solid var(--line);padding-top:var(--s2);
+  }
+  .score-sum div{font-size:14px}
+  .score-sum strong{
+    display:block;font-family:var(--font-display);font-size:28px;color:var(--amber);
+  }
+  .score-sum .deduct strong{color:var(--red)}
+
+  .placeholder{
+    border:1px dashed var(--line);padding:var(--s3);
+    color:var(--paper);opacity:.55;
+  }
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-weight:500;color:var(--amber);font-size:12px;letter-spacing:.08em}
+  td.num{font-variant-numeric:tabular-nums}
+  td.over{color:var(--red)}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+  <div class="v0-note">v0 設計稿 · 配置與配色待確認 · 資料為佔位範例</div>
+
+  <header class="topbar">
+    <div class="brand">高一合唱・評分計時台<small>CHOIR CONTEST CONSOLE</small></div>
+    <span class="status" id="status">未開始</span>
+    <button class="btn" type="button">設定</button>
+    <button class="btn" id="btn-theme" type="button" aria-pressed="false">明亮模式</button>
+    <button class="btn" id="btn-mode" type="button" aria-pressed="false">登記分數模式</button>
+    <button class="btn primary" type="button">匯出 ▾</button>
+  </header>
+
+  <main class="workspace">
+    <section class="stage" aria-label="目前隊伍與計時">
+      <p class="eyebrow">目前隊伍</p>
+      <h1 class="team-now">一年5班</h1>
+      <div class="timer">
+        <div>
+          <div class="timer-label">倒數時間</div>
+          <div class="timer-value">05:00.00</div>
+        </div>
+        <div>
+          <div class="timer-label">正數時間</div>
+          <div class="timer-value">00:00.00</div>
+        </div>
+      </div>
+      <div class="control-row">
+        <button class="btn primary" type="button">開始</button>
+        <button class="btn" type="button" disabled>暫停</button>
+        <button class="btn" type="button">重置</button>
+        <button class="btn" type="button">儲存紀錄</button>
+      </div>
+      <div class="reminder">提醒：剩餘 3 分鐘（10 秒後消失）</div>
+    </section>
+
+    <aside class="queue" aria-label="出場順序">
+      <h2>出場順序</h2>
+      <div class="queue-item active">
+        <span class="queue-num">①</span><span class="queue-name">一年5班</span>
+        <span class="queue-tag">目前</span>
+        <button class="icon-btn" type="button" aria-label="上移">↑</button>
+        <button class="icon-btn" type="button" aria-label="下移">↓</button>
+        <button class="icon-btn" type="button" aria-label="編輯">✎</button>
+        <button class="icon-btn" type="button" aria-label="刪除">✕</button>
+      </div>
+      <div class="queue-item">
+        <span class="queue-num">②</span><span class="queue-name">一年3班</span>
+        <button class="icon-btn" type="button" aria-label="上移">↑</button>
+        <button class="icon-btn" type="button" aria-label="下移">↓</button>
+        <button class="icon-btn" type="button" aria-label="編輯">✎</button>
+        <button class="icon-btn" type="button" aria-label="刪除">✕</button>
+      </div>
+      <button class="btn add-team" type="button">＋ 新增隊伍</button>
+    </aside>
+
+    <nav class="tabs" role="tablist" aria-label="功能分頁">
+      <button class="tab" role="tab" aria-selected="true" data-target="score">評分輸入</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="history">歷史紀錄</button>
+    </nav>
+
+    <section class="panel" id="score" role="tabpanel">
+      <div class="panel-heading">
+        <p class="eyebrow" style="margin:0">評分輸入 · 依評分表細項 · 0–100 分 · 三位評審</p>
+        <label class="score-team-picker">目前隊伍 <select><option>1. 一年5班</option><option>2. 一年3班</option></select></label>
+      </div>
+      <div class="score-grid">
+        <div class="score-card">
+          <h3>指定曲｜50%</h3>
+          <div class="score-item">
+            <h4>音準、節奏、音色（50％）</h4>
+            <div class="judge-row"><label>評審 1</label><input type="number" min="0" max="100" step="0.5" value="100"></div>
+            <div class="judge-row"><label>評審 2</label><input type="number" min="0" max="100" step="0.5" value="90"></div>
+            <div class="judge-row"><label>評審 3</label><input type="number" min="0" max="100" step="0.5" value="80"></div>
+          </div>
+          <div class="score-item">
+            <h4>團體創意（50％）</h4>
+            <div class="judge-row"><label>評審 1</label><input type="number" min="0" max="100" step="0.5" value="80"></div>
+            <div class="judge-row"><label>評審 2</label><input type="number" min="0" max="100" step="0.5" value="70"></div>
+            <div class="judge-row"><label>評審 3</label><input type="number" min="0" max="100" step="0.5" value="60"></div>
+          </div>
+          <div class="award-option">
+            <input id="award-mock" class="award-checkbox" type="checkbox">
+            <label for="award-mock">最佳指揮獎</label>
+          </div>
+        </div>
+        <div class="score-card">
+          <h3>自選曲｜50%</h3>
+          <div class="score-item">
+            <h4>音準、節奏、音色（40％）</h4>
+            <div class="judge-row"><label>評審 1</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 2</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 3</label><input type="number" min="0" max="100" step="0.5"></div>
+          </div>
+          <div class="score-item">
+            <h4>和聲（30％）</h4>
+            <div class="judge-row"><label>評審 1</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 2</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 3</label><input type="number" min="0" max="100" step="0.5"></div>
+          </div>
+          <div class="score-item">
+            <h4>指揮（30％）</h4>
+            <div class="judge-row"><label>評審 1</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 2</label><input type="number" min="0" max="100" step="0.5"></div>
+            <div class="judge-row"><label>評審 3</label><input type="number" min="0" max="100" step="0.5"></div>
+          </div>
+        </div>
+      </div>
+      <div class="score-sum">
+        <div>指定曲得分<strong>40.00</strong></div>
+        <div>自選曲得分<strong>—</strong></div>
+        <div class="deduct">超時扣分<strong>−3.00</strong></div>
+        <div>總得分<strong>—</strong></div>
+        <div>排名<strong>—</strong></div>
+      </div>
+      <div class="score-actions">
+        <button class="btn" type="button">儲存這隊分數草稿</button>
+        <button class="btn primary" type="button">儲存紀錄</button>
+      </div>
+    </section>
+
+    <section class="panel" id="history" role="tabpanel" hidden>
+      <p class="eyebrow">歷史紀錄</p>
+      <table>
+        <thead><tr><th>隊伍</th><th>正數時間</th><th>超過時間</th><th>總分</th><th>排名</th><th>最佳指揮獎</th></tr></thead>
+        <tbody>
+          <tr><td>一年5班</td><td class="num">05:32.45</td><td class="num over">00:32.45</td><td class="num">81.00</td><td class="num">1</td></tr>
+        </tbody>
+      </table>
+      <div class="placeholder" style="margin-top:var(--s2)">[匯出按鈕位置] CSV / Excel 相容 .xls / 列印 HTML</div>
+    </section>
+  </main>
+
+<script>
+  (function () {
+    var theme = 'dark';
+    try { theme = JSON.parse(localStorage.getItem('mcts.theme') || '"dark"'); } catch (e) { theme = 'dark'; }
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+    var view = 'full';
+    try { view = JSON.parse(localStorage.getItem('mcts.view') || '"full"'); } catch (e) { view = 'full'; }
+    document.documentElement.setAttribute('data-view', view === 'score' ? 'score' : 'full');
+  })();
+  var themeBtn = document.getElementById('btn-theme');
+  function paint(theme) {
+    var light = theme === 'light';
+    document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
+    themeBtn.textContent = light ? '深色模式' : '明亮模式';
+    themeBtn.setAttribute('aria-pressed', light ? 'true' : 'false');
+    localStorage.setItem('mcts.theme', JSON.stringify(light ? 'light' : 'dark'));
+  }
+  paint(document.documentElement.getAttribute('data-theme'));
+  themeBtn.addEventListener('click', function () {
+    paint(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  });
+
+  var modeBtn = document.getElementById('btn-mode');
+  function paintView(view) {
+    var scoreOnly = view === 'score';
+    document.documentElement.setAttribute('data-view', scoreOnly ? 'score' : 'full');
+    modeBtn.textContent = scoreOnly ? '返回計時台' : '登記分數模式';
+    modeBtn.setAttribute('aria-pressed', scoreOnly ? 'true' : 'false');
+    localStorage.setItem('mcts.view', JSON.stringify(scoreOnly ? 'score' : 'full'));
+  }
+  paintView(document.documentElement.getAttribute('data-view'));
+  modeBtn.addEventListener('click', function () {
+    paintView(document.documentElement.getAttribute('data-view') === 'score' ? 'full' : 'score');
+  });
+
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected','false')});
+      document.querySelectorAll('.panel').forEach(function(p){p.hidden=true});
+      tab.setAttribute('aria-selected','true');
+      document.getElementById(tab.dataset.target).hidden=false;
+    });
+  });
+</script>
+</body>
+</html>
