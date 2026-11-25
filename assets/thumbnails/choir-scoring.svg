@@ -3,7 +3,7 @@
   <desc>深色控制室風格的評分計時台示意圖，包含大型倒數計時、指定曲與自選曲評分卡片、隊伍順序與排名。</desc>
   <rect width="1200" height="675" fill="#0b1220"/>
   <rect x="0" y="0" width="1200" height="72" fill="#111a2e"/>
-  <text x="600" y="45" fill="#e2e8f0" font-family="sans-serif" font-size="26" text-anchor="middle" font-weight="bold">高一合唱・評分計時台</text>
+  <text x="600" y="45" fill="#e2e8f0" font-family="sans-serif" font-size="26" text-anchor="middle" font-weight="bold">合唱比賽計時計分系統</text>
   <text x="600" y="116" fill="#64748b" font-family="sans-serif" font-size="18" text-anchor="middle">計時 / 評分 / 排名 / 匯出 ・ 純前端單頁工具</text>
   <rect x="80" y="150" width="640" height="210" rx="16" fill="#111a2e" stroke="#1e3a5f" stroke-width="2"/>
   <text x="400" y="190" fill="#93b4d8" font-family="sans-serif" font-size="18" text-anchor="middle">剩餘時間</text>

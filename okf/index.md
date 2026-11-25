@@ -16,7 +16,7 @@ okf_version: "0.2"
 * [午餐小天使](projects/lunch-angel.md) - 高中生校園午餐 LINE 聊天機器人（Node.js 後端）
 * [台灣麻將](projects/mahjong.md) - 四人台灣 16 張麻將單機遊戲（AI 玩家、完整規則、Canvas 牌桌）
 * [二元樹視覺化](projects/binary-tree.md) - 互動式 BST 教學工具（插入、搜尋、刪除、四種走訪動畫）
-* [高一合唱・評分計時台](projects/choir-scoring.md) - 合唱比賽計時與評分工具（三評審加權、超時扣分、排名與匯出）
+* [合唱比賽計時計分系統](projects/choir-scoring.md) - 合唱比賽計時與評分工具（三評審加權、超時扣分、排名與匯出）
 
 ## 外部專案（獨立 Repo）
 

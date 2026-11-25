@@ -400,10 +400,10 @@
     {
       id: "choir-scoring",
       slug: "choir-scoring",
-      title: "高一合唱・評分計時台",
+      title: "合唱比賽計時計分系統",
       shortDescription: "給合唱比賽現場工作人員使用的計時＋評分工具，同一畫面完成計時、隊伍管理、評分、排名與匯出。",
       description:
-        "「高一合唱・評分計時台」是一款為音樂比賽現場工作人員設計的純前端工具。同一畫面即可完成計時、隊伍管理、指定曲與自選曲評分輸入、超時扣分、排名與結果匯出；不需要伺服器與安裝套件，直接以瀏覽器開啟即可使用，所有資料僅存於本機 localStorage。",
+        "「合唱比賽計時計分系統」是一款為音樂比賽現場工作人員設計的純前端工具。同一畫面即可完成計時、隊伍管理、指定曲與自選曲評分輸入、超時扣分、排名與結果匯出；不需要伺服器與安裝套件，直接以瀏覽器開啟即可使用，所有資料僅存於本機 localStorage。",
       categories: ["工具", "教育"],
       technologies: ["HTML5", "CSS3", "JavaScript", "localStorage"],
       thumbnail: "assets/thumbnails/choir-scoring.svg",

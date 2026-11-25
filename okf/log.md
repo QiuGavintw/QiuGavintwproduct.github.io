@@ -1,7 +1,7 @@
 # 作品集知識庫更新記錄
 
 ## 2026-11-25
-* **Creation**: 加入高一合唱・評分計時台（內部專案，原始檔置於 projects/choir-scoring/play/）。
+* **Creation**: 加入合唱比賽計時計分系統（內部專案，原始檔置於 projects/choir-scoring/play/）。
 
 ## 2026-11-18
 * **Creation**: 建立 OKF bundle（okf/ 目錄），收錄 8 個內部專案 + 2 個外部專案。
